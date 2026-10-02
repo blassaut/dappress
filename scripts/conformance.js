@@ -77,9 +77,14 @@ async function main() {
 // to import. Its output is captured, so nothing secret reaches the logs.
 function newWallet() {
   const cast = (...args) => execFileSync(foundry('cast'), args, { encoding: 'utf8', stdio: 'pipe' });
-  const seedPhrase = JSON.parse(cast('wallet', 'new-mnemonic', '--words', '12', '--json')).data.mnemonic;
+  // Foundry's nightlies wrap cast's JSON in { data }, its 1.5 releases don't
+  const castJson = (...args) => {
+    const json = JSON.parse(cast(...args));
+    return json.data ?? json;
+  };
+  const seedPhrase = castJson('wallet', 'new-mnemonic', '--words', '12', '--json').mnemonic;
   const account = (index) => cast('wallet', 'address', '--mnemonic', seedPhrase, '--mnemonic-index', String(index)).trim().toLowerCase();
-  const [other] = JSON.parse(cast('wallet', 'new', '--json')).data;
+  const [other] = castJson('wallet', 'new', '--json');
   return {
     seedPhrase,
     accounts: [account(0), account(1)],
