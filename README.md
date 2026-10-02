@@ -24,12 +24,12 @@ npm install --save-dev dappress
 
 Register the plugin in the Cypress configuration:
 
-```js
-// cypress.config.js
-const { defineConfig } = require('cypress');
-const { configureDappress } = require('dappress');
+```ts
+// cypress.config.ts
+import { defineConfig } from 'cypress';
+import { configureDappress } from 'dappress';
 
-module.exports = defineConfig({
+export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
     testIsolation: false, // the wallet state is shared across tests
@@ -42,16 +42,18 @@ module.exports = defineConfig({
 
 Load the commands in the support file:
 
-```js
-// cypress/support/e2e.js
+```ts
+// cypress/support/e2e.ts
 import 'dappress/support';
 ```
 
 Describe the test wallet:
 
-```js
-// cypress/wallet.setup.js
-module.exports = {
+```ts
+// cypress/wallet.setup.ts
+import type { WalletSetup } from 'dappress';
+
+const wallet: WalletSetup = {
   password: 'Tester@1234',
   // Optional. The network the dapp is moved onto when it connects.
   network: {
@@ -61,6 +63,8 @@ module.exports = {
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   },
 };
+
+export default wallet;
 ```
 
 Keep the seed phrase out of the repository, in `cypress.env.json` (git-ignored):
@@ -81,7 +85,7 @@ env:
 
 When neither is provided, Dappress uses the public Hardhat / Anvil development wallet.
 
-For a TypeScript project, add the command types to `tsconfig.json`:
+Add the command types to `tsconfig.json`:
 
 ```json
 {
@@ -91,6 +95,8 @@ For a TypeScript project, add the command types to `tsconfig.json`:
 }
 ```
 
+JavaScript projects use the same files with a `.js` extension and `module.exports`.
+
 Run the tests in a headed browser that supports extensions:
 
 ```bash
@@ -99,7 +105,7 @@ npx cypress run --browser chrome-for-testing --headed
 
 ## Usage
 
-```js
+```ts
 it('connects the wallet and signs in', () => {
   cy.visit('/');
   cy.contains('button', 'Connect wallet').click();
@@ -130,11 +136,11 @@ Planned: locking the wallet, switching accounts, importing additional accounts.
 
 ### Configuration
 
-Settings normally live in `cypress/wallet.setup.js`. Secrets go in `cypress.env.json` or in environment variables, which take precedence. The full order, first one found wins:
+Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.json` or in environment variables, which take precedence. The full order, first one found wins:
 
 1. Environment variables, for secrets in CI.
 2. `cypress.env.json`, for secrets on a development machine, such as the seed phrase.
-3. `cypress/wallet.setup.js`, for everything else.
+3. `cypress/wallet.setup.ts`, for everything else.
 4. The third argument of `configureDappress(on, config, options)`.
 
 | Option | Environment variable | Default |

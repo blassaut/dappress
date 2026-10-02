@@ -1,6 +1,8 @@
+import type { WalletSetup } from '../../types';
+
 // The public Hardhat / Anvil test wallet, moved onto the Hoodi testnet at
 // connection so the suite never touches Ethereum mainnet.
-module.exports = {
+const wallet: WalletSetup = {
   password: 'Tester@1234',
   network: {
     chainId: '0x88bb0',
@@ -10,3 +12,5 @@ module.exports = {
     blockExplorerUrls: ['https://hoodi.etherscan.io'],
   },
 };
+
+export default wallet;

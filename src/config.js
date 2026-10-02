@@ -16,12 +16,13 @@ const DEFAULTS = {
   cacheDir: path.join(os.homedir(), '.cache', 'dappress'),
 };
 
-const WALLET_SETUP_FILE = path.join('cypress', 'wallet.setup.js');
+// A .ts file loads when the Cypress config is itself in TypeScript
+const WALLET_SETUP_FILES = ['cypress/wallet.setup.ts', 'cypress/wallet.setup.js'];
 
 /**
  * The plugin options, in order of precedence: environment variables, the
  * Cypress `env` block (cypress.env.json), the wallet setup file
- * (cypress/wallet.setup.js), the options given to configureDappress(),
+ * (cypress/wallet.setup.ts or .js), the options given to configureDappress(),
  * then the defaults above.
  */
 function resolveOptions(userOptions = {}, cypressConfig = {}) {
@@ -41,11 +42,12 @@ function resolveOptions(userOptions = {}, cypressConfig = {}) {
 
 /** The project's wallet setup file: { seedPhrase?, password?, network? }. */
 function loadWalletSetup(projectRoot = process.cwd()) {
-  const file = path.join(projectRoot, WALLET_SETUP_FILE);
-  if (!fs.existsSync(file)) return {};
-  const setup = require(file);
+  const file = WALLET_SETUP_FILES.map((name) => path.join(projectRoot, name)).find((candidate) => fs.existsSync(candidate));
+  if (!file) return {};
+  const loaded = require(file);
+  const setup = loaded.default || loaded; // `export default` or `module.exports`
   const unknown = Object.keys(setup).filter((key) => !['seedPhrase', 'password', 'network'].includes(key));
-  if (unknown.length) throw new Error(`[dappress] Unknown keys in ${WALLET_SETUP_FILE}: ${unknown.join(', ')}`);
+  if (unknown.length) throw new Error(`[dappress] Unknown keys in ${path.basename(file)}: ${unknown.join(', ')}`);
   return setup;
 }
 
