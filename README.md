@@ -10,7 +10,7 @@ Dappress loads the MetaMask browser extension into the browser Cypress launches,
 
 ## Requirements
 
-| | |
+| Dependency | Version |
 |---|---|
 | Cypress | 13.6 or later |
 | Node.js | 20 or later |
