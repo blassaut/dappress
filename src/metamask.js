@@ -86,11 +86,14 @@ const decisions = {
   rejectTransaction: selectors.confirmation.cancel,
 };
 
-/** Which screen the extension home page is showing right now. */
+/** Which screen the extension home page shows, once MetaMask has started. */
 async function walletState(page) {
-  if (await isVisible(page, selectors.onboarding.importWallet, 3000)) return 'onboarding';
-  if (await isVisible(page, selectors.unlock.password, 1000)) return 'locked';
-  if (await isVisible(page, selectors.home.header, 1000)) return 'unlocked';
+  const deadline = Date.now() + 20000;
+  while (Date.now() < deadline) {
+    if (await isVisible(page, selectors.onboarding.importWallet, 500)) return 'onboarding';
+    if (await isVisible(page, selectors.unlock.password, 500)) return 'locked';
+    if (await isVisible(page, selectors.home.header, 500)) return 'unlocked';
+  }
   return 'unknown';
 }
 
@@ -108,8 +111,7 @@ async function onboard(page, { seedPhrase, password }) {
   await click(page, s.passwordTerms);
   await clickWhenEnabled(page, s.passwordSubmit);
 
-  await dismissOptionalScreens(page);
-  await waitForHome(page);
+  await reachHome(page, { password });
 }
 
 // MetaMask's sandbox (LavaMoat) blocks a scripted paste, so the phrase is
@@ -124,24 +126,41 @@ async function fillSeedPhrase(page, seedPhrase) {
   }
 }
 
-// The screens after the password depend on the build flags: passkey setup,
-// analytics opt-in, "download the app". Dismiss whichever shows up until "Done".
-async function dismissOptionalScreens(page) {
+async function unlock(page, { password }) {
+  await fill(page, selectors.unlock.password, password);
+  await click(page, selectors.unlock.submit);
+  await reachHome(page, { password });
+}
+
+/**
+ * Go through whatever MetaMask shows until the wallet's home: the screens
+ * that may follow the password or an unlock (passkey, analytics, "download
+ * the app", "Done"), and the unlock form if MetaMask locked meanwhile. After
+ * "Done", MetaMask takes a moment to record the onboarding as complete and
+ * redirects to it until then, so the home page is reloaded.
+ */
+async function reachHome(page, { password }) {
   const s = selectors.onboarding;
-  const deadline = Date.now() + 60000;
+  const deadline = Date.now() + 90000;
   while (Date.now() < deadline) {
-    if (await isVisible(page, s.done)) {
-      await click(page, s.done);
-      return;
-    }
+    if (await isVisible(page, selectors.home.header, 500)) return;
     if (await isVisible(page, s.passkeyMaybeLater, 500)) await click(page, s.passkeyMaybeLater);
     if (await isVisible(page, s.metricsCheckbox, 500)) {
       await optOutOfMetrics(page);
       await click(page, s.metricsContinue);
     }
     if (await isVisible(page, s.downloadAppContinue, 500)) await click(page, s.downloadAppContinue);
+    if (await isVisible(page, s.done, 500)) {
+      await click(page, s.done);
+      await sleep(1000);
+      await reloadHome(page);
+    }
+    if (await isVisible(page, selectors.unlock.password, 500)) {
+      await fill(page, selectors.unlock.password, password);
+      await click(page, selectors.unlock.submit);
+    }
   }
-  throw await failure(page, 'Onboarding did not reach the "Done" screen');
+  throw await failure(page, 'MetaMask did not show the wallet');
 }
 
 async function optOutOfMetrics(page) {
@@ -150,26 +169,12 @@ async function optOutOfMetrics(page) {
   if (checked) await checkbox.click();
 }
 
-// MetaMask records the onboarding as complete shortly after "Done". Until
-// then its pages still redirect to the onboarding, so reload the home page
-// until it shows the wallet.
-async function waitForHome(page) {
+// Through about:blank: dropping only the "#" part of the URL would be a
+// same-document navigation, which goto() waits on forever
+async function reloadHome(page) {
   const homeUrl = page.url().split('#')[0];
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    // Through about:blank: dropping only the "#" part would be a same-document navigation, which goto() waits on forever
-    await page.goto('about:blank');
-    await page.goto(homeUrl);
-    if (await isVisible(page, selectors.home.header, 3000)) return;
-    await sleep(1000);
-  }
-  throw await failure(page, 'MetaMask did not show the wallet after onboarding');
-}
-
-async function unlock(page, { password }) {
-  await fill(page, selectors.unlock.password, password);
-  await click(page, selectors.unlock.submit);
-  await waitFor(page, selectors.home.header);
+  await page.goto('about:blank');
+  await page.goto(homeUrl);
 }
 
 /** Press the button of `decision` on the confirmation shown on `page`. */

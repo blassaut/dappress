@@ -12,6 +12,10 @@ function extensionIdOf(url) {
   return match ? match[1] : null;
 }
 
+function isHomeRoute(url) {
+  return url.includes('/notification.html') && /notification\.html(#\/?)?$/.test(url);
+}
+
 function pagesOf(browser, extensionId, pathname) {
   return browser
     .targets()
@@ -60,12 +64,16 @@ async function getHomePage(browser, extensionId) {
   return page;
 }
 
-/** The page a dapp request is shown on. Waits for the popup to open, or takes the side panel. */
+/**
+ * The page a dapp request is shown on. Waits for the popup to open, or takes
+ * the side panel. A popup still on its home route is one closing after the
+ * previous request, or one that hasn't routed to the request yet: skipped.
+ */
 async function getConfirmationPage(browser, extensionId, timeout) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (const pathname of CONFIRMATION_PATHS) {
-      const [target] = pagesOf(browser, extensionId, pathname);
+      const [target] = pagesOf(browser, extensionId, pathname).filter((candidate) => !isHomeRoute(candidate.url()));
       if (target) return target.page();
     }
     await sleep(250);

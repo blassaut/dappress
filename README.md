@@ -154,11 +154,14 @@ Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.
 | `password` | `DAPPRESS_PASSWORD` | `Tester@1234`. It only protects the throwaway browser profile Cypress creates for each run. |
 | `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
 | `autoSetup` | | `true`. Dappress imports or unlocks the wallet before the first test of each spec. Set to `false` to call `cy.setupMetaMask()` yourself. |
+| `cache` | | `true`. The wallet is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs. Runs then start by unlocking the wallet. Set to `false` to import it in every run. |
 | `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
 
 ### Security
 
 Use a wallet dedicated to testing, funded on test networks only. The default seed phrase is public. The seed phrase and password remain on the Node.js side: they are never exposed to the browser nor written to the Cypress command log. The wallet setup file contains no secret and can be committed.
+
+The cached profile under `~/.cache/dappress/profiles` holds the wallet's vault, encrypted by MetaMask with the password. Treat that directory like the seed phrase: keep it on the machine, and do not store it in a CI cache that other people or workflows can restore. In CI, either leave the profile out of the cache (the import costs about forty seconds per run) or set `cache: false`.
 
 ## Conformance suite
 
@@ -181,11 +184,14 @@ Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the 
 
 Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, Dappress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request (side panel or popup) and interacts with it.
 
+Before the run, Dappress imports the wallet once in a browser of its own and keeps the profile; MetaMask's storage is copied from it into the profile Cypress is about to launch, so each run starts from a wallet that has never seen the dapp.
+
 ```
 src/index.js            configureDappress(): plugin entry point
 src/config.js           options and wallet setup file
 src/download.js         download and cache of MetaMask builds
 src/browser.js          Puppeteer connection to the Cypress browser
+src/profile.js          wallet profile built once and reused across runs
 src/metamask-pages.js   discovery of MetaMask's pages
 src/metamask.js         MetaMask screens: selectors and flows
 src/page-helpers.js     wait, click and fill primitives with fallback selectors

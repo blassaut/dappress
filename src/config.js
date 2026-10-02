@@ -11,6 +11,8 @@ const DEFAULTS = {
   network: null,
   // Run cy.setupMetaMask() automatically before the first test of each spec
   autoSetup: true,
+  // Import the wallet once and reuse the profile across runs
+  cache: true,
   // How long to wait for MetaMask to show a confirmation after a dapp request (ms)
   timeout: 20000,
   cacheDir: path.join(os.homedir(), '.cache', 'dappress'),
