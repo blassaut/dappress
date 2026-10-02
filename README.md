@@ -104,7 +104,12 @@ Planned: locking the wallet, switching accounts, importing additional accounts.
 
 ### Configuration
 
-Options are read, in order of precedence, from environment variables, `cypress.env.json`, `cypress/wallet.setup.js`, and the third argument of `configureDappress(on, config, options)`.
+Settings normally live in `cypress/wallet.setup.js`. Secrets go in `cypress.env.json` or in environment variables, which take precedence. The full order, first one found wins:
+
+1. Environment variables, for secrets in CI.
+2. `cypress.env.json`, for secrets on a development machine, such as the seed phrase.
+3. `cypress/wallet.setup.js`, for everything else.
+4. The third argument of `configureDappress(on, config, options)`.
 
 | Option | Environment variable | Default |
 |---|---|---|
