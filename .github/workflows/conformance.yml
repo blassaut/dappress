@@ -1,6 +1,6 @@
 # Checks every day whether MetaMask published a new release, and runs the
 # conformance suite against it, in each mode, when it has no report yet. Run by
-# hand with a version, or on a pull request that changes how the suite runs,
+# hand with a version, or on a pull request that changes Dappress or the suite,
 # it tests that release (or the latest) regardless.
 #
 # The reports, MATRIX.md and badge.json (a shields.io endpoint) are published
@@ -14,6 +14,7 @@ on:
       - .github/workflows/conformance.yml
       - conformance/**
       - scripts/**
+      - src/**
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
