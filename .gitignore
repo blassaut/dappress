@@ -1,0 +1,6 @@
+node_modules/
+conformance/cypress/screenshots/
+conformance/cypress/videos/
+conformance/cypress/downloads/
+.DS_Store
+conformance/cypress/debug/

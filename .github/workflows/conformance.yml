@@ -1,0 +1,53 @@
+# Checks every day whether MetaMask published a new release, and runs the
+# conformance suite against it when there is no report for it yet.
+# Not validated on GitHub's runners yet.
+name: Conformance
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Latest MetaMask release
+        id: metamask
+        run: |
+          version=$(curl -s https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -f "reports/metamask-$version.json" ]; then
+            echo "MetaMask $version already has a report, nothing to do"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.metamask.outputs.new == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - if: steps.metamask.outputs.new == 'true'
+        uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - if: steps.metamask.outputs.new == 'true'
+        uses: foundry-rs/foundry-toolchain@v1
+      - if: steps.metamask.outputs.new == 'true'
+        run: npm ci
+
+      - name: Run the suite against MetaMask ${{ steps.metamask.outputs.version }}
+        if: steps.metamask.outputs.new == 'true'
+        run: xvfb-run --auto-servernum npm run conformance -- ${{ steps.metamask.outputs.version }}
+        env:
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.metamask.outputs.new == 'true'
+        with:
+          name: report-metamask-${{ steps.metamask.outputs.version }}
+          path: reports/

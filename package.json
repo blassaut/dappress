@@ -1,0 +1,46 @@
+{
+  "name": "dappress",
+  "version": "0.1.0",
+  "description": "MetaMask wallet automation for Cypress, built on the official @cypress/puppeteer plugin and tracking the latest MetaMask release.",
+  "license": "MIT",
+  "author": "Benjamin Lassaut",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blassaut/dappress.git"
+  },
+  "keywords": [
+    "cypress",
+    "metamask",
+    "web3",
+    "e2e",
+    "testing",
+    "wallet",
+    "dapp"
+  ],
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./support": "./src/support.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "conformance": "node scripts/conformance.js"
+  },
+  "peerDependencies": {
+    "cypress": ">=13.6.0"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "puppeteer-core": "^24.43.1"
+  },
+  "devDependencies": {
+    "cypress": "^16.1.1"
+  }
+}
