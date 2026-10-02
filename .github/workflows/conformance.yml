@@ -1,12 +1,21 @@
 # Checks every day whether MetaMask published a new release, and runs the
-# conformance suite against it when there is no report for it yet.
-# Not validated on GitHub's runners yet.
+# conformance suite against it when there is no report for it yet. Run by
+# hand with a version, or on a pull request that changes how the suite runs,
+# it tests that release (or the latest) regardless.
 name: Conformance
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/conformance.yml
+      - scripts/conformance.js
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      version:
+        description: MetaMask release to test, e.g. 13.50.0 (default the latest, when it has no report yet)
+        required: false
 
 jobs:
   conformance:
@@ -16,10 +25,22 @@ jobs:
 
       - name: Latest MetaMask release
         id: metamask
+        env:
+          REQUESTED: ${{ inputs.version }}
+          EVENT: ${{ github.event_name }}
+          # Authenticated, the API call isn't limited to the runner IP's 60 per hour
+          GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(curl -s https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
+          if [ -n "$REQUESTED" ]; then
+            echo "version=$REQUESTED" >> "$GITHUB_OUTPUT"
+            echo "new=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [ -f "reports/metamask-$version.json" ]; then
+          if [ "$EVENT" = pull_request ]; then
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          elif [ -f "reports/metamask-$version.json" ]; then
             echo "MetaMask $version already has a report, nothing to do"
             echo "new=false" >> "$GITHUB_OUTPUT"
           else
@@ -29,12 +50,15 @@ jobs:
       - if: steps.metamask.outputs.new == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - if: steps.metamask.outputs.new == 'true'
-        uses: browser-actions/setup-chrome@v1
+          node-version: 24
+      # @puppeteer/browsers installs Chrome for Testing; setup-chrome's
+      # "stable" channel installs Google Chrome, which can't load MetaMask
+      - name: Install Chrome for Testing
+        if: steps.metamask.outputs.new == 'true'
         id: chrome
-        with:
-          chrome-version: stable
+        run: |
+          path=$(npx --yes @puppeteer/browsers@3 install chrome@stable --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
       - if: steps.metamask.outputs.new == 'true'
         uses: foundry-rs/foundry-toolchain@v1
       - if: steps.metamask.outputs.new == 'true'
@@ -44,10 +68,14 @@ jobs:
         if: steps.metamask.outputs.new == 'true'
         run: xvfb-run --auto-servernum npm run conformance -- ${{ steps.metamask.outputs.version }}
         env:
-          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.metamask.outputs.new == 'true'
         with:
           name: report-metamask-${{ steps.metamask.outputs.version }}
-          path: reports/
+          # Dappress saves what MetaMask showed when a command failed under /tmp/dappress
+          path: |
+            reports/
+            /tmp/dappress
+          if-no-files-found: ignore
