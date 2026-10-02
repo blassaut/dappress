@@ -108,12 +108,12 @@ Options are read, in order of precedence, from environment variables, `cypress.e
 
 | Option | Environment variable | Default |
 |---|---|---|
-| `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0` |
-| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | Hardhat / Anvil development mnemonic |
-| `password` | `DAPPRESS_PASSWORD` | `Tester@1234` |
-| `network` | | none |
-| `autoSetup` | | `true`, runs `cy.setupMetaMask()` before each spec |
-| `timeout` | | `20000` ms, the time allowed for MetaMask to display a request |
+| `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0`. The build is downloaded from MetaMask's GitHub releases on first run and cached in `~/.cache/dappress`. |
+| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | `test test test test test test test test test test test junk`, the Hardhat / Anvil development wallet. Its first account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`. |
+| `password` | `DAPPRESS_PASSWORD` | `Tester@1234`. It only protects the throwaway browser profile Cypress creates for each run. |
+| `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
+| `autoSetup` | | `true`. `cy.setupMetaMask()` runs before the first test of each spec. |
+| `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
 
 ### Security
 
