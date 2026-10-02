@@ -63,7 +63,15 @@ module.exports = {
 };
 ```
 
-Provide the seed phrase through `DAPPRESS_SEED_PHRASE`, either in `cypress.env.json` (git-ignored) or as an environment variable. When none is provided, Dappress uses the public Hardhat / Anvil development wallet.
+Keep the seed phrase out of the repository, in `cypress.env.json` (git-ignored):
+
+```json
+{
+  "DAPPRESS_SEED_PHRASE": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+}
+```
+
+In CI, set the `DAPPRESS_SEED_PHRASE` environment variable instead. When neither is provided, Dappress uses the public Hardhat / Anvil development wallet.
 
 Run the tests in a headed browser that supports extensions:
 
