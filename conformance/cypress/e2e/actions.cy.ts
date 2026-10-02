@@ -4,12 +4,26 @@ import { testDapp } from '../support/testDapp';
 import { provider } from '../support/provider';
 
 // One test per Dappress command, against MetaMask's test dapp and a local
-// Anvil node (started by scripts/conformance.js) for the funded transaction.
+// Anvil node for the funded transaction. scripts/conformance.js starts Anvil
+// and makes the wallet: run the suite through it.
 // The wallet setup (cypress/wallet.setup.js) moves the dapp onto the Hoodi
 // testnet at connection, so nothing is signed on Ethereum mainnet. A failing
 // test means the MetaMask build under test moved something the adapter relies on.
 
-const account = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
+// The wallet of this run, made by scripts/conformance.js: its first two
+// accounts, funded on Anvil, and a separate account to import from its key
+const { accounts, imported } = Cypress.expose('conformance') as {
+  accounts: [string, string];
+  imported: { address: string; privateKey: string };
+};
+const [account, secondAccount] = accounts;
+
+// The dapp connects with the wallet's selected account: disconnect, then connect again
+const reconnect = () => {
+  provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+  testDapp.connect();
+  cy.connectToDapp();
+};
 const USER_REJECTED = 4001;
 
 const hoodi = '0x88bb0';
@@ -115,4 +129,22 @@ describe('MetaMask actions', () => {
     });
   });
 
+
+  it('addAccount', () => {
+    cy.addAccount().should('eq', 'Account 2');
+    reconnect();
+    cy.getAccountAddress().should('eq', secondAccount);
+  });
+
+  it('importAccount', () => {
+    cy.importAccount(imported.privateKey).should('be.a', 'string');
+    reconnect();
+    cy.getAccountAddress().should('eq', imported.address);
+  });
+
+  it('switchAccount', () => {
+    cy.switchAccount('Account 1');
+    reconnect();
+    cy.getAccountAddress().should('eq', account);
+  });
 });

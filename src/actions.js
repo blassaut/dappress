@@ -27,6 +27,17 @@ function createTasks(options) {
     return state;
   }
 
+  /** A task that drives the wallet's own screens, from its full-screen page. */
+  const onHomePage = (flow) => async (browser, argument) => {
+    const home = await getHomePage(browser, await metamaskId(browser));
+    try {
+      await home.bringToFront();
+      return await flow(home, argument);
+    } finally {
+      await home.close();
+    }
+  };
+
   /** Approve the prompt a network change raised: "Add network" or the permission to switch. */
   async function approveNetworkChange(browser) {
     const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
@@ -39,7 +50,13 @@ function createTasks(options) {
     await metamask.decide(decision, page, options.timeout);
   };
 
-  const actions = { setupWallet, approveNetworkChange };
+  const actions = {
+    setupWallet,
+    approveNetworkChange,
+    addAccount: onHomePage(metamask.addAccount),
+    switchAccount: onHomePage(metamask.switchAccount),
+    importAccount: onHomePage(metamask.importAccount),
+  };
   for (const decision of Object.keys(metamask.decisions)) actions[decision] = decide(decision);
 
   // cy.task() needs a value back: null when the action has nothing to say

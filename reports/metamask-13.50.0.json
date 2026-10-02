@@ -1,8 +1,8 @@
 {
-  "dappressVersion": "0.1.2",
+  "dappressVersion": "0.2.0",
   "metamaskVersion": "13.50.0",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-02T19:26:42.150Z",
+  "date": "2026-10-02T19:45:29.582Z",
   "passed": true,
   "actions": [
     {
@@ -55,6 +55,18 @@
     },
     {
       "action": "rejectAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "addAccount",
+      "status": "passed"
+    },
+    {
+      "action": "importAccount",
+      "status": "passed"
+    },
+    {
+      "action": "switchAccount",
       "status": "passed"
     }
   ]

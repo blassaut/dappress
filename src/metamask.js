@@ -44,6 +44,18 @@ const selectors = {
   },
   home: {
     header: testId('parent-selector-header-navbar'),
+    accountMenu: testId('account-menu-icon'),
+  },
+  // The account list, opened from the home header
+  accounts: {
+    name: '[data-testid^="multichain-account-cell-name-"]',
+    cell: (name) => `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]`,
+    add: 'xpath/(.//*[@data-testid="add-multichain-account-button"])[1]',
+    addWallet: testId('account-list-add-wallet-button'),
+    importAccount: testId('choose-wallet-type-import-account'),
+    privateKey: '#private-key-box',
+    importConfirm: [testId('import-account-confirm-button'), buttonText('Import')],
+    back: testId('account-list-page-back-button'),
   },
   // "Connect this website with MetaMask"
   connect: {
@@ -202,6 +214,69 @@ async function reloadHome(page) {
   await page.goto(homeUrl);
 }
 
+/** Add an account to the wallet and select it. Yields its name, "Account N". */
+async function addAccount(page) {
+  await click(page, selectors.home.accountMenu);
+  const before = await accountNames(page);
+  await clickWhenEnabled(page, selectors.accounts.add, { timeout: 30000 });
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    const [added] = (await accountNames(page)).filter((name) => !before.includes(name));
+    if (added) {
+      await selectAccount(page, added);
+      return added;
+    }
+    await sleep(250);
+  }
+  throw await failure(page, 'MetaMask added no account');
+}
+
+async function accountNames(page) {
+  await waitFor(page, selectors.accounts.name);
+  return page.$$eval(selectors.accounts.name, (cells) => cells.map((cell) => cell.textContent.trim()));
+}
+
+/** Make `name` the selected account of the wallet. */
+async function switchAccount(page, name) {
+  await click(page, selectors.home.accountMenu);
+  await selectAccount(page, name);
+}
+
+// Picking an account closes the list and shows it in the home header
+async function selectAccount(page, name) {
+  await click(page, selectors.accounts.cell(name));
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline) {
+    if ((await selectedAccount(page)) === name) return;
+    await sleep(250);
+  }
+  throw await failure(page, `MetaMask did not select "${name}"`);
+}
+
+async function selectedAccount(page) {
+  const menu = await page.$(selectors.home.accountMenu);
+  return menu ? menu.evaluate((el) => el.textContent.trim()) : null;
+}
+
+/** Import an account from its private key and select it. Yields its name. */
+async function importAccount(page, privateKey) {
+  await waitFor(page, selectors.home.accountMenu);
+  const before = await selectedAccount(page);
+  // Straight to the form the account list's "Add wallet" menu leads to
+  const homeUrl = page.url().split('#')[0];
+  await page.goto('about:blank');
+  await page.goto(`${homeUrl}#/add-wallet-page`);
+  await fill(page, selectors.accounts.privateKey, privateKey, { timeout: 30000 });
+  await clickWhenEnabled(page, selectors.accounts.importConfirm);
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    const selected = await selectedAccount(page);
+    if (selected && selected !== before) return selected;
+    await sleep(250);
+  }
+  throw await failure(page, 'MetaMask did not import the account');
+}
+
 /** Press the button of `decision` on the confirmation shown on `page`. */
 function decide(decision, page, timeout) {
   return pressAndWaitForDismissal(page, decisions[decision], timeout);
@@ -271,4 +346,4 @@ async function dismissModal(page) {
   await dispatchClick(page, selectors.modal.lastButton);
 }
 
-module.exports = { decisions, walletState, onboard, unlock, decide, approveNetworkChange };
+module.exports = { decisions, walletState, onboard, unlock, addAccount, switchAccount, importAccount, decide, approveNetworkChange };

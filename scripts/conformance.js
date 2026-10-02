@@ -7,7 +7,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
+const { spawn, execFileSync } = require('node:child_process');
 const cypress = require('cypress');
 const { DEFAULTS } = require('../src/config');
 const { version: dappressVersion } = require('../package.json');
@@ -17,10 +17,14 @@ const reportsDir = path.join(__dirname, '..', 'reports');
 const ANVIL_URL = 'http://127.0.0.1:8545';
 
 async function main() {
-  const anvil = await startAnvil();
+  // A wallet nobody has used: MetaMask restores nothing for it, and Anvil funds it
+  const wallet = newWallet();
+  process.env.DAPPRESS_SEED_PHRASE = wallet.seedPhrase;
+  const anvil = await startAnvil(wallet.seedPhrase);
   let results;
   try {
     results = await cypress.run({
+      config: { expose: { conformance: { accounts: wallet.accounts, imported: wallet.imported } } },
       project: path.join(__dirname, '..', 'conformance'),
       // A browser that loads extensions in headed mode: Chrome for Testing, or a path to one
       browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
@@ -56,9 +60,22 @@ async function main() {
   process.exit(report.passed ? 0 : 1);
 }
 
-async function startAnvil() {
-  const binary = process.env.ANVIL || findAnvil();
-  const anvil = spawn(binary, ['--silent'], { stdio: 'inherit' });
+// Foundry's cast: the seed phrase, its first two accounts, and a separate key
+// to import. Its output is captured, so nothing secret reaches the logs.
+function newWallet() {
+  const cast = (...args) => execFileSync(foundry('cast'), args, { encoding: 'utf8', stdio: 'pipe' });
+  const seedPhrase = JSON.parse(cast('wallet', 'new-mnemonic', '--words', '12', '--json')).data.mnemonic;
+  const account = (index) => cast('wallet', 'address', '--mnemonic', seedPhrase, '--mnemonic-index', String(index)).trim().toLowerCase();
+  const [other] = JSON.parse(cast('wallet', 'new', '--json')).data;
+  return {
+    seedPhrase,
+    accounts: [account(0), account(1)],
+    imported: { address: other.address.toLowerCase(), privateKey: other.private_key },
+  };
+}
+
+async function startAnvil(seedPhrase) {
+  const anvil = spawn(foundry('anvil'), ['--silent', '--mnemonic', seedPhrase], { stdio: 'inherit' });
   anvil.on('error', () => {
     console.error('[dappress] Anvil is needed for the funded transaction tests: https://getfoundry.sh');
     process.exit(1);
@@ -71,9 +88,9 @@ async function startAnvil() {
   throw new Error(`[dappress] Anvil did not answer on ${ANVIL_URL}`);
 }
 
-function findAnvil() {
-  const foundry = path.join(os.homedir(), '.foundry', 'bin', 'anvil');
-  return fs.existsSync(foundry) ? foundry : 'anvil';
+function foundry(tool) {
+  const installed = path.join(os.homedir(), '.foundry', 'bin', tool);
+  return fs.existsSync(installed) ? installed : tool;
 }
 
 async function isUp(url) {

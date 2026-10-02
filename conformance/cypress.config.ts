@@ -14,7 +14,6 @@ export default defineConfig({
     // The tests share one MetaMask instance and one dapp connection
     testIsolation: false,
     video: false,
-    chromeWebSecurity: false,
     setupNodeEvents(on, config) {
       return configureDappress(on, config);
     },

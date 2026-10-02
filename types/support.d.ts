@@ -27,6 +27,12 @@ declare global {
       /** Answers wallet_watchAsset ("Add suggested tokens"). */
       approveAddToken(): Chainable<void>;
       rejectAddToken(): Chainable<void>;
+      /** Adds an account to the wallet and selects it. Yields its name, "Account N". */
+      addAccount(): Chainable<string>;
+      /** Selects an account of the wallet by its name. */
+      switchAccount(name: string): Chainable<void>;
+      /** Imports an account from its private key and selects it. Yields its name. */
+      importAccount(privateKey: string): Chainable<string>;
       /** Moves the dapp onto a network, adding it to MetaMask if needed. Defaults to the wallet setup's network. Yields the chain id. */
       useNetwork(network?: Network): Chainable<string>;
       /** The address the dapp is connected with. */

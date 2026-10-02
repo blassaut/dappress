@@ -134,6 +134,9 @@ The wallet is imported once, before the first test of each spec. Each command wa
 | `cy.rejectSwitchNetwork()` | Denies that permission |
 | `cy.approveAddToken()` | Adds the token requested by `wallet_watchAsset` |
 | `cy.rejectAddToken()` | Rejects the token |
+| `cy.addAccount()` | Adds an account to the wallet and selects it. Yields its name, such as `Account 2`. |
+| `cy.importAccount(privateKey)` | Imports an account from its private key and selects it. Yields its name. The key stays out of the command log. |
+| `cy.switchAccount(name)` | Selects an account of the wallet by its name |
 | `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the network of the wallet setup. |
 | `cy.getAccountAddress()` | Yields the address the dapp is connected with |
 | `cy.setupMetaMask()` | Imports the wallet, or unlocks it. Called automatically before each spec. |
@@ -153,7 +156,7 @@ Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.
 | `seedPhrase` | `DAPPRESS_SEED_PHRASE` | `test test test test test test test test test test test junk`, the Hardhat / Anvil development wallet. Its first account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`. |
 | `password` | `DAPPRESS_PASSWORD` | `Tester@1234`. It only protects the throwaway browser profile Cypress creates for each run. |
 | `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
-| `backupAndSync` | | `false`. Dappress turns off MetaMask's backup and sync while importing the wallet, so every import starts from the same state: one account, no contact. With `true`, MetaMask restores the accounts and contacts saved for that seed phrase from other installs. |
+| `backupAndSync` | | `false`. Dappress turns off MetaMask's backup and sync while importing the wallet, so that an account a test adds is not restored by the next import of the same seed phrase. With `true`, MetaMask keeps saving and restoring the accounts and contacts of that phrase. |
 | `autoSetup` | | `true`. Dappress imports or unlocks the wallet before the first test of each spec. Set to `false` to call `cy.setupMetaMask()` yourself. |
 | `cache` | | `false`. The wallet is imported in every run, about fifteen seconds. With `true`, it is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs, which then start by unlocking the wallet. |
 | `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
@@ -166,7 +169,7 @@ With `cache: true`, the profile under `~/.cache/dappress/profiles` holds the wal
 
 ## Conformance suite
 
-The suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/), with a local [Anvil](https://getfoundry.sh) node for the funded transaction. It requires Chrome for Testing and Foundry.
+The suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/). Each run makes a wallet nobody has used, with Foundry's `cast`, and starts a local [Anvil](https://getfoundry.sh) node that funds it. It requires Chrome for Testing and Foundry.
 
 ```bash
 npm run conformance               # default MetaMask version
@@ -210,10 +213,12 @@ Selectors are MetaMask's `data-testid` attributes, each with the button's Englis
 
 - **Cypress exits immediately with `MODULE_NOT_FOUND`.** The terminal sets `ELECTRON_RUN_AS_NODE=1`, as some IDEs do. Run `env -u ELECTRON_RUN_AS_NODE npx cypress run …`.
 - **"MetaMask showed no confirmation".** The dapp sent no request, or sent it on a network whose RPC endpoint is unreachable.
+- **Adding or importing an account never finishes.** `chromeWebSecurity: false` is set in the Cypress config. MetaMask then cannot start its snaps, which its account screens wait for. Leave Chrome's web security on, the Cypress default.
+- **The wallet shows accounts you did not create.** The seed phrase is used elsewhere, and MetaMask restored what its cloud holds for it. This happens with the public default phrase. Use a phrase made for your tests.
 
 ## Status
 
-Verified with MetaMask 13.49.0 and 13.50.0, Cypress 16 and Chrome for Testing 154 on macOS, in headed mode. Headless execution and continuous integration are not validated yet.
+Verified with MetaMask 13.49.0 and 13.50.0, Cypress 16 and Chrome for Testing 154, in headed mode, on macOS and on GitHub's Linux runners. Headless execution is not validated yet.
 
 ## License
 

@@ -16,6 +16,9 @@ const { createTasks } = require('./actions');
  */
 function configureDappress(on, config, userOptions = {}) {
   const options = resolveOptions(userOptions, config);
+  if (config.chromeWebSecurity === false) {
+    console.warn('[dappress] chromeWebSecurity is off: MetaMask cannot start its snaps, so adding or importing an account will hang');
+  }
 
   // Build the wallet profile before the run, out of the time Cypress allows a browser to come up
   on('before:run', async ({ browser }) => {

@@ -7,8 +7,9 @@
 
 const options = Cypress.expose('dappress') || {};
 
-function metamask(action, argument = null) {
-  Cypress.log({ name: 'metamask', message: argument ? `${action} ${argument}` : action });
+// `shown` is what the command log displays for the argument, if anything
+function metamask(action, argument = null, shown = '') {
+  Cypress.log({ name: 'metamask', message: `${action} ${shown}`.trim() });
   return cy.task(`dappress:${action}`, argument, { log: false });
 }
 
@@ -29,6 +30,12 @@ Cypress.Commands.add('rejectTransaction', () => metamask('rejectTransaction'));
 Cypress.Commands.add('approveAddToken', () => metamask('approveAddToken'));
 Cypress.Commands.add('rejectAddToken', () => metamask('rejectAddToken'));
 
+// The wallet's own accounts. A new or imported account becomes the selected
+// one; the dapp sees it once it connects with it.
+Cypress.Commands.add('addAccount', () => metamask('addAccount'));
+Cypress.Commands.add('switchAccount', (name) => metamask('switchAccount', name, name));
+// The private key is kept out of the command log
+Cypress.Commands.add('importAccount', (privateKey) => metamask('importAccount', privateKey));
 
 // Connect, then move the dapp onto the network from the wallet setup, if there is one
 Cypress.Commands.add('connectToDapp', () => {

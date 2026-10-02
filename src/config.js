@@ -9,8 +9,8 @@ const DEFAULTS = {
   password: 'Tester@1234',
   // The network cy.connectToDapp() moves the dapp onto, as a wallet_addEthereumChain parameter; none by default
   network: null,
-  // MetaMask's backup and sync restores, for a seed phrase, the accounts and
-  // contacts saved from other installs. Off, every import starts the same.
+  // MetaMask's backup and sync saves the accounts and contacts of a seed phrase
+  // and restores them on other installs. Off, a test's accounts don't come back.
   backupAndSync: false,
   // Run cy.setupMetaMask() automatically before the first test of each spec
   autoSetup: true,
