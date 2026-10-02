@@ -71,7 +71,15 @@ Keep the seed phrase out of the repository, in `cypress.env.json` (git-ignored):
 }
 ```
 
-In CI, set the `DAPPRESS_SEED_PHRASE` environment variable instead. When neither is provided, Dappress uses the public Hardhat / Anvil development wallet.
+In CI, provide it as an encrypted secret of the repository, exposed to the job as an environment variable:
+
+```yaml
+# GitHub Actions
+env:
+  DAPPRESS_SEED_PHRASE: ${{ secrets.DAPPRESS_SEED_PHRASE }}
+```
+
+When neither is provided, Dappress uses the public Hardhat / Anvil development wallet.
 
 Run the tests in a headed browser that supports extensions:
 
