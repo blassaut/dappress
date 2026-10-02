@@ -262,10 +262,13 @@ async function switchAccount(page, name) {
   await selectAccount(page, name);
 }
 
-// As with the buttons in the list, a click on the menu that lands while the
-// home screen settles is lost: the menu is pressed again until the list shows.
+// A click on the menu is lost while the home screen settles, as with the
+// buttons in the list, or swallowed by a modal MetaMask shows over the home
+// screen after some activity (the Transaction Shield offer, for one): any
+// modal is dismissed first, and the menu is pressed again until the list shows.
 async function openAccountList(page) {
   for (let attempt = 0; attempt < 3; attempt++) {
+    await dismissModal(page);
     await click(page, selectors.home.accountMenu);
     if (await isVisible(page, selectors.accounts.name, 10000)) return;
   }
