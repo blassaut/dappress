@@ -69,7 +69,9 @@ async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whi
   for (;;) {
     const element = await waitFor(page, selector, { timeout });
     if (!(await element.evaluate((el) => el.disabled))) break;
-    if (Date.now() > deadline) throw await failure(page, `"${describe(selector)}" stayed disabled for ${timeout}ms`);
+    if (Date.now() > deadline) {
+      throw await failure(page, `"${describe(selector)}" stayed disabled for ${timeout}ms. ${await describeDisabled(page, element)}`);
+    }
     // Something the page wants done before it enables the button, every half second
     if (whileDisabled && Date.now() - nudged > 500) {
       await whileDisabled();
@@ -78,6 +80,28 @@ async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whi
     await sleep(100);
   }
   await clickFresh(page, selector, { timeout });
+}
+
+// What may keep a button disabled: the button itself (a spinner, a class),
+// a pane left to scroll, the page not being the focused one
+async function describeDisabled(page, element) {
+  try {
+    const state = await page.evaluate((button) => {
+      const panes = [...document.querySelectorAll('[style*="overflow"]')]
+        .filter((pane) => pane.scrollHeight > pane.clientHeight)
+        .map((pane) => `${pane.scrollTop}+${pane.clientHeight}/${pane.scrollHeight}`);
+      return {
+        button: button.outerHTML.replace(/\s+/g, ' ').slice(0, 300),
+        panesToScroll: panes,
+        viewport: `${document.documentElement.clientWidth}x${document.documentElement.clientHeight}`,
+        focused: document.hasFocus(),
+        visibility: document.visibilityState,
+      };
+    }, element);
+    return `Button: ${JSON.stringify(state)}.`;
+  } catch {
+    return '';
+  }
 }
 
 // Find the element and click it; once more if a re-render replaced it between the two
