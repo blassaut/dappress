@@ -51,11 +51,27 @@ async function buildProfile(dir, { browserPath, extensionDir, options }) {
 async function withMetaMask(launch, action) {
   const browser = await launch();
   try {
-    await action(await getHomePage(browser, await findExtensionId(browser)));
+    const home = await getHomePage(browser, await findExtensionId(browser));
+    await keepInFront(browser, home);
+    await action(home);
     await new Promise((resolve) => setTimeout(resolve, 3000));
   } finally {
     await browser.close();
   }
+}
+
+// Chrome stops rendering a tab that isn't the active one, and Puppeteer waits
+// on rendering to find an element or to click it: a hidden tab never answers.
+// So the home page is made the active tab, and again whenever MetaMask opens
+// a tab of its own, as it does for its onboarding right after the install.
+async function keepInFront(browser, home) {
+  const toFront = () => home.bringToFront().catch(() => {});
+  await toFront();
+  browser.on('targetcreated', (target) => {
+    if (target.type() !== 'page') return;
+    toFront();
+    setTimeout(toFront, 500);
+  });
 }
 
 // Where Cypress is about to create the browser profile:
