@@ -223,7 +223,7 @@ async function reloadHome(page) {
  * is pressed again when no account shows up.
  */
 async function addAccount(page) {
-  await click(page, selectors.home.accountMenu);
+  await openAccountList(page);
   const before = await accountNames(page);
   for (let attempt = 0; attempt < 3; attempt++) {
     const added = (await newAccount(page, before, 0)) || (await pressAddAccount(page, before));
@@ -258,8 +258,18 @@ async function accountNames(page) {
 
 /** Make `name` the selected account of the wallet. */
 async function switchAccount(page, name) {
-  await click(page, selectors.home.accountMenu);
+  await openAccountList(page);
   await selectAccount(page, name);
+}
+
+// As with the buttons in the list, a click on the menu that lands while the
+// home screen settles is lost: the menu is pressed again until the list shows.
+async function openAccountList(page) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await click(page, selectors.home.accountMenu);
+    if (await isVisible(page, selectors.accounts.name, 10000)) return;
+  }
+  throw await failure(page, 'MetaMask did not open the account list');
 }
 
 // Picking an account closes the list and shows it in the home header. As with
