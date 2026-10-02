@@ -1,6 +1,6 @@
 {
   "name": "dappress",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MetaMask automation for Cypress: load the real extension, import a test wallet, answer dapp requests with cy.* commands. Tracks the latest MetaMask release.",
   "license": "MIT",
   "author": "Benjamin Lassaut",

@@ -30,6 +30,13 @@ const selectors = {
     metricsContinue: [testId('metametrics-i-agree'), buttonText('Continue')],
     downloadAppContinue: testId('download-app-continue'),
     done: [testId('onboarding-complete-done'), buttonText('Done')],
+    // "Manage default settings", offered next to "Done"
+    manageDefaultSettings: testId('manage-default-settings'),
+    // The first category, "General": its testid carries the translated label
+    generalSettings: 'xpath/(.//*[starts-with(@data-testid, "category-item-")])[1]',
+    backupAndSyncToggle: testId('backup-and-sync-toggle-button'),
+    categoryBack: testId('category-back-button'),
+    settingsBack: testId('privacy-settings-back-button'),
   },
   unlock: {
     password: [testId('unlock-password'), passwordInput(1)],
@@ -98,7 +105,7 @@ async function walletState(page) {
 }
 
 /** Import a wallet from its seed phrase on a fresh MetaMask install. */
-async function onboard(page, { seedPhrase, password }) {
+async function onboard(page, { seedPhrase, password, backupAndSync }) {
   const s = selectors.onboarding;
   await click(page, s.importWallet, { timeout: 30000 });
   await click(page, s.importWithSrp);
@@ -111,7 +118,7 @@ async function onboard(page, { seedPhrase, password }) {
   await click(page, s.passwordTerms);
   await clickWhenEnabled(page, s.passwordSubmit);
 
-  await reachHome(page, { password });
+  await reachHome(page, { password, backupAndSync });
 }
 
 // MetaMask's sandbox (LavaMoat) blocks a scripted paste, so the phrase is
@@ -139,9 +146,10 @@ async function unlock(page, { password }) {
  * "Done", MetaMask takes a moment to record the onboarding as complete and
  * redirects to it until then, so the home page is reloaded.
  */
-async function reachHome(page, { password }) {
+async function reachHome(page, { password, backupAndSync }) {
   const s = selectors.onboarding;
   const deadline = Date.now() + 90000;
+  let syncTurnedOff = false;
   while (Date.now() < deadline) {
     if (await isVisible(page, selectors.home.header, 500)) return;
     if (await isVisible(page, s.passkeyMaybeLater, 500)) await click(page, s.passkeyMaybeLater);
@@ -150,6 +158,10 @@ async function reachHome(page, { password }) {
       await click(page, s.metricsContinue);
     }
     if (await isVisible(page, s.downloadAppContinue, 500)) await click(page, s.downloadAppContinue);
+    if (backupAndSync === false && !syncTurnedOff && (await isVisible(page, s.manageDefaultSettings, 500))) {
+      await turnOffBackupAndSync(page);
+      syncTurnedOff = true;
+    }
     if (await isVisible(page, s.done, 500)) {
       await click(page, s.done);
       await sleep(1000);
@@ -161,6 +173,19 @@ async function reachHome(page, { password }) {
     }
   }
   throw await failure(page, 'MetaMask did not show the wallet');
+}
+
+// Backup and sync restores, for a seed phrase, the accounts and contacts saved
+// from other installs. Off, every import starts from the same state.
+async function turnOffBackupAndSync(page) {
+  const s = selectors.onboarding;
+  await click(page, s.manageDefaultSettings);
+  await click(page, s.generalSettings);
+  const toggle = await waitFor(page, s.backupAndSyncToggle);
+  const on = await toggle.evaluate((el) => el.closest('.toggle-button')?.classList.contains('toggle-button--on') ?? el.className.includes('--on'));
+  if (on) await toggle.click();
+  await click(page, s.categoryBack);
+  await click(page, s.settingsBack);
 }
 
 async function optOutOfMetrics(page) {

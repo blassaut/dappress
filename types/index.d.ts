@@ -23,6 +23,11 @@ export interface DappressOptions extends WalletSetup {
   password?: string;
   /** MetaMask release to load, downloaded from GitHub on first run. */
   metamaskVersion?: string;
+  /**
+   * Keep MetaMask's backup and sync on. It restores, for a seed phrase, the
+   * accounts and contacts saved from other installs. Default: false.
+   */
+  backupAndSync?: boolean;
   /** Run cy.setupMetaMask() before the first test of each spec. Default: true. */
   autoSetup?: boolean;
   /** Import the wallet once and reuse the profile across runs. Keeps the vault under cacheDir. Default: false. */

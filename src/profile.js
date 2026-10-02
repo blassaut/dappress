@@ -16,7 +16,7 @@ const builds = new Map();
 
 /** The cached profile for these options, built on first use. */
 function prepareProfile({ browserPath, extensionDir, options }) {
-  const key = crypto.createHash('sha256').update([options.metamaskVersion, options.seedPhrase, options.password].join('|')).digest('hex').slice(0, 16);
+  const key = crypto.createHash('sha256').update([options.metamaskVersion, options.seedPhrase, options.password, options.backupAndSync].join('|')).digest('hex').slice(0, 16);
   if (!builds.has(key)) builds.set(key, buildProfile(path.join(options.cacheDir, 'profiles', key), { browserPath, extensionDir, options }));
   return builds.get(key);
 }
