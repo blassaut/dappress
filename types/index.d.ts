@@ -33,7 +33,7 @@ export interface DappressOptions extends WalletSetup {
   backupAndSync?: boolean;
   /** Run cy.setupMetaMask() before the first test of each spec. Default: true. */
   autoSetup?: boolean;
-  /** Import the wallet once and reuse the profile across runs. Keeps the vault under cacheDir. Default: false. */
+  /** Import the wallet once and reuse the profile across runs. Keeps the vault under cacheDir. Headed runs only. Default: false. */
   cache?: boolean;
   /** Time allowed for MetaMask to display a request, in ms. Default: 20000. */
   timeout?: number;

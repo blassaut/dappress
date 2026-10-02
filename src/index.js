@@ -20,9 +20,12 @@ function configureDappress(on, config, userOptions = {}) {
     console.warn('[dappress] chromeWebSecurity is off: MetaMask cannot start its snaps, so adding or importing an account will hang');
   }
 
+  // A cached wallet gets its requests in MetaMask's popup window, which headless Chrome doesn't open
+  const usesCache = (browser) => options.cache && !browser.isHeadless;
+
   // Build the wallet profile before the run, out of the time Cypress allows a browser to come up
   on('before:run', async ({ browser }) => {
-    if (options.cache && browser) await prepareProfile({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
+    if (browser && usesCache(browser)) await prepareProfile({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
   });
 
   on('before:browser:launch', async (browser, launchOptions) => {
@@ -31,7 +34,12 @@ function configureDappress(on, config, userOptions = {}) {
     }
     const extensionDir = await prepareExtension(options);
     launchOptions.extensions.push(extensionDir);
-    if (options.cache) {
+    if (browser.isHeadless) {
+      // Cypress leaves extensions out of a headless launch, so ask Chrome directly
+      launchOptions.args.push(`--load-extension=${extensionDir}`);
+      if (options.cache) console.warn('[dappress] The wallet cache needs a headed browser: importing the wallet in this run instead');
+    }
+    if (usesCache(browser)) {
       const profileDir = await prepareProfile({ browserPath: browser.path, extensionDir, options });
       await installProfile(profileDir, browser, config.isTextTerminal);
     }

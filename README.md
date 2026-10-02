@@ -95,11 +95,13 @@ Add the command types to `tsconfig.json`:
 
 JavaScript projects use the same files with a `.js` extension and `module.exports`.
 
-Run the tests in a headed browser that supports extensions:
+Run the tests in a browser that supports extensions:
 
 ```bash
 npx cypress run --browser chrome-for-testing --headed
 ```
+
+Without `--headed`, the run is headless and works the same, except for the wallet cache, which needs a headed browser.
 
 ## Usage
 
@@ -157,7 +159,7 @@ Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.
 | `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
 | `backupAndSync` | | `false`. Dappress turns off MetaMask's backup and sync while importing the wallet, so that an account a test adds is not restored by the next import of the same seed phrase. With `true`, MetaMask keeps saving and restoring the accounts and contacts of that phrase. |
 | `autoSetup` | | `true`. Dappress imports or unlocks the wallet before the first test of each spec. Set to `false` to call `cy.setupMetaMask()` yourself. |
-| `cache` | | `false`. The wallet is imported in every run, about fifteen seconds. With `true`, and a seed phrase of your own, it is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs, which then start by unlocking the wallet. |
+| `cache` | | `false`. The wallet is imported in every run, about fifteen seconds. With `true`, and a seed phrase of your own, it is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs, which then start by unlocking the wallet. Headed runs only: a headless run imports the wallet as usual. |
 | `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
 
 ### Security
@@ -171,8 +173,9 @@ With `cache: true`, the profile under `~/.cache/dappress/profiles` holds the wal
 The suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/). Each run makes a wallet nobody has used, with Foundry's `cast`, and starts a local [Anvil](https://getfoundry.sh) node that funds it. It requires Chrome for Testing and Foundry.
 
 ```bash
-npm run conformance               # default MetaMask version
-npm run conformance -- 13.51.0    # a specific release
+npm run conformance                        # default MetaMask version
+npm run conformance -- 13.51.0             # a specific release
+DAPPRESS_HEADLESS=1 npm run conformance    # without a browser window
 ```
 
 Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the suite daily against the latest MetaMask release that has no report yet.
@@ -188,6 +191,8 @@ Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the 
 Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, Dappress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request and interacts with it.
 
 MetaMask displays requests in its side panel when the panel is open, and in its popup window otherwise. Without the cache, the import of the wallet ends by opening the side panel, so requests appear there. With the cache, the wallet was imported in another browser, the panel is closed, and requests appear in the popup. Dappress handles both, and the conformance suite covers both.
+
+Cypress leaves extensions out of a headless launch, so Dappress passes MetaMask to Chrome itself. Headless Chrome displays the side panel but does not open the popup window, which is why the cache, whose requests appear in the popup, is limited to headed runs.
 
 With `cache: true`, Dappress imports the wallet once before the run, in a browser of its own, and keeps the profile; MetaMask's storage is copied from it into the profile Cypress is about to launch, so each run starts from a wallet that has never seen the dapp.
 
@@ -217,7 +222,7 @@ Selectors are MetaMask's `data-testid` attributes, each with the button's Englis
 
 ## Status
 
-Verified with MetaMask 13.49.0 and 13.50.0, Cypress 16 and Chrome for Testing 154, in headed mode, on macOS and on GitHub's Linux runners. Headless execution is not validated yet.
+Verified with MetaMask 13.49.0 and 13.50.0, Cypress 16 and Chrome for Testing 154: in headed mode on macOS and on GitHub's Linux runners, and in headless mode on macOS.
 
 ## License
 

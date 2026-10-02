@@ -26,9 +26,10 @@ async function main() {
     results = await cypress.run({
       config: { expose: { conformance: { accounts: wallet.accounts, imported: wallet.imported } } },
       project: path.join(__dirname, '..', 'conformance'),
-      // A browser that loads extensions in headed mode: Chrome for Testing, or a path to one
+      // A browser that loads extensions: Chrome for Testing, or a path to one
       browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
-      headed: true,
+      // With a window, unless DAPPRESS_HEADLESS=1
+      headed: process.env.DAPPRESS_HEADLESS !== '1',
       env: { DAPPRESS_METAMASK_VERSION: metamaskVersion },
     });
   } finally {

@@ -259,15 +259,23 @@ async function switchAccount(page, name) {
   await selectAccount(page, name);
 }
 
-// Picking an account closes the list and shows it in the home header
+// Picking an account closes the list and shows it in the home header. As with
+// adding one, a lost click leaves the list open, so the account is pressed again.
 async function selectAccount(page, name) {
-  await click(page, selectors.accounts.cell(name));
-  const deadline = Date.now() + 15000;
-  while (Date.now() < deadline) {
-    if ((await selectedAccount(page)) === name) return;
-    await sleep(250);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await click(page, selectors.accounts.cell(name));
+    if (await isSelected(page, name, 5000)) return;
   }
   throw await failure(page, `MetaMask did not select "${name}"`);
+}
+
+async function isSelected(page, name, timeout) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if ((await selectedAccount(page)) === name) return true;
+    await sleep(250);
+  }
+  return false;
 }
 
 async function selectedAccount(page) {
