@@ -24,6 +24,9 @@ declare global {
       /** Answers the permission asked before switching to a network the dapp isn't allowed on yet. */
       approveSwitchNetwork(): Chainable<void>;
       rejectSwitchNetwork(): Chainable<void>;
+      /** Answers wallet_watchAsset ("Add suggested tokens"). */
+      approveAddToken(): Chainable<void>;
+      rejectAddToken(): Chainable<void>;
       /** Moves the dapp onto a network, adding it to MetaMask if needed. Defaults to the wallet setup's network. Yields the chain id. */
       useNetwork(network?: Network): Chainable<string>;
       /** The address the dapp is connected with. */

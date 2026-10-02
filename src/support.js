@@ -7,9 +7,9 @@
 
 const options = Cypress.expose('dappress') || {};
 
-function metamask(action) {
-  Cypress.log({ name: 'metamask', message: action });
-  return cy.task(`dappress:${action}`, null, { log: false });
+function metamask(action, argument = null) {
+  Cypress.log({ name: 'metamask', message: argument ? `${action} ${argument}` : action });
+  return cy.task(`dappress:${action}`, argument, { log: false });
 }
 
 function provider(method, params) {
@@ -26,6 +26,9 @@ Cypress.Commands.add('confirmSignature', () => metamask('confirmSignature'));
 Cypress.Commands.add('rejectSignature', () => metamask('rejectSignature'));
 Cypress.Commands.add('confirmTransaction', () => metamask('confirmTransaction'));
 Cypress.Commands.add('rejectTransaction', () => metamask('rejectTransaction'));
+Cypress.Commands.add('approveAddToken', () => metamask('approveAddToken'));
+Cypress.Commands.add('rejectAddToken', () => metamask('rejectAddToken'));
+
 
 // Connect, then move the dapp onto the network from the wallet setup, if there is one
 Cypress.Commands.add('connectToDapp', () => {

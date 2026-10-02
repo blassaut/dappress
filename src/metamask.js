@@ -49,10 +49,9 @@ const selectors = {
     cancel: [testId('confirm-footer-cancel-button'), buttonText('Cancel')],
     scrollToBottom: testId('confirm-scroll-to-bottom'),
   },
-  // Switching to a network the dapp isn't allowed on yet asks to update its
-  // permissions; older builds show "Allow this site to switch the network".
-  // A switch to an allowed network is silent, so nothing to click then.
-  switchNetwork: {
+  // The older footer, still used by the permission update a network switch
+  // asks for, by "Add suggested tokens", and by template confirmations
+  pageContainer: {
     confirm: [testId('page-container-footer-next'), testId('confirmation-submit-button'), buttonText('Confirm')],
     cancel: [testId('page-container-footer-cancel'), testId('confirmation-cancel-button'), buttonText('Cancel')],
   },
@@ -75,8 +74,12 @@ const decisions = {
   rejectConnection: selectors.connect.cancel,
   approveNewNetwork: selectors.confirmation.confirm,
   rejectNewNetwork: selectors.confirmation.cancel,
-  approveSwitchNetwork: selectors.switchNetwork.confirm,
-  rejectSwitchNetwork: selectors.switchNetwork.cancel,
+  // A switch to a network the dapp is allowed on is silent; otherwise MetaMask asks for the permission
+  approveSwitchNetwork: selectors.pageContainer.confirm,
+  rejectSwitchNetwork: selectors.pageContainer.cancel,
+  // wallet_watchAsset
+  approveAddToken: selectors.pageContainer.confirm,
+  rejectAddToken: selectors.pageContainer.cancel,
   confirmSignature: selectors.confirmation.confirm,
   rejectSignature: selectors.confirmation.cancel,
   confirmTransaction: selectors.confirmation.confirm,
@@ -176,7 +179,7 @@ function decide(decision, page, timeout) {
 
 /** wallet_addEthereumChain on a network MetaMask knows behaves like a switch: either prompt may show. */
 function approveNetworkChange(page, timeout) {
-  return pressAndWaitForDismissal(page, [...selectors.confirmation.confirm, ...selectors.switchNetwork.confirm], timeout);
+  return pressAndWaitForDismissal(page, [...selectors.confirmation.confirm, ...selectors.pageContainer.confirm], timeout);
 }
 
 /**

@@ -54,8 +54,7 @@ Describe the test wallet:
 import type { WalletSetup } from 'dappress';
 
 const wallet: WalletSetup = {
-  password: 'Tester@1234',
-  // Optional. The network the dapp is moved onto when it connects.
+  // The network the dapp is moved onto when it connects
   network: {
     chainId: '0x88bb0',
     chainName: 'Hoodi',
@@ -121,18 +120,23 @@ The wallet is imported once, before the first test of each spec. Each command wa
 
 ### Commands
 
-| Command | Request answered |
+| Command | What it does |
 |---|---|
-| `cy.connectToDapp()` / `cy.rejectConnection()` | Connection request. On success, the dapp is moved onto the network declared in the wallet setup. |
-| `cy.confirmSignature()` / `cy.rejectSignature()` | Signature request: `personal_sign`, `eth_signTypedData_*` |
-| `cy.confirmTransaction()` / `cy.rejectTransaction()` | Transaction, including ERC-20 approvals |
-| `cy.approveNewNetwork()` / `cy.rejectNewNetwork()` | `wallet_addEthereumChain` |
-| `cy.approveSwitchNetwork()` / `cy.rejectSwitchNetwork()` | Permission request raised by `wallet_switchEthereumChain` for a network the dapp is not yet allowed on |
-| `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the wallet setup's network. |
+| `cy.connectToDapp()` | Accepts the connection request, then moves the dapp onto the network of the wallet setup |
+| `cy.rejectConnection()` | Rejects the connection request |
+| `cy.confirmSignature()` | Signs the message (`personal_sign`, `eth_signTypedData_*`) |
+| `cy.rejectSignature()` | Rejects the signature request |
+| `cy.confirmTransaction()` | Sends the transaction, including ERC-20 approvals |
+| `cy.rejectTransaction()` | Rejects the transaction |
+| `cy.approveNewNetwork()` | Adds the network requested by `wallet_addEthereumChain` |
+| `cy.rejectNewNetwork()` | Rejects the network |
+| `cy.approveSwitchNetwork()` | Grants the permission asked by `wallet_switchEthereumChain` for a network the dapp is not yet allowed on |
+| `cy.rejectSwitchNetwork()` | Denies that permission |
+| `cy.approveAddToken()` | Adds the token requested by `wallet_watchAsset` |
+| `cy.rejectAddToken()` | Rejects the token |
+| `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the network of the wallet setup. |
 | `cy.getAccountAddress()` | Yields the address the dapp is connected with |
-| `cy.setupMetaMask()` | Imports or unlocks the wallet. Called automatically before each spec. |
-
-Planned: locking the wallet, switching accounts, importing additional accounts.
+| `cy.setupMetaMask()` | Imports the wallet, or unlocks it. Called automatically before each spec. |
 
 ### Configuration
 

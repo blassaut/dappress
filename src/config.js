@@ -40,13 +40,13 @@ function resolveOptions(userOptions = {}, cypressConfig = {}) {
   return options;
 }
 
-/** The project's wallet setup file: { seedPhrase?, password?, network? }. */
+/** The project's wallet setup file: { seedPhrase?, network? }. */
 function loadWalletSetup(projectRoot = process.cwd()) {
   const file = WALLET_SETUP_FILES.map((name) => path.join(projectRoot, name)).find((candidate) => fs.existsSync(candidate));
   if (!file) return {};
   const loaded = require(file);
   const setup = loaded.default || loaded; // `export default` or `module.exports`
-  const unknown = Object.keys(setup).filter((key) => !['seedPhrase', 'password', 'network'].includes(key));
+  const unknown = Object.keys(setup).filter((key) => !['seedPhrase', 'network'].includes(key));
   if (unknown.length) throw new Error(`[dappress] Unknown keys in ${path.basename(file)}: ${unknown.join(', ')}`);
   return setup;
 }

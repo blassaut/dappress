@@ -96,4 +96,23 @@ describe('MetaMask actions', () => {
     // Anvil mines at once, so the account's nonce moves as soon as MetaMask publishes the transaction
     provider.waitFor('eth_getTransactionCount', [account, 'latest'], (nonce) => nonce === '0x1').should('eq', '0x1');
   });
+
+  it('approveAddToken', () => {
+    testDapp.createToken();
+    cy.confirmTransaction();
+    testDapp.tokenAddress().should('match', /^0x[0-9a-fA-F]{40}$/).then((address) => {
+      provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
+      cy.approveAddToken();
+      provider.result().should('deep.equal', { result: true });
+    });
+  });
+
+  it('rejectAddToken', () => {
+    testDapp.tokenAddress().then((address) => {
+      provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
+      cy.rejectAddToken();
+      provider.result().its('error.code').should('eq', USER_REJECTED);
+    });
+  });
+
 });

@@ -10,16 +10,17 @@ export interface Network {
   iconUrls?: string[];
 }
 
-/** What cypress/wallet.setup.js exports. */
+/** What cypress/wallet.setup.ts exports. */
 export interface WalletSetup {
   /** Prefer DAPPRESS_SEED_PHRASE in cypress.env.json or the environment: this file is usually committed. */
   seedPhrase?: string;
-  password?: string;
   /** The network the dapp is moved onto by cy.connectToDapp(). */
   network?: Network;
 }
 
 export interface DappressOptions extends WalletSetup {
+  /** Password of the throwaway browser profile's wallet. Default: Tester@1234. */
+  password?: string;
   /** MetaMask release to load, downloaded from GitHub on first run. */
   metamaskVersion?: string;
   /** Run cy.setupMetaMask() before the first test of each spec. Default: true. */

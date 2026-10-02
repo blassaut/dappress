@@ -2,7 +2,7 @@
   "dappressVersion": "0.1.0",
   "metamaskVersion": "13.50.0",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-02T15:05:10.259Z",
+  "date": "2026-10-02T15:14:26.813Z",
   "passed": true,
   "actions": [
     {
@@ -47,6 +47,14 @@
     },
     {
       "action": "confirmTransaction",
+      "status": "passed"
+    },
+    {
+      "action": "approveAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "rejectAddToken",
       "status": "passed"
     }
   ]

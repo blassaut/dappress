@@ -8,13 +8,13 @@ type Settled = { result: unknown } | { error: { code: number; message: string } 
 
 declare global {
   interface Window {
-    ethereum: { request(args: { method: string; params?: unknown[] }): Promise<unknown> };
+    ethereum: { request(args: { method: string; params?: unknown }): Promise<unknown> };
     dappressPending?: Promise<Settled>;
   }
 }
 
 export const provider = {
-  request(method: string, params?: unknown[]) {
+  request(method: string, params?: unknown) {
     cy.window({ log: false }).then((win) => {
       win.dappressPending = win.ethereum.request({ method, params }).then(
         (result) => ({ result }),

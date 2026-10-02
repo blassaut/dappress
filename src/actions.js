@@ -43,7 +43,7 @@ function createTasks(options) {
   for (const decision of Object.keys(metamask.decisions)) actions[decision] = decide(decision);
 
   // cy.task() needs a value back: null when the action has nothing to say
-  const asTask = (action) => async () => (await withBrowser(action)) ?? null;
+  const asTask = (action) => async (argument) => (await withBrowser((browser) => action(browser, argument))) ?? null;
   return Object.fromEntries(Object.entries(actions).map(([name, action]) => [`dappress:${name}`, asTask(action)]));
 }
 
