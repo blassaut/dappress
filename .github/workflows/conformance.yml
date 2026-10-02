@@ -73,6 +73,8 @@ jobs:
     needs: version
     if: needs.version.outputs.run == 'true'
     runs-on: ubuntu-latest
+    # A failing run is about seven minutes; a hung one shouldn't bill an hour
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
