@@ -66,7 +66,7 @@ const wallet: WalletSetup = {
 export default wallet;
 ```
 
-Keep the seed phrase out of the repository, in `cypress.env.json` (git-ignored):
+Without a seed phrase, Dappress makes a new wallet for each run: enough to connect and sign. To test with a wallet of yours, one that holds test funds for instance, give its seed phrase and keep it out of the repository, in `cypress.env.json` (git-ignored):
 
 ```json
 {
@@ -82,7 +82,6 @@ env:
   DAPPRESS_SEED_PHRASE: ${{ secrets.DAPPRESS_SEED_PHRASE }}
 ```
 
-When neither is provided, Dappress uses the public Hardhat / Anvil development wallet. Give your test suite a seed phrase of its own: that one is shared with everybody.
 
 Add the command types to `tsconfig.json`:
 
@@ -109,7 +108,7 @@ it('connects the wallet and signs in', () => {
   cy.visit('/');
   cy.contains('button', 'Connect wallet').click();
   cy.connectToDapp();
-  cy.getAccountAddress().should('eq', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  cy.getAccountAddress().should('match', /^0x[0-9a-f]{40}$/);
 
   cy.contains('button', 'Sign in').click();
   cy.confirmSignature();
@@ -153,17 +152,17 @@ Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.
 | Option | Environment variable | Default |
 |---|---|---|
 | `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0`. The build is downloaded from MetaMask's GitHub releases on first run and cached in `~/.cache/dappress`. |
-| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | `test test test test test test test test test test test junk`, the Hardhat / Anvil development wallet. Its first account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`. |
+| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | None. Dappress makes a new wallet for each run, which nobody else knows and which is never written anywhere. |
 | `password` | `DAPPRESS_PASSWORD` | `Tester@1234`. It only protects the throwaway browser profile Cypress creates for each run. |
 | `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
 | `backupAndSync` | | `false`. Dappress turns off MetaMask's backup and sync while importing the wallet, so that an account a test adds is not restored by the next import of the same seed phrase. With `true`, MetaMask keeps saving and restoring the accounts and contacts of that phrase. |
 | `autoSetup` | | `true`. Dappress imports or unlocks the wallet before the first test of each spec. Set to `false` to call `cy.setupMetaMask()` yourself. |
-| `cache` | | `false`. The wallet is imported in every run, about fifteen seconds. With `true`, it is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs, which then start by unlocking the wallet. |
+| `cache` | | `false`. The wallet is imported in every run, about fifteen seconds. With `true`, and a seed phrase of your own, it is imported once, in a browser Dappress opens before the run, and the resulting profile is reused by later runs, which then start by unlocking the wallet. |
 | `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
 
 ### Security
 
-Use a wallet dedicated to testing, funded on test networks only. The default seed phrase is public: anyone can spend from it, and its accounts can carry activity nobody controls. It is fine for a first run, not for a test suite you rely on. The seed phrase and password remain on the Node.js side: they are never exposed to the browser nor written to the Cypress command log. The wallet setup file contains no secret and can be committed.
+When you give a seed phrase, make it one dedicated to testing, funded on test networks only. Avoid a phrase other people know, such as the Hardhat or Anvil development mnemonic: MetaMask restores the accounts others saved for it, so the wallet is not the one you expect. The seed phrase and password remain on the Node.js side: they are never exposed to the browser nor written to the Cypress command log. The wallet setup file contains no secret and can be committed.
 
 With `cache: true`, the profile under `~/.cache/dappress/profiles` holds the wallet's vault, encrypted by MetaMask with the password. Treat that directory like the seed phrase: keep it on the machine, and do not store it in a CI cache that other people or workflows can restore.
 
@@ -214,7 +213,7 @@ Selectors are MetaMask's `data-testid` attributes, each with the button's Englis
 - **Cypress exits immediately with `MODULE_NOT_FOUND`.** The terminal sets `ELECTRON_RUN_AS_NODE=1`, as some IDEs do. Run `env -u ELECTRON_RUN_AS_NODE npx cypress run …`.
 - **"MetaMask showed no confirmation".** The dapp sent no request, or sent it on a network whose RPC endpoint is unreachable.
 - **Adding or importing an account never finishes.** `chromeWebSecurity: false` is set in the Cypress config. MetaMask then cannot start its snaps, which its account screens wait for. Leave Chrome's web security on, the Cypress default.
-- **The wallet shows accounts you did not create.** The seed phrase is used elsewhere, and MetaMask restored what its cloud holds for it. This happens with the public default phrase. Use a phrase made for your tests.
+- **The wallet shows accounts you did not create.** The seed phrase is used elsewhere, and MetaMask restored what its cloud holds for it. This happens with well-known development mnemonics. Use a phrase made for your tests, or none.
 
 ## Status
 

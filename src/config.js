@@ -1,11 +1,14 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { generateMnemonic } = require('@scure/bip39');
+const { wordlist } = require('@scure/bip39/wordlists/english');
 
 const DEFAULTS = {
   metamaskVersion: '13.50.0',
-  // The Hardhat / Anvil development mnemonic. Account 0 is 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266.
-  seedPhrase: 'test test test test test test test test test test test junk',
+  // None: a new wallet is made for each run. A phrase known to others is not
+  // blank, since MetaMask restores the accounts saved for it elsewhere.
+  seedPhrase: null,
   password: 'Tester@1234',
   // The network cy.connectToDapp() moves the dapp onto, as a wallet_addEthereumChain parameter; none by default
   network: null,
@@ -42,7 +45,18 @@ function resolveOptions(userOptions = {}, cypressConfig = {}) {
   for (const [key, value] of Object.entries(fromEnv)) {
     if (value) options[key] = value;
   }
+  if (!options.seedPhrase) useNewWallet(options);
   return options;
+}
+
+/** No seed phrase was given: make one for this run. It is never written anywhere. */
+function useNewWallet(options) {
+  options.seedPhrase = generateMnemonic(wordlist);
+  console.log('[dappress] No seed phrase configured: using a new wallet for this run');
+  if (options.cache) {
+    console.warn('[dappress] The profile cache needs a seed phrase of your own: importing the wallet in this run instead');
+    options.cache = false;
+  }
 }
 
 /** The project's wallet setup file: { seedPhrase?, network? }. */

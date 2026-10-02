@@ -214,21 +214,38 @@ async function reloadHome(page) {
   await page.goto(homeUrl);
 }
 
-/** Add an account to the wallet and select it. Yields its name, "Account N". */
+/**
+ * Add an account to the wallet and select it. Yields its name, "Account N".
+ * A click that lands while the list is still settling is lost, so the button
+ * is pressed again when no account shows up.
+ */
 async function addAccount(page) {
   await click(page, selectors.home.accountMenu);
   const before = await accountNames(page);
-  await clickWhenEnabled(page, selectors.accounts.add, { timeout: 30000 });
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    const [added] = (await accountNames(page)).filter((name) => !before.includes(name));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const added = (await newAccount(page, before, 0)) || (await pressAddAccount(page, before));
     if (added) {
       await selectAccount(page, added);
       return added;
     }
-    await sleep(250);
   }
   throw await failure(page, 'MetaMask added no account');
+}
+
+async function pressAddAccount(page, before) {
+  await clickWhenEnabled(page, selectors.accounts.add, { timeout: 30000 });
+  return newAccount(page, before, 15000);
+}
+
+/** The name of an account that wasn't in `before`, within `timeout` ms. */
+async function newAccount(page, before, timeout) {
+  const deadline = Date.now() + timeout;
+  do {
+    const [added] = (await accountNames(page)).filter((name) => !before.includes(name));
+    if (added) return added;
+    await sleep(250);
+  } while (Date.now() < deadline);
+  return null;
 }
 
 async function accountNames(page) {

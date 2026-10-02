@@ -12,7 +12,10 @@ export interface Network {
 
 /** What cypress/wallet.setup.ts exports. */
 export interface WalletSetup {
-  /** Prefer DAPPRESS_SEED_PHRASE in cypress.env.json or the environment: this file is usually committed. */
+  /**
+   * The wallet to import. Without one, Dappress makes a new wallet for each run.
+   * Prefer DAPPRESS_SEED_PHRASE in cypress.env.json or the environment: this file is usually committed.
+   */
   seedPhrase?: string;
   /** The network the dapp is moved onto by cy.connectToDapp(). */
   network?: Network;
