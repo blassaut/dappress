@@ -1,14 +1,19 @@
 # Checks every day whether MetaMask published a new release, and runs the
-# conformance suite against it when there is no report for it yet. Run by
+# conformance suite against it, in each mode, when it has no report yet. Run by
 # hand with a version, or on a pull request that changes how the suite runs,
 # it tests that release (or the latest) regardless.
+#
+# The reports, MATRIX.md and badge.json (a shields.io endpoint) are published
+# on the conformance-reports branch, never on main. Pull requests only show
+# the matrix in the run summary.
 name: Conformance
 
 on:
   pull_request:
     paths:
       - .github/workflows/conformance.yml
-      - scripts/conformance.js
+      - conformance/**
+      - scripts/**
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
@@ -17,13 +22,19 @@ on:
         description: MetaMask release to test, e.g. 13.50.0 (default the latest, when it has no report yet)
         required: false
 
+env:
+  REPORTS_BRANCH: conformance-reports
+
 jobs:
-  conformance:
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metamask.outputs.version }}
+      run: ${{ steps.metamask.outputs.run }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Latest MetaMask release
+      - name: MetaMask release to test
         id: metamask
         env:
           REQUESTED: ${{ inputs.version }}
@@ -33,49 +44,129 @@ jobs:
         run: |
           if [ -n "$REQUESTED" ]; then
             echo "version=$REQUESTED" >> "$GITHUB_OUTPUT"
-            echo "new=true" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           version=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = pull_request ]; then
-            echo "new=true" >> "$GITHUB_OUTPUT"
-          elif [ -f "reports/metamask-$version.json" ]; then
-            echo "MetaMask $version already has a report, nothing to do"
-            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Done when the reports branch has a report for every mode
+          missing=1
+          if git fetch --depth=1 origin "$REPORTS_BRANCH" 2>/dev/null; then
+            missing=0
+            for mode in sidepanel headless popup; do
+              git cat-file -e "FETCH_HEAD:reports/metamask-$version-$mode.json" 2>/dev/null || missing=1
+            done
+          fi
+          if [ "$missing" = 0 ]; then
+            echo "MetaMask $version already has a report for every mode, nothing to do"
+            echo "run=false" >> "$GITHUB_OUTPUT"
           else
-            echo "new=true" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - if: steps.metamask.outputs.new == 'true'
-        uses: actions/setup-node@v4
+  suite:
+    needs: version
+    if: needs.version.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # See scripts/modes.js
+        mode: [sidepanel, headless, popup]
+    name: suite (${{ matrix.mode }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
+
       # @puppeteer/browsers installs Chrome for Testing; setup-chrome's
       # "stable" channel installs Google Chrome, which can't load MetaMask
       - name: Install Chrome for Testing
-        if: steps.metamask.outputs.new == 'true'
         id: chrome
         run: |
           path=$(npx --yes @puppeteer/browsers@3 install chrome@stable --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1)
           echo "path=$path" >> "$GITHUB_OUTPUT"
-      - if: steps.metamask.outputs.new == 'true'
-        uses: foundry-rs/foundry-toolchain@v1
-      - if: steps.metamask.outputs.new == 'true'
-        run: npm ci
 
-      - name: Run the suite against MetaMask ${{ steps.metamask.outputs.version }}
-        if: steps.metamask.outputs.new == 'true'
-        run: xvfb-run --auto-servernum npm run conformance -- ${{ steps.metamask.outputs.version }}
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: npm ci
+
+      - name: Run the suite against MetaMask ${{ needs.version.outputs.version }}, ${{ matrix.mode }}
+        # The headless mode needs no display; Xvfb is harmless there
+        run: xvfb-run --auto-servernum npm run conformance -- ${{ needs.version.outputs.version }}
         env:
           DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
+          DAPPRESS_MODE: ${{ matrix.mode }}
 
       - uses: actions/upload-artifact@v4
-        if: always() && steps.metamask.outputs.new == 'true'
+        if: always()
         with:
-          name: report-metamask-${{ steps.metamask.outputs.version }}
-          # Dappress saves what MetaMask showed when a command failed under /tmp/dappress
-          path: |
-            reports/
-            /tmp/dappress
+          name: report-${{ needs.version.outputs.version }}-${{ matrix.mode }}
+          path: reports/metamask-${{ needs.version.outputs.version }}-${{ matrix.mode }}.json
           if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots-${{ needs.version.outputs.version }}-${{ matrix.mode }}
+          # Dappress saves what MetaMask showed when a command failed under /tmp/dappress
+          path: /tmp/dappress
+          if-no-files-found: ignore
+
+  publish:
+    needs: [version, suite]
+    # A failing mode still has its report published
+    if: always() && needs.version.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: conformance-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          merge-multiple: true
+          path: incoming
+
+      - name: Matrix of this run
+        run: |
+          mkdir -p incoming
+          node scripts/matrix.js incoming run
+          cat run/MATRIX.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish on ${{ env.REPORTS_BRANCH }}
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git ls-remote --exit-code --heads origin "$REPORTS_BRANCH" >/dev/null; then
+            git fetch --depth=1 origin "$REPORTS_BRANCH"
+            git worktree add published FETCH_HEAD
+          else
+            # First publication: start from the reports kept on main
+            git worktree add --detach published
+            git -C published checkout --orphan "$REPORTS_BRANCH"
+            git -C published rm -rfq .
+            cp -r reports published/reports
+          fi
+          mkdir -p published/reports
+          cp incoming/*.json published/reports/ 2>/dev/null || true
+          node scripts/matrix.js published/reports published
+          cd published
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing new to publish"
+            exit 0
+          fi
+          git commit -q -m "Conformance of MetaMask ${{ needs.version.outputs.version }}"
+          git push origin "HEAD:refs/heads/$REPORTS_BRANCH"

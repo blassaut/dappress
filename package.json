@@ -51,6 +51,8 @@
   },
   "scripts": {
     "conformance": "node scripts/conformance.js",
+    "matrix": "node scripts/matrix.js",
+    "test": "node --test scripts/*.test.js",
     "check-types": "tsc -p tsconfig.json"
   },
   "peerDependencies": {
