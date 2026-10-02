@@ -191,7 +191,9 @@ function approveNetworkChange(page, timeout) {
  * Press a footer button, then wait for the confirmation to go away: the
  * popup closes, the side panel goes back to the home screen. A click that
  * lands while the confirmation is still settling is lost, so the click is
- * repeated while the button stays.
+ * repeated while the button stays. If it stays anyway, the error says
+ * whether it is the same request or a new one the dapp sent meanwhile, and
+ * what MetaMask logged.
  */
 async function pressAndWaitForDismissal(page, button, timeout) {
   await waitFor(page, button, { timeout });
@@ -199,14 +201,41 @@ async function pressAndWaitForDismissal(page, button, timeout) {
   if (await isVisible(page, selectors.confirmation.scrollToBottom, 500)) {
     await click(page, selectors.confirmation.scrollToBottom);
   }
-  await clickWhenEnabled(page, button);
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
-    if (await isGone(page, button, 3000)) return;
-    await dismissModal(page);
-    await dispatchClick(page, button, { timeout: 3000 }).catch(() => {});
+  const logged = recordErrors(page);
+  const request = page.url();
+  try {
+    await clickWhenEnabled(page, button);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
+      if (await isGone(page, button, 3000)) return;
+      await dismissModal(page);
+      await dispatchClick(page, button, { timeout: 3000 }).catch(() => {});
+    }
+    const what = page.url() === request ? 'MetaMask kept the same request open' : 'MetaMask shows a new request: the dapp asked again';
+    const distinct = [...new Set(logged.errors)].slice(-3);
+    const errors = distinct.length ? `MetaMask logged: ${distinct.join(' | ')}` : 'MetaMask logged no error';
+    throw await failure(page, `"${describe(button)}" is still showing after being clicked. ${what}. ${errors}`);
+  } finally {
+    logged.stop();
   }
-  throw await failure(page, `"${describe(button)}" is still showing after being clicked`);
+}
+
+/** Collect the errors MetaMask's page logs to its console, until stop(). */
+function recordErrors(page) {
+  const errors = [];
+  const onConsole = (message) => {
+    if (message.type() === 'error') errors.push(message.text().slice(0, 300));
+  };
+  const onPageError = (error) => errors.push(String(error.message || error).slice(0, 300));
+  page.on('console', onConsole);
+  page.on('pageerror', onPageError);
+  return {
+    errors,
+    stop() {
+      page.off('console', onConsole);
+      page.off('pageerror', onPageError);
+    },
+  };
 }
 
 /** Close a modal shown over the confirmation (Escape, or its last button: "Cancel"). */
