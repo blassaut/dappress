@@ -86,6 +86,8 @@ const selectors = {
   // sends many requests in a row, and it swallows the clicks
   modal: {
     content: '.mm-modal-content',
+    // The cross of the modal's header, when it has one
+    close: '.mm-modal-content button[aria-label="Close"]',
     lastButton: 'xpath/(.//div[contains(@class, "mm-modal-content")]//button)[last()]',
   },
 };
@@ -268,6 +270,8 @@ async function switchAccount(page, name) {
 // modal is dismissed first, and the menu is pressed again until the list shows.
 async function openAccountList(page) {
   for (let attempt = 0; attempt < 3; attempt++) {
+    // Back in front: a tab something opened meanwhile would hide this page and stall its rendering
+    await page.bringToFront().catch(() => {});
     await dismissModal(page);
     await click(page, selectors.home.accountMenu);
     if (await isVisible(page, selectors.accounts.name, 10000)) return;
@@ -402,11 +406,21 @@ async function scrollContentToEnd(page) {
   await page.mouse.wheel({ deltaY: 10000 });
 }
 
-/** Close a modal shown over the confirmation (Escape, or its last button: "Cancel"). */
+/**
+ * Close a modal shown over the screen: Escape, then the cross of its header,
+ * then its last button, which is "Cancel" on the "multiple requests" modal.
+ * The last button is the last resort: on an offer such as Transaction
+ * Shield's, it is a call to action that opens a page, which hides this one.
+ */
 async function dismissModal(page) {
   if (!(await isVisible(page, selectors.modal.content, 300))) return;
   await page.keyboard.press('Escape');
   if (await isGone(page, selectors.modal.content, 1000)) return;
+  const close = await page.$(selectors.modal.close);
+  if (close) {
+    await close.click().catch(() => {});
+    if (await isGone(page, selectors.modal.content, 1000)) return;
+  }
   await dispatchClick(page, selectors.modal.lastButton);
 }
 
