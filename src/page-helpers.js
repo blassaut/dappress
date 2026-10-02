@@ -55,17 +55,20 @@ async function isGone(page, selector, timeout = 1500) {
 }
 
 async function click(page, selector, options) {
-  const element = await waitFor(page, selector, options);
-  await waitForStill(element);
-  await element.click();
+  await clickFresh(page, selector, options);
 }
 
-/** Wait until the element is both visible and enabled, then click it. */
+/**
+ * Wait until the element is both visible and enabled, then click it. The
+ * element is taken again at each turn: MetaMask re-renders its screens, and
+ * a handle on a replaced element reads its last state forever.
+ */
 async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whileDisabled } = {}) {
-  const element = await waitFor(page, selector, { timeout });
   const deadline = Date.now() + timeout;
   let nudged = 0;
-  while (await element.evaluate((el) => el.disabled)) {
+  for (;;) {
+    const element = await waitFor(page, selector, { timeout });
+    if (!(await element.evaluate((el) => el.disabled))) break;
     if (Date.now() > deadline) throw await failure(page, `"${describe(selector)}" stayed disabled for ${timeout}ms`);
     // Something the page wants done before it enables the button, every half second
     if (whileDisabled && Date.now() - nudged > 500) {
@@ -74,8 +77,20 @@ async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whi
     }
     await sleep(100);
   }
-  await waitForStill(element);
-  await element.click();
+  await clickFresh(page, selector, { timeout });
+}
+
+// Find the element and click it; once more if a re-render replaced it between the two
+async function clickFresh(page, selector, options) {
+  for (let attempt = 0; ; attempt++) {
+    const element = await waitFor(page, selector, options);
+    await waitForStill(element);
+    try {
+      return await element.click();
+    } catch (error) {
+      if (attempt > 0 || !/detached/.test(error.message)) throw error;
+    }
+  }
 }
 
 /** Click by dispatching the event on the element itself, for buttons something may cover. */
