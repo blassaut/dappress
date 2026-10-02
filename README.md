@@ -5,7 +5,7 @@
 Dappress loads the MetaMask browser extension into the browser Cypress launches, imports a test wallet, and exposes `cy.*` commands that answer the requests a dapp sends to the wallet: connection, signatures, transactions, network changes.
 
 - **Current MetaMask.** The extension version is a configuration value. Each release is verified by a conformance suite, with one test per command.
-- **Cypress native.** No second browser, no proxy. Dappress drives MetaMask through Puppeteer, connected to the browser Cypress already runs.
+- **Cypress native.** No second browser, no proxy. Dappress drives MetaMask through Puppeteer, connected to the browser Cypress already runs. Typed commands for TypeScript projects.
 - **Resilient selectors.** Every selector comes from MetaMask's own end-to-end test suite and carries a fallback.
 
 ## Requirements
@@ -80,6 +80,16 @@ env:
 ```
 
 When neither is provided, Dappress uses the public Hardhat / Anvil development wallet.
+
+For a TypeScript project, add the command types to `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "types": ["cypress", "dappress/support"]
+  }
+}
+```
 
 Run the tests in a headed browser that supports extensions:
 
@@ -171,6 +181,7 @@ src/metamask.js         MetaMask screens: selectors and flows
 src/page-helpers.js     wait, click and fill primitives with fallback selectors
 src/actions.js          Cypress tasks behind the commands
 src/support.js          cy.* commands
+types/                  TypeScript declarations
 conformance/            conformance suite
 ```
 

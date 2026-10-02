@@ -1,3 +1,5 @@
+/// <reference types="../../../types/support" />
+
 import { testDapp } from '../support/testDapp';
 import { provider } from '../support/provider';
 
@@ -25,7 +27,7 @@ describe('MetaMask actions', () => {
   it('injects the provider into the dapp', () => {
     testDapp.open();
     cy.window().should('have.property', 'ethereum');
-    cy.window().its('ethereum.isMetaMask').should('eq', true);
+    cy.window().its('ethereum').its('isMetaMask').should('eq', true);
   });
 
   it('connectToDapp, onto the network from the wallet setup', () => {

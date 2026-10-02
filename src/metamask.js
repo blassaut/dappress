@@ -56,6 +56,11 @@ const selectors = {
     confirm: [testId('page-container-footer-next'), testId('confirmation-submit-button'), buttonText('Confirm')],
     cancel: [testId('page-container-footer-cancel'), testId('confirmation-cancel-button'), buttonText('Cancel')],
   },
+  // "Switching network will cancel N pending transactions": a warning MetaMask
+  // raises after the confirmation is accepted; "Got it" carries on
+  alert: {
+    acknowledge: [testId('alert-modal-button'), buttonText('Got it')],
+  },
   // "We've noticed multiple requests": shown over the confirmation when a dapp
   // sends many requests in a row, and it swallows the clicks
   modal: {
@@ -188,6 +193,7 @@ async function pressAndWaitForDismissal(page, button, timeout) {
   }
   await clickWhenEnabled(page, button);
   for (let attempt = 0; attempt < 3; attempt++) {
+    if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
     if (await isGone(page, button, 3000)) return;
     await dismissModal(page);
     await dispatchClick(page, button, { timeout: 3000 }).catch(() => {});

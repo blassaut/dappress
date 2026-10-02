@@ -6,7 +6,7 @@ const { configureDappress } = require('../src');
 module.exports = defineConfig({
   e2e: {
     baseUrl: 'https://metamask.github.io/test-dapp/',
-    specPattern: 'cypress/e2e/**/*.cy.js',
+    specPattern: 'cypress/e2e/**/*.cy.ts',
     supportFile: 'cypress/support/e2e.js',
     // The tests share one MetaMask instance and one dapp connection
     testIsolation: false,
