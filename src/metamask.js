@@ -323,13 +323,10 @@ function approveNetworkChange(page, timeout) {
 async function pressAndWaitForDismissal(page, button, timeout) {
   await waitFor(page, button, { timeout });
   await dismissModal(page);
-  if (await isVisible(page, selectors.confirmation.scrollToBottom, 500)) {
-    await click(page, selectors.confirmation.scrollToBottom);
-  }
   const logged = recordErrors(page);
   const request = page.url();
   try {
-    await clickWhenEnabled(page, button);
+    await clickWhenEnabled(page, button, { whileDisabled: () => scrollContentToEnd(page) });
     for (let attempt = 0; attempt < 3; attempt++) {
       if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
       if (await isGone(page, button, 3000)) return;
@@ -361,6 +358,23 @@ function recordErrors(page) {
       page.off('pageerror', onPageError);
     },
   };
+}
+
+/**
+ * MetaMask keeps the button of a confirmation disabled until its content was
+ * read to the end: scrolled to the bottom, or not scrollable at all. Some
+ * screens offer a button for that, most don't, so the content is scrolled
+ * with the wheel, as a reader would. The popup, being small, needs it often.
+ */
+async function scrollContentToEnd(page) {
+  const scrollButton = await page.$(selectors.confirmation.scrollToBottom);
+  if (scrollButton) {
+    await scrollButton.click().catch(() => {});
+    return;
+  }
+  const [width, height] = await page.evaluate(() => [document.documentElement.clientWidth, document.documentElement.clientHeight]);
+  await page.mouse.move(Math.round(width / 2), Math.round(height / 2));
+  await page.mouse.wheel({ deltaY: 10000 });
 }
 
 /** Close a modal shown over the confirmation (Escape, or its last button: "Cancel"). */

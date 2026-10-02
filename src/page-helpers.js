@@ -61,11 +61,17 @@ async function click(page, selector, options) {
 }
 
 /** Wait until the element is both visible and enabled, then click it. */
-async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT } = {}) {
+async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whileDisabled } = {}) {
   const element = await waitFor(page, selector, { timeout });
   const deadline = Date.now() + timeout;
+  let nudged = 0;
   while (await element.evaluate((el) => el.disabled)) {
     if (Date.now() > deadline) throw await failure(page, `"${describe(selector)}" stayed disabled for ${timeout}ms`);
+    // Something the page wants done before it enables the button, every half second
+    if (whileDisabled && Date.now() - nudged > 500) {
+      await whileDisabled();
+      nudged = Date.now();
+    }
     await sleep(100);
   }
   await waitForStill(element);
