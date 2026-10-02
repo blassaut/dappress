@@ -4,16 +4,16 @@ const { prepareExtension } = require('./download');
 const { createTasks } = require('./actions');
 
 /**
- * Wire DappPress into a Cypress project. Call it from setupNodeEvents:
+ * Wire Dappress into a Cypress project. Call it from setupNodeEvents:
  *
  *   setupNodeEvents(on, config) {
- *     return configureDappPress(on, config);
+ *     return configureDappress(on, config);
  *   }
  *
  * It loads the MetaMask extension into the browser Cypress launches, and
  * registers the tasks behind the cy.* commands from 'dappress/support'.
  */
-function configureDappPress(on, config, userOptions = {}) {
+function configureDappress(on, config, userOptions = {}) {
   const options = resolveOptions(userOptions, config);
 
   on('before:browser:launch', async (browser, launchOptions) => {
@@ -31,4 +31,4 @@ function configureDappPress(on, config, userOptions = {}) {
   return config;
 }
 
-module.exports = { configureDappPress };
+module.exports = { configureDappress };

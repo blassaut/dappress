@@ -21,7 +21,7 @@ const WALLET_SETUP_FILE = path.join('cypress', 'wallet.setup.js');
 /**
  * The plugin options, in order of precedence: environment variables, the
  * Cypress `env` block (cypress.env.json), the wallet setup file
- * (cypress/wallet.setup.js), the options given to configureDappPress(),
+ * (cypress/wallet.setup.js), the options given to configureDappress(),
  * then the defaults above.
  */
 function resolveOptions(userOptions = {}, cypressConfig = {}) {

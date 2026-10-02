@@ -17,7 +17,7 @@ function captureDebuggerUrl(on) {
  */
 async function withBrowser(action) {
   if (!debuggerUrl) {
-    throw new Error('[dappress] No browser to connect to. Is configureDappPress() called in setupNodeEvents, with Cypress 13.6 or later?');
+    throw new Error('[dappress] No browser to connect to. Is configureDappress() called in setupNodeEvents, with Cypress 13.6 or later?');
   }
   const browser = await puppeteer.connect({ browserWSEndpoint: debuggerUrl, defaultViewport: null });
   try {

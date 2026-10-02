@@ -1,11 +1,11 @@
-# DappPress
+# Dappress
 
 **MetaMask automation for Cypress.**
 
-DappPress loads the MetaMask browser extension into the browser Cypress launches, imports a test wallet, and exposes `cy.*` commands that answer the requests a dapp sends to the wallet: connection, signatures, transactions, network changes.
+Dappress loads the MetaMask browser extension into the browser Cypress launches, imports a test wallet, and exposes `cy.*` commands that answer the requests a dapp sends to the wallet: connection, signatures, transactions, network changes.
 
 - **Current MetaMask.** The extension version is a configuration value. Each release is verified by a conformance suite, with one test per command.
-- **Cypress native.** No second browser, no proxy. DappPress drives MetaMask through Puppeteer, connected to the browser Cypress already runs.
+- **Cypress native.** No second browser, no proxy. Dappress drives MetaMask through Puppeteer, connected to the browser Cypress already runs.
 - **Resilient selectors.** Every selector comes from MetaMask's own end-to-end test suite and carries a fallback.
 
 ## Requirements
@@ -27,14 +27,14 @@ Register the plugin in the Cypress configuration:
 ```js
 // cypress.config.js
 const { defineConfig } = require('cypress');
-const { configureDappPress } = require('dappress');
+const { configureDappress } = require('dappress');
 
 module.exports = defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
     testIsolation: false, // the wallet state is shared across tests
     setupNodeEvents(on, config) {
-      return configureDappPress(on, config);
+      return configureDappress(on, config);
     },
   },
 });
@@ -63,7 +63,7 @@ module.exports = {
 };
 ```
 
-Provide the seed phrase through `DAPPRESS_SEED_PHRASE`, either in `cypress.env.json` (git-ignored) or as an environment variable. When none is provided, DappPress uses the public Hardhat / Anvil development wallet.
+Provide the seed phrase through `DAPPRESS_SEED_PHRASE`, either in `cypress.env.json` (git-ignored) or as an environment variable. When none is provided, Dappress uses the public Hardhat / Anvil development wallet.
 
 Run the tests in a headed browser that supports extensions:
 
@@ -104,7 +104,7 @@ Planned: locking the wallet, switching accounts, importing additional accounts.
 
 ### Configuration
 
-Options are read, in order of precedence, from environment variables, `cypress.env.json`, `cypress/wallet.setup.js`, and the third argument of `configureDappPress(on, config, options)`.
+Options are read, in order of precedence, from environment variables, `cypress.env.json`, `cypress/wallet.setup.js`, and the third argument of `configureDappress(on, config, options)`.
 
 | Option | Environment variable | Default |
 |---|---|---|
@@ -138,10 +138,10 @@ Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the 
 
 ## Architecture
 
-Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, DappPress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request (side panel or popup) and interacts with it.
+Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, Dappress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request (side panel or popup) and interacts with it.
 
 ```
-src/index.js            configureDappPress(): plugin entry point
+src/index.js            configureDappress(): plugin entry point
 src/config.js           options and wallet setup file
 src/download.js         download and cache of MetaMask builds
 src/browser.js          Puppeteer connection to the Cypress browser

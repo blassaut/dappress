@@ -1,5 +1,5 @@
 const { defineConfig } = require('cypress');
-const { configureDappPress } = require('../src');
+const { configureDappress } = require('../src');
 
 // Runs the conformance suite against MetaMask's public test dapp.
 // Pick the MetaMask build with DAPPRESS_METAMASK_VERSION=13.49.0.
@@ -13,7 +13,7 @@ module.exports = defineConfig({
     video: false,
     chromeWebSecurity: false,
     setupNodeEvents(on, config) {
-      return configureDappPress(on, config);
+      return configureDappress(on, config);
     },
   },
 });

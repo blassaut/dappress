@@ -1,7 +1,7 @@
 import { testDapp } from '../support/testDapp';
 import { provider } from '../support/provider';
 
-// One test per DappPress command, against MetaMask's test dapp and a local
+// One test per Dappress command, against MetaMask's test dapp and a local
 // Anvil node (started by scripts/conformance.js) for the funded transaction.
 // The wallet setup (cypress/wallet.setup.js) moves the dapp onto the Hoodi
 // testnet at connection, so nothing is signed on Ethereum mainnet. A failing
