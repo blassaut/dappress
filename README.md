@@ -1,19 +1,28 @@
 # DappPress
 
-MetaMask for your Cypress tests. DappPress loads the real MetaMask extension into the browser Cypress launches, imports a wallet, and gives you `cy.*` commands to accept or reject what your dapp asks the wallet.
+**MetaMask automation for Cypress.**
 
-Works with the latest MetaMask: the version is a setting, and a conformance suite checks each release.
+DappPress loads the MetaMask browser extension into the browser Cypress launches, imports a test wallet, and exposes `cy.*` commands that answer the requests a dapp sends to the wallet: connection, signatures, transactions, network changes.
+
+- **Current MetaMask.** The extension version is a configuration value. Each release is verified by a conformance suite, with one test per command.
+- **Cypress native.** No second browser, no proxy. DappPress drives MetaMask through Puppeteer, connected to the browser Cypress already runs.
+- **Resilient selectors.** Every selector comes from MetaMask's own end-to-end test suite and carries a fallback.
 
 ## Requirements
 
-- Cypress 13.6 or later, Node 20 or later
-- Chrome for Testing (Chromium and Electron work too). Google Chrome 137+ can't load extensions.
+| | |
+|---|---|
+| Cypress | 13.6 or later |
+| Node.js | 20 or later |
+| Browser | Chrome for Testing, Chromium or Electron. Google Chrome 137 and later cannot load extensions. |
 
-## Quick start
+## Installation
 
 ```bash
 npm install --save-dev dappress
 ```
+
+Register the plugin in the Cypress configuration:
 
 ```js
 // cypress.config.js
@@ -23,7 +32,7 @@ const { configureDappPress } = require('dappress');
 module.exports = defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
-    testIsolation: false, // the wallet is shared by the tests
+    testIsolation: false, // the wallet state is shared across tests
     setupNodeEvents(on, config) {
       return configureDappPress(on, config);
     },
@@ -31,16 +40,20 @@ module.exports = defineConfig({
 });
 ```
 
+Load the commands in the support file:
+
 ```js
 // cypress/support/e2e.js
 import 'dappress/support';
 ```
 
+Describe the test wallet:
+
 ```js
 // cypress/wallet.setup.js
 module.exports = {
   password: 'Tester@1234',
-  // Optional: the network the dapp is moved onto when it connects
+  // Optional. The network the dapp is moved onto when it connects.
   network: {
     chainId: '0x88bb0',
     chainName: 'Hoodi',
@@ -50,16 +63,18 @@ module.exports = {
 };
 ```
 
-Put the seed phrase in `cypress.env.json` (git-ignored) as `DAPPRESS_SEED_PHRASE`, or in the environment variable of the same name. Without it, DappPress uses the public Hardhat / Anvil test wallet.
+Provide the seed phrase through `DAPPRESS_SEED_PHRASE`, either in `cypress.env.json` (git-ignored) or as an environment variable. When none is provided, DappPress uses the public Hardhat / Anvil development wallet.
+
+Run the tests in a headed browser that supports extensions:
 
 ```bash
 npx cypress run --browser chrome-for-testing --headed
 ```
 
-## Write a test
+## Usage
 
 ```js
-it('connects and signs in', () => {
+it('connects the wallet and signs in', () => {
   cy.visit('/');
   cy.contains('button', 'Connect wallet').click();
   cy.connectToDapp();
@@ -70,79 +85,85 @@ it('connects and signs in', () => {
 });
 ```
 
-The wallet is imported before the first test of each spec. Each command waits for MetaMask to show the request, answers it, and waits for it to go away.
+The wallet is imported once, before the first test of each spec. Each command waits for MetaMask to display the request, answers it, and waits for the request to be dismissed.
 
-| Command | Answers |
+### Commands
+
+| Command | Request answered |
 |---|---|
-| `cy.connectToDapp()` / `cy.rejectConnection()` | "Connect this website with MetaMask", then moves the dapp onto the wallet setup's network |
-| `cy.confirmSignature()` / `cy.rejectSignature()` | A signature request (`personal_sign`, `eth_signTypedData_*`) |
-| `cy.confirmTransaction()` / `cy.rejectTransaction()` | A transaction, including ERC-20 approvals |
-| `cy.approveNewNetwork()` / `cy.rejectNewNetwork()` | "Add network" (`wallet_addEthereumChain`) |
-| `cy.approveSwitchNetwork()` / `cy.rejectSwitchNetwork()` | The permission asked before switching to a network the dapp isn't allowed on yet |
-| `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask if needed. Defaults to the wallet setup's network. |
-| `cy.getAccountAddress()` | Yields the connected address |
-| `cy.setupMetaMask()` | Imports or unlocks the wallet. Runs by itself before each spec. |
+| `cy.connectToDapp()` / `cy.rejectConnection()` | Connection request. On success, the dapp is moved onto the network declared in the wallet setup. |
+| `cy.confirmSignature()` / `cy.rejectSignature()` | Signature request: `personal_sign`, `eth_signTypedData_*` |
+| `cy.confirmTransaction()` / `cy.rejectTransaction()` | Transaction, including ERC-20 approvals |
+| `cy.approveNewNetwork()` / `cy.rejectNewNetwork()` | `wallet_addEthereumChain` |
+| `cy.approveSwitchNetwork()` / `cy.rejectSwitchNetwork()` | Permission request raised by `wallet_switchEthereumChain` for a network the dapp is not yet allowed on |
+| `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the wallet setup's network. |
+| `cy.getAccountAddress()` | Yields the address the dapp is connected with |
+| `cy.setupMetaMask()` | Imports or unlocks the wallet. Called automatically before each spec. |
 
-Not yet: locking the wallet, switching accounts, importing extra accounts.
+Planned: locking the wallet, switching accounts, importing additional accounts.
 
-## Options
+### Configuration
 
-Set them in the wallet setup file, in `cypress.env.json`, as environment variables, or as the third argument of `configureDappPress()`.
+Options are read, in order of precedence, from environment variables, `cypress.env.json`, `cypress/wallet.setup.js`, and the third argument of `configureDappPress(on, config, options)`.
 
-| Option | Env var | Default |
+| Option | Environment variable | Default |
 |---|---|---|
 | `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0` |
-| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | the Hardhat / Anvil test mnemonic |
+| `seedPhrase` | `DAPPRESS_SEED_PHRASE` | Hardhat / Anvil development mnemonic |
 | `password` | `DAPPRESS_PASSWORD` | `Tester@1234` |
 | `network` | | none |
-| `autoSetup` | | `true`, run `cy.setupMetaMask()` before each spec |
-| `timeout` | | `20000` ms to wait for MetaMask to show a request |
+| `autoSetup` | | `true`, runs `cy.setupMetaMask()` before each spec |
+| `timeout` | | `20000` ms, the time allowed for MetaMask to display a request |
 
-Use a wallet made for testing, with test funds only: the default seed phrase is public. The seed phrase stays on the Node side and never reaches the browser or the Cypress log. The wallet setup file holds nothing secret, so it can be committed.
+### Security
 
-## Check a MetaMask release
+Use a wallet dedicated to testing, funded on test networks only. The default seed phrase is public. The seed phrase and password remain on the Node.js side: they are never exposed to the browser nor written to the Cypress command log. The wallet setup file contains no secret and can be committed.
 
-The conformance suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/), with a local [Anvil](https://getfoundry.sh) node for the funded transaction:
+## Conformance suite
+
+The suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/), with a local [Anvil](https://getfoundry.sh) node for the funded transaction. It requires Chrome for Testing and Foundry.
 
 ```bash
-npm run conformance               # the default MetaMask version
-npm run conformance -- 13.51.0    # another release
+npm run conformance               # default MetaMask version
+npm run conformance -- 13.51.0    # a specific release
 ```
 
-It writes `reports/metamask-<version>.json`. The GitHub workflow runs it daily against the latest release that has no report yet.
+Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the suite daily against the latest MetaMask release that has no report yet.
 
-When a command fails on a new release:
+### Updating to a new MetaMask release
 
-1. The error names a screenshot of the MetaMask screen at that moment.
-2. Find the new selector in MetaMask's own page objects: `github.com/MetaMask/metamask-extension/tree/v<version>/test/e2e/page-objects/pages`.
-3. Fix it in `src/metamask.js`, run the suite on the new and the previous release, bump the default version in `src/config.js`, commit the report.
+1. Run the suite. Each failure names a screenshot of the MetaMask screen at that moment.
+2. Locate the new selector in MetaMask's page objects: `github.com/MetaMask/metamask-extension/tree/v<version>/test/e2e/page-objects/pages`.
+3. Update `src/metamask.js`, run the suite against the new and the previous release, bump the default version in `src/config.js`, and commit the report.
 
-## How it works
+## Architecture
 
-Cypress runs your test inside the dapp's tab and can't see the extension. So for each command, DappPress connects Puppeteer to the browser Cypress launched, finds the MetaMask page showing the request (the side panel, or the popup) and clicks on it.
+Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, DappPress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request (side panel or popup) and interacts with it.
 
 ```
 src/index.js            configureDappPress(): plugin entry point
-src/config.js           options and the wallet setup file
-src/download.js         fetch and cache a MetaMask build
+src/config.js           options and wallet setup file
+src/download.js         download and cache of MetaMask builds
 src/browser.js          Puppeteer connection to the Cypress browser
-src/metamask-pages.js   find MetaMask's pages in the browser
-src/metamask.js         MetaMask's screens: selectors and flows
-src/page-helpers.js     wait / click / fill, with fallback selectors
-src/actions.js          the Cypress tasks behind the commands
-src/support.js          the cy.* commands
-conformance/            one test per command
+src/metamask-pages.js   discovery of MetaMask's pages
+src/metamask.js         MetaMask screens: selectors and flows
+src/page-helpers.js     wait, click and fill primitives with fallback selectors
+src/actions.js          Cypress tasks behind the commands
+src/support.js          cy.* commands
+conformance/            conformance suite
 ```
 
-Selectors are MetaMask's own `data-testid`s, each with the button's English text as a fallback. MetaMask's pages run under LavaMoat, which blocks injected scripts, so the helpers only use what Puppeteer can do from outside the page.
+Selectors are MetaMask's `data-testid` attributes, each with the button's English label as a fallback. MetaMask's pages run under LavaMoat, which rejects injected scripts; the helpers therefore rely only on what Puppeteer can do from outside the page.
 
 ## Troubleshooting
 
-- **Cypress exits at once with `MODULE_NOT_FOUND`**: the terminal sets `ELECTRON_RUN_AS_NODE=1` (some IDEs do). Run `env -u ELECTRON_RUN_AS_NODE npx cypress run …`.
-- **"MetaMask showed no confirmation"**: the dapp sent no request, or sent it on a network whose RPC is unreachable.
+- **Cypress exits immediately with `MODULE_NOT_FOUND`.** The terminal sets `ELECTRON_RUN_AS_NODE=1`, as some IDEs do. Run `env -u ELECTRON_RUN_AS_NODE npx cypress run …`.
+- **"MetaMask showed no confirmation".** The dapp sent no request, or sent it on a network whose RPC endpoint is unreachable.
 
 ## Status
 
-Early. Verified on MetaMask 13.49.0 and 13.50.0, Cypress 16, Chrome for Testing 154, macOS, headed mode. Headless runs and CI are not validated yet.
+Verified with MetaMask 13.49.0 and 13.50.0, Cypress 16 and Chrome for Testing 154 on macOS, in headed mode. Headless execution and continuous integration are not validated yet.
 
-MIT license.
+## License
+
+MIT
