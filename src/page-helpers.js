@@ -98,9 +98,23 @@ async function describeDisabled(page, element) {
         visibility: document.visibilityState,
       };
     }, element);
+    state.window = await windowBounds(page);
     return `Button: ${JSON.stringify(state)}.`;
   } catch {
     return '';
+  }
+}
+
+// The size and state of the window the page is in, as "400x620 normal"
+async function windowBounds(page) {
+  const session = await page.target().createCDPSession();
+  try {
+    const { bounds } = await session.send('Browser.getWindowForTarget');
+    return `${bounds.width}x${bounds.height} ${bounds.windowState}`;
+  } catch {
+    return 'unknown';
+  } finally {
+    await session.detach().catch(() => {});
   }
 }
 
