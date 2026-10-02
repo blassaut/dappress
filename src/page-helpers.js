@@ -97,16 +97,34 @@ async function fill(page, selector, text, options) {
   await element.type(text);
 }
 
-/** The error for something that went wrong on `page`, with a screenshot to look at. */
+/**
+ * The error for something that went wrong on `page`: what the page shows, in
+ * words for the log and as a screenshot to look at.
+ */
 async function failure(page, message) {
   const prefix = `[dappress] ${message} on ${page.url()}`;
+  const shown = await pageText(page);
   try {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
     const file = path.join(SCREENSHOTS_DIR, `${Date.now()}.png`);
     await page.screenshot({ path: file });
-    return new Error(`${prefix}. Screenshot: ${file}`);
+    return new Error(`${prefix}. ${shown}Screenshot: ${file}`);
   } catch {
-    return new Error(prefix);
+    return new Error(`${prefix}. ${shown}`.trim());
+  }
+}
+
+// The visible text of the page, shortened: enough to tell which MetaMask
+// screen it is from the log alone, when the screenshot is out of reach
+async function pageText(page) {
+  try {
+    const text = await Promise.race([
+      page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').trim()),
+      sleep(2000).then(() => null),
+    ]);
+    return text ? `The page shows: "${text.length > 500 ? `${text.slice(0, 500)}…` : text}". ` : '';
+  } catch {
+    return '';
   }
 }
 
