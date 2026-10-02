@@ -153,7 +153,7 @@ Settings normally live in `cypress/wallet.setup.ts`. Secrets go in `cypress.env.
 | `seedPhrase` | `DAPPRESS_SEED_PHRASE` | `test test test test test test test test test test test junk`, the Hardhat / Anvil development wallet. Its first account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`. |
 | `password` | `DAPPRESS_PASSWORD` | `Tester@1234`. It only protects the throwaway browser profile Cypress creates for each run. |
 | `network` | | None. The dapp stays on the network MetaMask starts on, Ethereum mainnet. |
-| `autoSetup` | | `true`. `cy.setupMetaMask()` runs before the first test of each spec. |
+| `autoSetup` | | `true`. Dappress imports or unlocks the wallet before the first test of each spec. Set to `false` to call `cy.setupMetaMask()` yourself. |
 | `timeout` | | `20000` ms. The time allowed for MetaMask to display a request before a command fails. |
 
 ### Security
