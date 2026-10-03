@@ -2,6 +2,8 @@
 
 **MetaMask automation for Cypress.**
 
+[![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
+
 Dappress loads the MetaMask browser extension into the browser Cypress launches, imports a test wallet, and exposes `cy.*` commands that answer the requests a dapp sends to the wallet: connection, signatures, transactions, network changes.
 
 - **Current MetaMask.** The extension version is a configuration value. Each release is verified by a conformance suite, with one test per command.
