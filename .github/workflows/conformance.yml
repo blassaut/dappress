@@ -28,12 +28,12 @@ env:
 
 jobs:
   version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.metamask.outputs.version }}
       run: ${{ steps.metamask.outputs.run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: MetaMask release to test
         id: metamask
@@ -75,11 +75,11 @@ jobs:
 
   checks:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -95,7 +95,7 @@ jobs:
   suite:
     needs: version
     if: needs.version.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A failing run is about seven minutes; a hung one shouldn't bill an hour
     timeout-minutes: 25
     strategy:
@@ -105,9 +105,9 @@ jobs:
         mode: [sidepanel, headless, popup]
     name: suite (${{ matrix.mode }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -141,14 +141,14 @@ jobs:
           DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
           DAPPRESS_MODE: ${{ matrix.mode }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: report-${{ needs.version.outputs.version }}-${{ matrix.mode }}
           path: reports/metamask-${{ needs.version.outputs.version }}-${{ matrix.mode }}.json
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: screenshots-${{ needs.version.outputs.version }}-${{ matrix.mode }}
@@ -160,16 +160,16 @@ jobs:
     needs: [version, suite]
     # A failing mode still has its report published
     if: always() && needs.version.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     concurrency:
       group: conformance-publish
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: report-*
           merge-multiple: true
