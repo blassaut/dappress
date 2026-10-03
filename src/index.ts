@@ -1,8 +1,13 @@
-const { resolveOptions, publicOptions } = require('./config');
-const { captureDebuggerUrl } = require('./browser');
-const { prepareExtension } = require('./download');
-const { prepareProfile, installProfile } = require('./profile');
-const { createTasks } = require('./actions');
+/// <reference types="cypress" preserve="true" />
+
+import { resolveOptions, publicOptions } from './config';
+import { captureDebuggerUrl } from './browser';
+import { prepareExtension } from './download';
+import { prepareProfile, installProfile } from './profile';
+import { createTasks } from './actions';
+import type { DappressOptions } from './types';
+
+export type { DappressOptions, Network, WalletSetup } from './types';
 
 /**
  * Wire Dappress into a Cypress project. Call it from setupNodeEvents:
@@ -14,14 +19,18 @@ const { createTasks } = require('./actions');
  * It loads the MetaMask extension into the browser Cypress launches, and
  * registers the tasks behind the cy.* commands from 'dappress/support'.
  */
-function configureDappress(on, config, userOptions = {}) {
+export function configureDappress(
+  on: Cypress.PluginEvents,
+  config: Cypress.PluginConfigOptions,
+  userOptions: DappressOptions = {},
+): Cypress.PluginConfigOptions {
   const options = resolveOptions(userOptions, config);
   if (config.chromeWebSecurity === false) {
     console.warn('[dappress] chromeWebSecurity is off: MetaMask cannot start its snaps, so adding or importing an account will hang');
   }
 
   // A cached wallet gets its requests in MetaMask's popup window, which headless Chrome doesn't open
-  const usesCache = (browser) => options.cache && !browser.isHeadless;
+  const usesCache = (browser: Cypress.Browser) => options.cache && !browser.isHeadless;
 
   // Build the wallet profile before the run, out of the time Cypress allows a browser to come up
   on('before:run', async ({ browser }) => {
@@ -52,5 +61,3 @@ function configureDappress(on, config, userOptions = {}) {
   config.expose = { ...config.expose, dappress: publicOptions(options) };
   return config;
 }
-
-module.exports = { configureDappress };

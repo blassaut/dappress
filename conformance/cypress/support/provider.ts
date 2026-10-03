@@ -1,5 +1,3 @@
-/// <reference types="../../../types/support" />
-
 // Send a request to the injected provider from the test, for wallet methods
 // the test dapp has no button for. The request is left pending while the
 // MetaMask command answers it; `result()` then yields what the dapp got back.

@@ -2,11 +2,27 @@
 // table of MetaMask versions by mode and one of actions by MetaMask version,
 // and badge.json, a shields.io endpoint for the latest version.
 //
-//   node scripts/matrix.js <reportsDir> <outDir>
+//   npm run matrix -- <reportsDir> <outDir>
 
-const fs = require('node:fs');
-const path = require('node:path');
-const { MODES } = require('./modes');
+import fs from 'node:fs';
+import path from 'node:path';
+import { MODES } from './modes';
+
+/** What scripts/conformance.ts writes for one run of the suite. */
+export type Report = {
+  dappressVersion: string;
+  metamaskVersion: string;
+  // Missing from the reports that predate the modes
+  mode?: string;
+  browser?: string;
+  date: string;
+  passed: boolean;
+  actions: { action: string; status: string; error?: string }[];
+};
+
+export type ReportEntry = { version: string; mode: string; legacy?: boolean; report: Report };
+
+type ReportsByMode = Record<string, Report>;
 
 // The actions table has one column per version: the latest ones, to stay readable
 const VERSIONS_BY_ACTION = 8;
@@ -17,44 +33,47 @@ const REPORT_FILE = /^metamask-(\d+\.\d+\.\d+)(?:-([a-z]+))?\.json$/;
  * The reports in `dir`, as { version, mode, report }. A report without a mode
  * predates them and counts as side panel, unless a side panel report exists.
  */
-function readReports(dir) {
-  return fs
-    .readdirSync(dir)
-    .map((file) => ({ file, match: REPORT_FILE.exec(file) }))
-    .filter(({ match }) => match)
-    .map(({ file, match }) => {
-      const report = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
-      return { version: match[1], mode: report.mode || match[2] || 'sidepanel', legacy: !match[2], report };
-    })
-    // Legacy reports first, so a report of the mode replaces them
-    .sort((a, b) => Number(b.legacy) - Number(a.legacy));
+export function readReports(dir: string): ReportEntry[] {
+  return (
+    fs
+      .readdirSync(dir)
+      .map((file) => ({ file, match: REPORT_FILE.exec(file) }))
+      .flatMap(({ file, match }) => (match ? [{ file, match }] : []))
+      .map(({ file, match }) => {
+        const report: Report = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+        return { version: match[1], mode: report.mode || match[2] || 'sidepanel', legacy: !match[2], report };
+      })
+      // Legacy reports first, so a report of the mode replaces them
+      .sort((a, b) => Number(b.legacy) - Number(a.legacy))
+  );
 }
 
 /** Newest first. */
-function compareVersions(a, b) {
+function compareVersions(a: string, b: string): number {
   const [x, y] = [a, b].map((version) => version.split('.').map(Number));
   for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i];
   return 0;
 }
 
 /** version -> mode -> report, versions newest first. */
-function byVersion(reports) {
-  const versions = new Map();
+function byVersion(reports: ReportEntry[]): Map<string, ReportsByMode> {
+  const versions = new Map<string, ReportsByMode>();
   for (const { version, mode, report } of reports) {
-    if (!versions.has(version)) versions.set(version, {});
-    versions.get(version)[mode] = report;
+    const reportsByMode = versions.get(version) ?? {};
+    reportsByMode[mode] = report;
+    versions.set(version, reportsByMode);
   }
   return new Map([...versions].sort(([a], [b]) => compareVersions(a, b)));
 }
 
-function cell(report) {
+function cell(report: Report | undefined): string {
   if (!report) return '–';
   const passed = report.actions.filter((action) => action.status === 'passed').length;
   const total = report.actions.length;
   return report.passed ? `✅ ${passed}/${total}` : `❌ ${passed}/${total}`;
 }
 
-function failures(version, modes) {
+function failures(version: string, modes: ReportsByMode): string[] {
   return Object.entries(modes)
     .filter(([, report]) => !report.passed)
     .flatMap(([mode, report]) =>
@@ -68,19 +87,19 @@ function failures(version, modes) {
  * How one action did in one version: passed in every mode that ran it, failed
  * in the modes named, or "–" when no report of the version has it.
  */
-function actionCell(reportsByMode, action) {
+function actionCell(reportsByMode: ReportsByMode, action: string): string {
   const ran = Object.entries(reportsByMode)
     .map(([mode, report]) => ({ mode, result: report.actions.find((candidate) => candidate.action === action) }))
     .filter(({ result }) => result);
   if (!ran.length) return '–';
-  const failed = ran.filter(({ result }) => result.status !== 'passed').map(({ mode }) => MODES[mode]?.label || mode);
+  const failed = ran.filter(({ result }) => result?.status !== 'passed').map(({ mode }) => MODES[mode]?.label || mode);
   return failed.length ? `❌ ${failed.join(', ')}` : '✅';
 }
 
 /** The table of actions by version: the actions in the order of the suite, newest version first. */
-function actionRows(versions) {
+function actionRows(versions: Map<string, ReportsByMode>): string[] {
   const latest = [...versions].slice(0, VERSIONS_BY_ACTION);
-  const actions = [];
+  const actions: string[] = [];
   for (const [, reportsByMode] of latest) {
     for (const report of Object.values(reportsByMode)) {
       for (const { action } of report.actions) if (!actions.includes(action)) actions.push(action);
@@ -89,14 +108,12 @@ function actionRows(versions) {
   return [
     `| Action | ${latest.map(([version]) => version).join(' | ')} |`,
     `| --- | ${latest.map(() => '---').join(' | ')} |`,
-    ...actions.map(
-      (action) => `| ${action.replace(/\|/g, '\\|')} | ${latest.map(([, reportsByMode]) => actionCell(reportsByMode, action)).join(' | ')} |`,
-    ),
+    ...actions.map((action) => `| ${action.replace(/\|/g, '\\|')} | ${latest.map(([, reportsByMode]) => actionCell(reportsByMode, action)).join(' | ')} |`),
   ];
 }
 
 /** MATRIX.md for the reports. */
-function renderMatrix(reports) {
+export function renderMatrix(reports: ReportEntry[]): string {
   const versions = byVersion(reports);
   const modes = Object.keys(MODES);
   const lines = [
@@ -109,9 +126,7 @@ function renderMatrix(reports) {
   ];
   for (const [version, reportsByMode] of versions) {
     const any = Object.values(reportsByMode)[0];
-    lines.push(
-      `| ${version} | ${modes.map((mode) => cell(reportsByMode[mode])).join(' | ')} | ${any.dappressVersion} | ${any.date.slice(0, 10)} |`,
-    );
+    lines.push(`| ${version} | ${modes.map((mode) => cell(reportsByMode[mode])).join(' | ')} | ${any.dappressVersion} | ${any.date.slice(0, 10)} |`);
   }
   if (versions.size) {
     lines.push(
@@ -129,7 +144,7 @@ function renderMatrix(reports) {
 }
 
 /** The shields.io endpoint for the latest version: green when every mode passed. */
-function renderBadge(reports) {
+export function renderBadge(reports: ReportEntry[]): { schemaVersion: 1; label: string; message: string; color: string } {
   const [latest] = byVersion(reports);
   if (!latest) return { schemaVersion: 1, label: 'MetaMask', message: 'no report', color: 'lightgrey' };
   const [version, reportsByMode] = latest;
@@ -139,12 +154,10 @@ function renderBadge(reports) {
   return { schemaVersion: 1, label: 'MetaMask', message: `${version} · ${passed}/${total} modes`, color };
 }
 
-module.exports = { readReports, renderMatrix, renderBadge };
-
 if (require.main === module) {
   const [reportsDir, outDir] = process.argv.slice(2);
   if (!reportsDir || !outDir) {
-    console.error('Usage: node scripts/matrix.js <reportsDir> <outDir>');
+    console.error('Usage: npm run matrix -- <reportsDir> <outDir>');
     process.exit(1);
   }
   const reports = readReports(reportsDir);

@@ -6,21 +6,23 @@
 // first, then a fallback on the button's English text. When a MetaMask release
 // moves something, this is the file to fix.
 
-const { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep } = require('./page-helpers');
+import type { ConsoleMessage, Page } from 'puppeteer-core';
+import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep, type Selector } from './page-helpers';
+import type { ConnectOptions, CustomGas, GasEstimate, ResolvedOptions, TransactionOptions, WalletState } from './types';
 
-const testId = (id) => `[data-testid="${id}"]`;
+const testId = (id: string) => `[data-testid="${id}"]`;
 // XPath rather than Puppeteer's ::-p-text(): the latter needs MutationObserver,
 // which MetaMask's sandbox (LavaMoat) blocks in its pages.
-const buttonText = (text) => `xpath/.//button[normalize-space(.)="${text}"]`;
-const linkText = (text) => `xpath/.//a[normalize-space(.)="${text}"]`;
-const passwordInput = (position) => `xpath/(.//input[@type="password"])[${position}]`;
+const buttonText = (text: string) => `xpath/.//button[normalize-space(.)="${text}"]`;
+const linkText = (text: string) => `xpath/.//a[normalize-space(.)="${text}"]`;
+const passwordInput = (position: number) => `xpath/(.//input[@type="password"])[${position}]`;
 
 const selectors = {
   onboarding: {
     importWallet: [testId('onboarding-import-wallet'), buttonText('I have an existing wallet')],
     importWithSrp: [testId('onboarding-import-with-srp-button'), buttonText('Import using Secret Recovery Phrase')],
     srpInput: testId('srp-input-import__srp-note'),
-    srpWord: (index) => testId(`import-srp__srp-word-${index}`),
+    srpWord: (index: number) => testId(`import-srp__srp-word-${index}`),
     srpConfirm: [testId('import-srp-confirm'), buttonText('Continue')],
     newPassword: [testId('create-password-new-input'), passwordInput(1)],
     confirmPassword: [testId('create-password-confirm-input'), passwordInput(2)],
@@ -60,10 +62,7 @@ const selectors = {
     hub: testId('parent-selector-gator-permissions'),
     connections: 'xpath/.//p[normalize-space(.)="Connections"]',
     // A site is listed by its host, "localhost:3000"
-    site: (host) => [
-      `xpath/.//*[@data-testid="connection-list-item"][.//p[normalize-space(.)="${host}"]]`,
-      `xpath/.//p[normalize-space(.)="${host}"]`,
-    ],
+    site: (host: string) => [`xpath/.//*[@data-testid="connection-list-item"][.//p[normalize-space(.)="${host}"]]`, `xpath/.//p[normalize-space(.)="${host}"]`],
     disconnect: [testId('disconnect-button'), 'button[aria-label="Disconnect"]'],
     // "Disconnect", in the modal that asks to confirm
     confirmDisconnect: [testId('disconnect-all'), `xpath/.//*[@data-testid="disconnect-all-modal"]//button[normalize-space(.)="Disconnect"]`],
@@ -71,7 +70,7 @@ const selectors = {
   // The account list, opened from the home header
   accounts: {
     name: '[data-testid^="multichain-account-cell-name-"]',
-    cell: (name) => `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]`,
+    cell: (name: string) => `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]`,
     add: 'xpath/(.//*[@data-testid="add-multichain-account-button"])[1]',
     addWallet: testId('account-list-add-wallet-button'),
     importAccount: testId('choose-wallet-type-import-account'),
@@ -89,10 +88,11 @@ const selectors = {
   connectAccounts: {
     // The suggested account, or their count when there are several
     edit: [testId('account-selection-section'), '[data-testid="parent-selector-connect-page"] .multichain-account-cell, [data-testid^="accounts-count-"]'],
-    checkbox: (name) => `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]//input[@type="checkbox"]`,
+    checkbox: (name: string) =>
+      `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]//input[@type="checkbox"]`,
     save: [testId('connect-more-accounts-button'), buttonText('Save')],
     // What the request shows once the list is saved: the account alone, or how many there are
-    chosen: (names) =>
+    chosen: (names: string[]) =>
       names.length === 1
         ? `[data-testid="parent-selector-connect-page"] [data-testid="multichain-account-cell-name-${names[0]}"]`
         : testId(`accounts-count-${names.length}`),
@@ -114,14 +114,20 @@ const selectors = {
     spendingCap: testId('simulation-token-value'),
     spendingCapInput: [testId('custom-spending-cap-input'), '.edit-spending-cap-modal input'],
     // "Save", the last button of the modal's footer: it has no test id
-    spendingCapSave: ['.edit-spending-cap-modal .mm-modal-footer__button:last-child', 'xpath/.//*[contains(@class, "edit-spending-cap-modal")]//button[normalize-space(.)="Save"]'],
+    spendingCapSave: [
+      '.edit-spending-cap-modal .mm-modal-footer__button:last-child',
+      'xpath/.//*[contains(@class, "edit-spending-cap-modal")]//button[normalize-space(.)="Save"]',
+    ],
     // The pencil of the "Network fee" row opens the fee editor: a list of
     // estimates, whose last entry, "Advanced", leads to a form
     editGas: [testId('edit-gas-fee-icon'), `${testId('gas-fee-section')} button[aria-label="Edit"]`],
     gasEstimates: testId('gas-fee-estimates-modal'),
-    gasOption: (key, label) => [testId(`gas-option-${key}`), `xpath/.//*[@data-testid="gas-fee-estimates-modal"]//p[normalize-space(.)="${label}"]`],
+    gasOption: (key: string, label: string) => [
+      testId(`gas-option-${key}`),
+      `xpath/.//*[@data-testid="gas-fee-estimates-modal"]//p[normalize-space(.)="${label}"]`,
+    ],
     gasForm: testId('gas-fee-advanced-eip1559-modal'),
-    gasField: (id) => [`#${id}`, `${testId(id)} input`],
+    gasField: (id: string) => [`#${id}`, `${testId(id)} input`],
     gasSave: [testId('gas-fee-modal-save-button'), buttonText('Save')],
   },
   // The older footer, still used by the permission update a network switch
@@ -139,14 +145,15 @@ const selectors = {
   // sends many requests in a row, and it swallows the clicks
   modal: {
     content: '.mm-modal-content',
-    // The cross of the modal's header, when it has one
-    close: '.mm-modal-content button[aria-label="Close"]',
+    // The cross of the modal's header, when it has one. Its label is translated:
+    // the Transaction Shield offer is known by its test id, whatever the language
+    close: `${testId('shield-entry-modal-close-button')}, .mm-modal-content button[aria-label="Close"]`,
     lastButton: 'xpath/(.//div[contains(@class, "mm-modal-content")]//button)[last()]',
   },
 };
 
 // Which button each command presses on the confirmation
-const decisions = {
+export const decisions = {
   connectToDapp: selectors.connect.confirm,
   rejectConnection: selectors.connect.cancel,
   approveNewNetwork: selectors.confirmation.confirm,
@@ -163,8 +170,10 @@ const decisions = {
   rejectTransaction: selectors.confirmation.cancel,
 };
 
+export type Decision = keyof typeof decisions;
+
 /** Which screen the extension home page shows, once MetaMask has started. */
-async function walletState(page) {
+export async function walletState(page: Page): Promise<WalletState | 'unknown'> {
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
     if (await isVisible(page, selectors.onboarding.importWallet, 500)) return 'onboarding';
@@ -175,7 +184,10 @@ async function walletState(page) {
 }
 
 /** Import a wallet from its seed phrase on a fresh MetaMask install. */
-async function onboard(page, { seedPhrase, password, backupAndSync }) {
+export async function onboard(
+  page: Page,
+  { seedPhrase, password, backupAndSync }: Pick<ResolvedOptions, 'seedPhrase' | 'password' | 'backupAndSync'>,
+): Promise<void> {
   const s = selectors.onboarding;
   await click(page, s.importWallet, { timeout: 30000 });
   await click(page, s.importWithSrp);
@@ -193,7 +205,7 @@ async function onboard(page, { seedPhrase, password, backupAndSync }) {
 
 // MetaMask's sandbox (LavaMoat) blocks a scripted paste, so the phrase is
 // typed word by word: a space after a word moves the cursor to the next field.
-async function fillSeedPhrase(page, seedPhrase) {
+async function fillSeedPhrase(page: Page, seedPhrase: string): Promise<void> {
   const words = seedPhrase.trim().split(/\s+/);
   await fill(page, selectors.onboarding.srpInput, words[0]);
   await page.keyboard.press('Space');
@@ -203,12 +215,12 @@ async function fillSeedPhrase(page, seedPhrase) {
   }
 }
 
-async function unlock(page, { password }) {
+export async function unlock(page: Page, { password }: Pick<ResolvedOptions, 'password'>): Promise<void> {
   await submitPassword(page, password);
   await reachHome(page, { password });
 }
 
-async function submitPassword(page, password) {
+async function submitPassword(page: Page, password: string): Promise<void> {
   await fill(page, selectors.unlock.password, password);
   await click(page, selectors.unlock.submit);
 }
@@ -219,7 +231,7 @@ async function submitPassword(page, password) {
  * password is given there too, as a user would; what follows is the wallet
  * or a request, so only the form is watched.
  */
-async function leaveUnlockForm(page, { password }) {
+export async function leaveUnlockForm(page: Page, { password }: Pick<ResolvedOptions, 'password'>): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await isVisible(page, selectors.unlock.password, 500))) return;
     await submitPassword(page, password);
@@ -235,7 +247,7 @@ async function leaveUnlockForm(page, { password }) {
  * "Done", MetaMask takes a moment to record the onboarding as complete and
  * redirects to it until then, so the home page is reloaded.
  */
-async function reachHome(page, { password, backupAndSync }) {
+async function reachHome(page: Page, { password, backupAndSync }: { password: string; backupAndSync?: boolean }): Promise<void> {
   const s = selectors.onboarding;
   const deadline = Date.now() + 90000;
   let syncTurnedOff = false;
@@ -263,7 +275,7 @@ async function reachHome(page, { password, backupAndSync }) {
 
 // Backup and sync restores, for a seed phrase, the accounts and contacts saved
 // from other installs. Off, every import starts from the same state.
-async function turnOffBackupAndSync(page) {
+async function turnOffBackupAndSync(page: Page): Promise<void> {
   const s = selectors.onboarding;
   await click(page, s.manageDefaultSettings);
   await click(page, s.generalSettings);
@@ -274,7 +286,7 @@ async function turnOffBackupAndSync(page) {
   await click(page, s.settingsBack);
 }
 
-async function optOutOfMetrics(page) {
+async function optOutOfMetrics(page: Page): Promise<void> {
   const checkbox = await waitFor(page, selectors.onboarding.metricsCheckbox);
   const checked = await checkbox.evaluate((el) => el.getAttribute('data-checked') === 'true');
   if (checked) await checkbox.click();
@@ -282,7 +294,7 @@ async function optOutOfMetrics(page) {
 
 // Through about:blank: dropping only the "#" part of the URL would be a
 // same-document navigation, which goto() waits on forever
-async function reloadHome(page) {
+async function reloadHome(page: Page): Promise<void> {
   const homeUrl = page.url().split('#')[0];
   await page.goto('about:blank');
   await page.goto(homeUrl);
@@ -293,7 +305,7 @@ async function reloadHome(page) {
  * A click that lands while the list is still settling is lost, so the button
  * is pressed again when no account shows up.
  */
-async function addAccount(page) {
+export async function addAccount(page: Page): Promise<string> {
   await openAccountList(page);
   const before = await accountNames(page);
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -306,13 +318,13 @@ async function addAccount(page) {
   throw await failure(page, 'MetaMask added no account');
 }
 
-async function pressAddAccount(page, before) {
+async function pressAddAccount(page: Page, before: string[]): Promise<string | null> {
   await clickWhenEnabled(page, selectors.accounts.add, { timeout: 30000 });
   return newAccount(page, before, 15000);
 }
 
 /** The name of an account that wasn't in `before`, within `timeout` ms. */
-async function newAccount(page, before, timeout) {
+async function newAccount(page: Page, before: string[], timeout: number): Promise<string | null> {
   const deadline = Date.now() + timeout;
   do {
     const [added] = (await accountNames(page)).filter((name) => !before.includes(name));
@@ -322,13 +334,13 @@ async function newAccount(page, before, timeout) {
   return null;
 }
 
-async function accountNames(page) {
+async function accountNames(page: Page): Promise<string[]> {
   await waitFor(page, selectors.accounts.name);
-  return page.$$eval(selectors.accounts.name, (cells) => cells.map((cell) => cell.textContent.trim()));
+  return page.$$eval(selectors.accounts.name, (cells) => cells.map((cell) => (cell.textContent ?? '').trim()));
 }
 
 /** Make `name` the selected account of the wallet. */
-async function switchAccount(page, name) {
+export async function switchAccount(page: Page, name: string): Promise<void> {
   await openAccountList(page);
   await selectAccount(page, name);
 }
@@ -337,7 +349,7 @@ async function switchAccount(page, name) {
 // buttons in the list, or swallowed by a modal MetaMask shows over the home
 // screen after some activity (the Transaction Shield offer, for one): any
 // modal is dismissed first, and the menu is pressed again until the list shows.
-async function openAccountList(page) {
+async function openAccountList(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     // Back in front: a tab something opened meanwhile would hide this page and stall its rendering
     await page.bringToFront().catch(() => {});
@@ -350,7 +362,7 @@ async function openAccountList(page) {
 
 // Picking an account closes the list and shows it in the home header. As with
 // adding one, a lost click leaves the list open, so the account is pressed again.
-async function selectAccount(page, name) {
+async function selectAccount(page: Page, name: string): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await click(page, selectors.accounts.cell(name));
     if (await isSelected(page, name, 5000)) return;
@@ -358,7 +370,7 @@ async function selectAccount(page, name) {
   throw await failure(page, `MetaMask did not select "${name}"`);
 }
 
-async function isSelected(page, name, timeout) {
+async function isSelected(page: Page, name: string, timeout: number): Promise<boolean> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if ((await selectedAccount(page)) === name) return true;
@@ -367,13 +379,13 @@ async function isSelected(page, name, timeout) {
   return false;
 }
 
-async function selectedAccount(page) {
+async function selectedAccount(page: Page): Promise<string | null> {
   const menu = await page.$(selectors.home.accountMenu);
-  return menu ? menu.evaluate((el) => el.textContent.trim()) : null;
+  return menu ? menu.evaluate((el) => (el.textContent ?? '').trim()) : null;
 }
 
 /** Import an account from its private key and select it. Yields its name. */
-async function importAccount(page, privateKey) {
+export async function importAccount(page: Page, privateKey: string): Promise<string> {
   await waitFor(page, selectors.home.accountMenu);
   const before = await selectedAccount(page);
   // Straight to the form the account list's "Add wallet" menu leads to
@@ -392,7 +404,7 @@ async function importAccount(page, privateKey) {
 }
 
 /** Lock the wallet from the menu of its home page. Nothing to do on a wallet already locked. */
-async function lock(page) {
+export async function lock(page: Page): Promise<void> {
   if ((await walletState(page)) === 'locked') return;
   for (let attempt = 0; attempt < 3; attempt++) {
     await openMenu(page);
@@ -404,7 +416,7 @@ async function lock(page) {
 
 // As with the account list, a click on the menu is lost while the home screen
 // settles or swallowed by a modal, so it is pressed again until the menu shows.
-async function openMenu(page) {
+async function openMenu(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await page.bringToFront().catch(() => {});
     await dismissModal(page);
@@ -418,7 +430,7 @@ async function openMenu(page) {
  * Disconnect the site at `origin` from the wallet, on its page of the
  * "Permissions" screen. The dapp gets an empty accountsChanged.
  */
-async function disconnectSite(page, origin) {
+export async function disconnectSite(page: Page, origin: string): Promise<void> {
   const s = selectors.permissions;
   const { host } = new URL(origin);
   await openConnections(page);
@@ -436,7 +448,7 @@ async function disconnectSite(page, origin) {
 }
 
 /** The list of connected sites, from the menu's "Permissions". */
-async function openConnections(page) {
+async function openConnections(page: Page): Promise<void> {
   const s = selectors.permissions;
   for (let attempt = 0; attempt < 3; attempt++) {
     await openMenu(page);
@@ -450,7 +462,7 @@ async function openConnections(page) {
   throw await failure(page, 'MetaMask did not open its permissions');
 }
 
-async function openSite(page, host) {
+async function openSite(page: Page, host: string): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await click(page, selectors.permissions.site(host));
     if (await isVisible(page, selectors.permissions.disconnect, 5000)) return;
@@ -458,9 +470,12 @@ async function openSite(page, host) {
   throw await failure(page, `MetaMask did not open the permissions of "${host}"`);
 }
 
+/** The options a command took from the test: those of the commands that take any. */
+type CommandOptions = ConnectOptions & TransactionOptions;
+
 // What a command sets on its confirmation before pressing the button, when the
 // test passed it options: adjustments[command](page, options, timeout)
-const adjustments = {
+const adjustments: Partial<Record<Decision, (page: Page, options: CommandOptions, timeout: number) => Promise<void>>> = {
   connectToDapp: chooseAccounts,
   confirmTransaction: adjustTransaction,
 };
@@ -470,7 +485,7 @@ const adjustments = {
  * list the connection request opens: the boxes of the others are unticked,
  * theirs ticked, and the list saved, which goes back to the request.
  */
-async function chooseAccounts(page, { accounts }) {
+async function chooseAccounts(page: Page, { accounts }: ConnectOptions): Promise<void> {
   if (accounts === undefined) return;
   if (!Array.isArray(accounts) || accounts.length === 0) throw new Error('[dappress] connectToDapp({ accounts }) needs the name of at least one account');
   const wanted = [...new Set(accounts)];
@@ -478,7 +493,7 @@ async function chooseAccounts(page, { accounts }) {
   const listed = await accountNames(page);
   const unknown = wanted.filter((name) => !listed.includes(name));
   if (unknown.length) {
-    const quoted = (names) => names.map((name) => `"${name}"`).join(', ');
+    const quoted = (names: string[]) => names.map((name) => `"${name}"`).join(', ');
     throw await failure(page, `MetaMask lists no account named ${quoted(unknown)} to connect: it lists ${quoted(listed)}`);
   }
   for (const name of listed) await tickAccount(page, name, wanted.includes(name));
@@ -486,7 +501,7 @@ async function chooseAccounts(page, { accounts }) {
 }
 
 // As elsewhere, a click that lands while the request settles is lost: pressed again until the list shows
-async function openConnectAccounts(page) {
+async function openConnectAccounts(page: Page): Promise<void> {
   const s = selectors.connectAccounts;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await isVisible(page, s.save, 500))) await click(page, s.edit);
@@ -497,7 +512,7 @@ async function openConnectAccounts(page) {
 
 // A click on an account's row ticks or unticks its box. The box is read
 // before each click: a second click on a row that took the first undoes it.
-async function tickAccount(page, name, ticked) {
+async function tickAccount(page: Page, name: string, ticked: boolean): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     if (await isTicked(page, name, ticked, 500)) return;
     await click(page, selectors.accounts.cell(name));
@@ -506,11 +521,11 @@ async function tickAccount(page, name, ticked) {
   throw await failure(page, `MetaMask did not ${ticked ? 'tick' : 'untick'} "${name}"`);
 }
 
-async function isTicked(page, name, ticked, timeout) {
+async function isTicked(page: Page, name: string, ticked: boolean, timeout: number): Promise<boolean> {
   const deadline = Date.now() + timeout;
   do {
     const checkbox = await page.$(selectors.connectAccounts.checkbox(name));
-    const state = checkbox ? await checkbox.evaluate((el) => el.checked).catch(() => null) : null;
+    const state = checkbox ? await checkbox.evaluate((el) => (el as HTMLInputElement).checked).catch(() => null) : null;
     if (state === ticked) return true;
     await sleep(250);
   } while (Date.now() < deadline);
@@ -518,7 +533,7 @@ async function isTicked(page, name, ticked, timeout) {
 }
 
 // Saving goes back to the request, which then shows what was chosen
-async function saveConnectAccounts(page, names) {
+async function saveConnectAccounts(page: Page, names: string[]): Promise<void> {
   const s = selectors.connectAccounts;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (await isVisible(page, s.save, 500)) await clickWhenEnabled(page, s.save);
@@ -530,7 +545,7 @@ async function saveConnectAccounts(page, names) {
 }
 
 /** Press the button of `decision` on the confirmation shown on `page`, once it is set as `options` ask. */
-async function decide(decision, page, timeout, options) {
+export async function decide(decision: Decision, page: Page, timeout: number, options?: CommandOptions): Promise<void> {
   if (options) {
     const adjust = adjustments[decision];
     if (!adjust) throw new Error(`[dappress] ${decision} takes no options`);
@@ -541,20 +556,25 @@ async function decide(decision, page, timeout, options) {
 }
 
 /** wallet_addEthereumChain on a network MetaMask knows behaves like a switch: either prompt may show. */
-function approveNetworkChange(page, timeout) {
+export function approveNetworkChange(page: Page, timeout: number): Promise<void> {
   return pressAndWaitForDismissal(page, [...selectors.confirmation.confirm, ...selectors.pageContainer.confirm], timeout);
 }
 
 // The estimates of the fee editor, by the name MetaMask shows: its test id and its English label
-const gasEstimates = { low: ['low', 'Low'], market: ['medium', 'Market'], aggressive: ['high', 'Aggressive'], networkSuggested: ['gasPrice', 'Network suggested'] };
+const gasEstimates: Record<GasEstimate, [key: string, label: string]> = {
+  low: ['low', 'Low'],
+  market: ['medium', 'Market'],
+  aggressive: ['high', 'Aggressive'],
+  networkSuggested: ['gasPrice', 'Network suggested'],
+};
 // The fields of the fee editor's advanced form, by the name MetaMask labels them with
-const gasFields = { maxBaseFee: 'max-base-fee-input', priorityFee: 'priority-fee-input', gasLimit: 'gas-input' };
+const gasFields: Record<keyof CustomGas, string> = { maxBaseFee: 'max-base-fee-input', priorityFee: 'priority-fee-input', gasLimit: 'gas-input' };
 
 /**
  * Set what the test asked of a transaction before it is confirmed. The cap
  * goes first: saving it makes MetaMask estimate the gas limit again.
  */
-async function adjustTransaction(page, options) {
+async function adjustTransaction(page: Page, options: TransactionOptions): Promise<void> {
   const { spendingCap, gas, ...unknown } = options;
   const [stray] = Object.keys(unknown);
   if (stray) throw new Error(`[dappress] confirmTransaction takes spendingCap and gas, not "${stray}"`);
@@ -566,19 +586,22 @@ async function adjustTransaction(page, options) {
 }
 
 // An amount as a user types it, "5" or "2.5", from a number or a string
-function amount(value, name) {
+function amount(value: unknown, name: string): string {
   const text = String(value).trim();
   if (!/^\d+(\.\d+)?$/.test(text)) throw new Error(`[dappress] ${name} is an amount such as 5 or '2.5', not ${JSON.stringify(value)}`);
   return text;
 }
 
+/** The fields of the advanced form to fill, as the amounts to type. */
+type GasValues = Partial<Record<keyof CustomGas, string>>;
+
 // The estimate to pick, or the fields of the advanced form to fill with what
-function gasChoice(gas) {
+function gasChoice(gas: GasEstimate | CustomGas): GasEstimate | GasValues {
   if (typeof gas === 'string') {
     if (!gasEstimates[gas]) throw new Error(`[dappress] gas is ${Object.keys(gasEstimates).join(', ')} or custom values, not "${gas}"`);
     return gas;
   }
-  const fields = Object.keys(gas || {});
+  const fields = Object.keys(gas || {}) as (keyof CustomGas)[];
   const [stray] = fields.filter((field) => !gasFields[field]);
   if (stray || !fields.length) throw new Error(`[dappress] Custom gas takes ${Object.keys(gasFields).join(', ')}, not ${stray ? `"${stray}"` : 'nothing'}`);
   return Object.fromEntries(fields.map((field) => [field, amount(gas[field], `gas.${field}`)]));
@@ -589,9 +612,10 @@ function gasChoice(gas) {
  * pencil of its "Spending cap" row. The row shows once MetaMask has read the
  * token, and only an ERC-20 approval has one.
  */
-async function setSpendingCap(page, cap) {
+async function setSpendingCap(page: Page, cap: string): Promise<void> {
   const s = selectors.transaction;
-  if (!(await isVisible(page, s.editSpendingCap, 10000))) throw await failure(page, 'MetaMask shows no spending cap to edit: spendingCap is for an ERC-20 approval');
+  if (!(await isVisible(page, s.editSpendingCap, 10000)))
+    throw await failure(page, 'MetaMask shows no spending cap to edit: spendingCap is for an ERC-20 approval');
   const shown = await textOf(page, s.spendingCap);
   const asked = await openSpendingCap(page);
   await type(page, s.spendingCapInput, cap, 'spending cap');
@@ -604,7 +628,7 @@ async function setSpendingCap(page, cap) {
 }
 
 /** Open the spending cap's modal. Yields the cap the dapp asked for, which its field starts with. */
-async function openSpendingCap(page) {
+async function openSpendingCap(page: Page): Promise<string> {
   const s = selectors.transaction;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await isVisible(page, s.spendingCapInput, 500))) await click(page, s.editSpendingCap);
@@ -617,7 +641,7 @@ async function openSpendingCap(page) {
  * Set the network fee in the fee editor, opened from the pencil of the
  * "Network fee" row: one of its estimates, or the values of its advanced form.
  */
-async function setGas(page, gas) {
+async function setGas(page: Page, gas: GasEstimate | GasValues): Promise<void> {
   const s = selectors.transaction;
   if (!(await isVisible(page, s.editGas, 10000))) throw await failure(page, 'MetaMask shows no network fee to edit on this confirmation');
   await openFeeEditor(page);
@@ -625,7 +649,7 @@ async function setGas(page, gas) {
   else await fillGasForm(page, gas);
 }
 
-async function openFeeEditor(page) {
+async function openFeeEditor(page: Page): Promise<void> {
   const s = selectors.transaction;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await isVisible(page, s.gasEstimates, 500))) await click(page, s.editGas);
@@ -637,7 +661,7 @@ async function openFeeEditor(page) {
 // Picking an estimate closes the editor. MetaMask lists the estimates it has
 // for the network: Low, Market and Aggressive where it has fee estimates,
 // "Network suggested" where it only has a gas price, as on a local node.
-async function pickGasEstimate(page, name) {
+async function pickGasEstimate(page: Page, name: GasEstimate): Promise<void> {
   const s = selectors.transaction;
   const option = s.gasOption(...gasEstimates[name]);
   if (!(await isVisible(page, option, 5000))) throw await failure(page, `MetaMask offers no "${name}" fee for this transaction`);
@@ -648,22 +672,22 @@ async function pickGasEstimate(page, name) {
   throw await failure(page, `MetaMask did not take the "${name}" fee`);
 }
 
-async function fillGasForm(page, values) {
+async function fillGasForm(page: Page, values: GasValues): Promise<void> {
   const s = selectors.transaction;
   await openGasForm(page);
   // The form checks each fee against the other as it stood, and keeps the old
   // value of a fee it refused: the max base fee is typed again once the
   // priority fee is in, for two fees that both move below or above the old ones.
-  const fields = Object.keys(gasFields).filter((field) => values[field] !== undefined);
+  const fields = (Object.keys(gasFields) as (keyof CustomGas)[]).filter((field) => values[field] !== undefined);
   if (values.maxBaseFee !== undefined && values.priorityFee !== undefined) fields.push('maxBaseFee');
-  for (const field of fields) await type(page, s.gasField(gasFields[field]), values[field], field);
+  for (const field of fields) await type(page, s.gasField(gasFields[field]), values[field]!, field);
   // "Save" stays disabled on a value the form refuses, and the error quotes what the form says of it
   if (!(await pressToClose(page, s.gasSave, s.gasForm))) throw await failure(page, 'MetaMask did not save the network fee');
 }
 
 // "Advanced", in the list of estimates, replaces the list with the form. A
 // transaction with a gas price gets another form, which has none of these fields.
-async function openGasForm(page) {
+async function openGasForm(page: Page): Promise<void> {
   const s = selectors.transaction;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await isVisible(page, s.gasForm, 500))) await click(page, s.gasOption('advanced', 'Advanced'));
@@ -673,7 +697,7 @@ async function openGasForm(page) {
 }
 
 // Type into a field and read it back: keys pressed while MetaMask re-renders are lost
-async function type(page, selector, text, what) {
+async function type(page: Page, selector: Selector, text: string, what: string): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await fill(page, selector, text);
     if (Number(await valueOf(page, selector)) === Number(text)) return;
@@ -682,7 +706,7 @@ async function type(page, selector, text, what) {
 }
 
 // Press the button that saves a modal until the modal closes: a lost click leaves it open
-async function pressToClose(page, button, content) {
+async function pressToClose(page: Page, button: Selector, content: Selector): Promise<boolean> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await clickWhenEnabled(page, button);
     if (await isGone(page, content, 10000)) return true;
@@ -690,14 +714,14 @@ async function pressToClose(page, button, content) {
   return false;
 }
 
-async function valueOf(page, selector) {
+async function valueOf(page: Page, selector: Selector): Promise<string> {
   const field = await waitFor(page, selector);
-  return field.evaluate((el) => el.value);
+  return field.evaluate((el) => (el as HTMLInputElement).value);
 }
 
-async function textOf(page, selector) {
+async function textOf(page: Page, selector: string): Promise<string | null> {
   const element = await page.$(selector);
-  return element ? element.evaluate((el) => el.textContent.trim()).catch(() => null) : null;
+  return element ? element.evaluate((el) => (el.textContent ?? '').trim()).catch(() => null) : null;
 }
 
 /**
@@ -708,7 +732,7 @@ async function textOf(page, selector) {
  * whether it is the same request or a new one the dapp sent meanwhile, and
  * what MetaMask logged.
  */
-async function pressAndWaitForDismissal(page, button, timeout) {
+async function pressAndWaitForDismissal(page: Page, button: Selector, timeout: number): Promise<void> {
   await waitFor(page, button, { timeout });
   await dismissModal(page);
   const logged = recordErrors(page);
@@ -731,12 +755,12 @@ async function pressAndWaitForDismissal(page, button, timeout) {
 }
 
 /** Collect the errors MetaMask's page logs to its console, until stop(). */
-function recordErrors(page) {
-  const errors = [];
-  const onConsole = (message) => {
+function recordErrors(page: Page): { errors: string[]; stop(): void } {
+  const errors: string[] = [];
+  const onConsole = (message: ConsoleMessage) => {
     if (message.type() === 'error') errors.push(message.text().slice(0, 300));
   };
-  const onPageError = (error) => errors.push(String(error.message || error).slice(0, 300));
+  const onPageError = (error: unknown) => errors.push(String((error as Error).message || error).slice(0, 300));
   page.on('console', onConsole);
   page.on('pageerror', onPageError);
   return {
@@ -754,7 +778,7 @@ function recordErrors(page) {
  * screens offer a button for that, most don't, so the content is scrolled
  * with the wheel, as a reader would. The popup, being small, needs it often.
  */
-async function scrollContentToEnd(page) {
+async function scrollContentToEnd(page: Page): Promise<void> {
   const scrollButton = await page.$(selectors.confirmation.scrollToBottom);
   if (scrollButton) {
     await scrollButton.click().catch(() => {});
@@ -780,7 +804,7 @@ async function scrollContentToEnd(page) {
  * The last button is the last resort: on an offer such as Transaction
  * Shield's, it is a call to action that opens a page, which hides this one.
  */
-async function dismissModal(page) {
+async function dismissModal(page: Page): Promise<void> {
   if (!(await isVisible(page, selectors.modal.content, 300))) return;
   await page.keyboard.press('Escape');
   if (await isGone(page, selectors.modal.content, 1000)) return;
@@ -791,18 +815,3 @@ async function dismissModal(page) {
   }
   await dispatchClick(page, selectors.modal.lastButton);
 }
-
-module.exports = {
-  decisions,
-  walletState,
-  onboard,
-  unlock,
-  leaveUnlockForm,
-  lock,
-  addAccount,
-  switchAccount,
-  importAccount,
-  disconnectSite,
-  decide,
-  approveNetworkChange,
-};

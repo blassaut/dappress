@@ -2,19 +2,20 @@
 // write a JSON report of which actions pass. Starts a local Anvil node
 // (Foundry) for the tests that need a funded account.
 //
-//   node scripts/conformance.js [metamaskVersion]
+//   npm run conformance -- [metamaskVersion]
 //
-// DAPPRESS_MODE picks where MetaMask shows the requests (see scripts/modes.js):
+// DAPPRESS_MODE picks where MetaMask shows the requests (see scripts/modes.ts):
 // sidepanel (default), headless, or popup. DAPPRESS_HEADLESS=1 still means headless.
 
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { spawn, execFileSync } = require('node:child_process');
-const cypress = require('cypress');
-const { DEFAULTS } = require('../src/config');
-const { version: dappressVersion } = require('../package.json');
-const { MODES, reportName } = require('./modes');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
+import cypress from 'cypress';
+import { DEFAULTS } from '../src/config';
+import { version as dappressVersion } from '../package.json';
+import { MODES, reportName } from './modes';
+import type { Report } from './matrix';
 
 const metamaskVersion = process.argv[2] || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
 const modeName = process.env.DAPPRESS_MODE || (process.env.DAPPRESS_HEADLESS === '1' ? 'headless' : 'sidepanel');
@@ -26,7 +27,7 @@ if (!mode) {
 const reportsDir = path.join(__dirname, '..', 'reports');
 const ANVIL_URL = 'http://127.0.0.1:8545';
 
-async function main() {
+async function main(): Promise<void> {
   // A wallet nobody has used: MetaMask restores nothing for it, and Anvil funds it
   const wallet = newWallet();
   process.env.DAPPRESS_SEED_PHRASE = wallet.seedPhrase;
@@ -46,16 +47,17 @@ async function main() {
   } finally {
     anvil.kill();
   }
-  if (results.status === 'failed') throw new Error(results.message);
+  // Cypress could not run: only then does the result have a status
+  if ('status' in results) throw new Error(results.message);
 
   const actions = results.runs.flatMap((run) =>
     run.tests.map((test) => ({
-      action: test.title.at(-1),
+      action: test.title.at(-1)!,
       status: test.state,
       error: test.displayError ? test.displayError.split('\n')[0] : undefined,
     })),
   );
-  const report = {
+  const report: Report = {
     dappressVersion,
     metamaskVersion,
     mode: modeName,
@@ -75,15 +77,15 @@ async function main() {
 
 // Foundry's cast: the seed phrase, its first two accounts, and a separate key
 // to import. Its output is captured, so nothing secret reaches the logs.
-function newWallet() {
-  const cast = (...args) => execFileSync(foundry('cast'), args, { encoding: 'utf8', stdio: 'pipe' });
+function newWallet(): { seedPhrase: string; accounts: string[]; imported: { address: string; privateKey: string } } {
+  const cast = (...args: string[]) => execFileSync(foundry('cast'), args, { encoding: 'utf8', stdio: 'pipe' });
   // Foundry's nightlies wrap cast's JSON in { data }, its 1.5 releases don't
-  const castJson = (...args) => {
+  const castJson = (...args: string[]) => {
     const json = JSON.parse(cast(...args));
     return json.data ?? json;
   };
   const seedPhrase = castJson('wallet', 'new-mnemonic', '--words', '12', '--json').mnemonic;
-  const account = (index) => cast('wallet', 'address', '--mnemonic', seedPhrase, '--mnemonic-index', String(index)).trim().toLowerCase();
+  const account = (index: number) => cast('wallet', 'address', '--mnemonic', seedPhrase, '--mnemonic-index', String(index)).trim().toLowerCase();
   const [other] = castJson('wallet', 'new', '--json');
   return {
     seedPhrase,
@@ -92,7 +94,7 @@ function newWallet() {
   };
 }
 
-async function startAnvil(seedPhrase) {
+async function startAnvil(seedPhrase: string): Promise<ChildProcess> {
   const anvil = spawn(foundry('anvil'), ['--silent', '--mnemonic', seedPhrase], { stdio: 'inherit' });
   anvil.on('error', () => {
     console.error('[dappress] Anvil is needed for the funded transaction tests: https://getfoundry.sh');
@@ -106,12 +108,12 @@ async function startAnvil(seedPhrase) {
   throw new Error(`[dappress] Anvil did not answer on ${ANVIL_URL}`);
 }
 
-function foundry(tool) {
+function foundry(tool: string): string {
   const installed = path.join(os.homedir(), '.foundry', 'bin', tool);
   return fs.existsSync(installed) ? installed : tool;
 }
 
-async function isUp(url) {
+async function isUp(url: string): Promise<boolean> {
   try {
     const response = await fetch(url, { method: 'POST', body: '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' });
     return response.ok;

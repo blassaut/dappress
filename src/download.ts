@@ -1,24 +1,26 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { pipeline } = require('node:stream/promises');
-const { Readable } = require('node:stream');
-const extractZip = require('extract-zip');
+import fs from 'node:fs';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
+import extractZip from 'extract-zip';
+import type { ResolvedOptions } from './types';
 
-function releaseUrl(version) {
+function releaseUrl(version: string): string {
   return `https://github.com/MetaMask/metamask-extension/releases/download/v${version}/metamask-chrome-${version}.zip`;
 }
 
-function extensionDir(cacheDir, version) {
+function extensionDir(cacheDir: string, version: string): string {
   return path.join(cacheDir, 'metamask', version);
 }
 
-async function download(url, destination) {
+async function download(url: string, destination: string): Promise<void> {
   const response = await fetch(url, { redirect: 'follow' });
   if (!response.ok || !response.body) {
     throw new Error(`[dappress] Could not download ${url}: HTTP ${response.status}`);
   }
   await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-  await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(destination));
+  await pipeline(Readable.fromWeb(response.body as ReadableStream), fs.createWriteStream(destination));
 }
 
 /**
@@ -26,7 +28,7 @@ async function download(url, destination) {
  * Returns the path of the unpacked extension (the folder holding manifest.json).
  * Already cached versions are reused.
  */
-async function prepareExtension({ metamaskVersion, cacheDir }) {
+export async function prepareExtension({ metamaskVersion, cacheDir }: Pick<ResolvedOptions, 'metamaskVersion' | 'cacheDir'>): Promise<string> {
   const dir = extensionDir(cacheDir, metamaskVersion);
   const manifest = path.join(dir, 'manifest.json');
   if (fs.existsSync(manifest)) return dir;
@@ -46,5 +48,3 @@ async function prepareExtension({ metamaskVersion, cacheDir }) {
   }
   return dir;
 }
-
-module.exports = { prepareExtension };

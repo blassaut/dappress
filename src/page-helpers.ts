@@ -5,27 +5,32 @@
 // A "selector" is a CSS or XPath selector, or a list of them tried together:
 // the first one to show up wins.
 
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import type { ElementHandle, Page } from 'puppeteer-core';
+
+export type Selector = string | string[];
+type WaitOptions = { timeout?: number };
 
 const DEFAULT_TIMEOUT = 15000;
 const SCREENSHOTS_DIR = path.join(os.tmpdir(), 'dappress');
 
-const candidates = (selector) => [].concat(selector);
+const candidates = (selector: Selector) => ([] as string[]).concat(selector);
 
 /** A readable name for a selector, for error messages. */
-function describe(selector) {
+export function describe(selector: Selector): string {
   return candidates(selector)
     .map((candidate) => candidate.replace(/^\[data-testid="(.+)"\]$/, '$1').replace(/^xpath\/.*="(.+)"\]$/, 'button "$1"'))
     .join(' | ');
 }
 
 /** Wait for the first candidate to be visible and return its element handle. */
-async function waitFor(page, selector, { timeout = DEFAULT_TIMEOUT } = {}) {
+export async function waitFor(page: Page, selector: Selector, { timeout = DEFAULT_TIMEOUT }: WaitOptions = {}): Promise<ElementHandle<Element>> {
   const attempts = candidates(selector).map((candidate) => page.waitForSelector(candidate, { visible: true, timeout }));
   try {
-    return await Promise.any(attempts);
+    // Never null: that is for a wait on a hidden element
+    return (await Promise.any(attempts))!;
   } catch {
     throw await failure(page, `Timed out waiting for "${describe(selector)}"`);
   } finally {
@@ -35,7 +40,7 @@ async function waitFor(page, selector, { timeout = DEFAULT_TIMEOUT } = {}) {
 }
 
 /** Returns true when `selector` is visible within `timeout` ms, false otherwise. */
-async function isVisible(page, selector, timeout = 1500) {
+export async function isVisible(page: Page, selector: Selector, timeout = 1500): Promise<boolean> {
   try {
     await waitFor(page, selector, { timeout });
     return true;
@@ -45,7 +50,7 @@ async function isVisible(page, selector, timeout = 1500) {
 }
 
 /** Returns true once every candidate has left the page, or if the page itself closes. */
-async function isGone(page, selector, timeout = 1500) {
+export async function isGone(page: Page, selector: Selector, timeout = 1500): Promise<boolean> {
   try {
     await Promise.all(candidates(selector).map((candidate) => page.waitForSelector(candidate, { hidden: true, timeout })));
     return true;
@@ -54,7 +59,7 @@ async function isGone(page, selector, timeout = 1500) {
   }
 }
 
-async function click(page, selector, options) {
+export async function click(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
   await clickFresh(page, selector, options);
 }
 
@@ -63,12 +68,16 @@ async function click(page, selector, options) {
  * element is taken again at each turn: MetaMask re-renders its screens, and
  * a handle on a replaced element reads its last state forever.
  */
-async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whileDisabled } = {}) {
+export async function clickWhenEnabled(
+  page: Page,
+  selector: Selector,
+  { timeout = DEFAULT_TIMEOUT, whileDisabled }: WaitOptions & { whileDisabled?: () => Promise<void> } = {},
+): Promise<void> {
   const deadline = Date.now() + timeout;
   let nudged = 0;
   for (;;) {
     const element = await waitFor(page, selector, { timeout });
-    if (!(await element.evaluate((el) => el.disabled))) break;
+    if (!(await element.evaluate((el) => (el as HTMLButtonElement).disabled))) break;
     if (Date.now() > deadline) {
       throw await failure(page, `"${describe(selector)}" stayed disabled for ${timeout}ms. ${await describeDisabled(page, element)}`);
     }
@@ -84,7 +93,7 @@ async function clickWhenEnabled(page, selector, { timeout = DEFAULT_TIMEOUT, whi
 
 // What may keep a button disabled: the button itself (a spinner, a class),
 // a pane left to scroll, the page not being the focused one
-async function describeDisabled(page, element) {
+async function describeDisabled(page: Page, element: ElementHandle<Element>): Promise<string> {
   try {
     const state = await page.evaluate((button) => {
       const panes = [...document.querySelectorAll('[style*="overflow"]')]
@@ -98,15 +107,14 @@ async function describeDisabled(page, element) {
         visibility: document.visibilityState,
       };
     }, element);
-    state.window = await windowBounds(page);
-    return `Button: ${JSON.stringify(state)}.`;
+    return `Button: ${JSON.stringify({ ...state, window: await windowBounds(page) })}.`;
   } catch {
     return '';
   }
 }
 
 // The size and state of the window the page is in, as "400x620 normal"
-async function windowBounds(page) {
+async function windowBounds(page: Page): Promise<string> {
   const session = await page.target().createCDPSession();
   try {
     const { bounds } = await session.send('Browser.getWindowForTarget');
@@ -119,26 +127,26 @@ async function windowBounds(page) {
 }
 
 // Find the element and click it; once more if a re-render replaced it between the two
-async function clickFresh(page, selector, options) {
+async function clickFresh(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     const element = await waitFor(page, selector, options);
     await waitForStill(element);
     try {
       return await element.click();
     } catch (error) {
-      if (attempt > 0 || !/detached/.test(error.message)) throw error;
+      if (attempt > 0 || !/detached/.test((error as Error).message)) throw error;
     }
   }
 }
 
 /** Click by dispatching the event on the element itself, for buttons something may cover. */
-async function dispatchClick(page, selector, options) {
+export async function dispatchClick(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
   const element = await waitFor(page, selector, options);
-  await element.evaluate((el) => el.click());
+  await element.evaluate((el) => (el as HTMLElement).click());
 }
 
 /** MetaMask animates its menus and confirmations in; a click during the animation lands elsewhere. */
-async function waitForStill(element, timeout = 2000) {
+async function waitForStill(element: ElementHandle<Element>, timeout = 2000): Promise<void> {
   const deadline = Date.now() + timeout;
   let previous = JSON.stringify(await element.boundingBox());
   while (Date.now() < deadline) {
@@ -150,7 +158,7 @@ async function waitForStill(element, timeout = 2000) {
 }
 
 /** Replace the content of a field with `text`. */
-async function fill(page, selector, text, options) {
+export async function fill(page: Page, selector: Selector, text: string, options?: WaitOptions): Promise<void> {
   const element = await waitFor(page, selector, options);
   await element.click({ clickCount: 3 });
   await element.type(text);
@@ -160,7 +168,7 @@ async function fill(page, selector, text, options) {
  * The error for something that went wrong on `page`: what the page shows, in
  * words for the log and as a screenshot to look at.
  */
-async function failure(page, message) {
+export async function failure(page: Page, message: string): Promise<Error> {
   const prefix = `[dappress] ${message} on ${page.url()}`;
   const shown = await pageText(page);
   try {
@@ -175,20 +183,15 @@ async function failure(page, message) {
 
 // The visible text of the page, shortened: enough to tell which MetaMask
 // screen it is from the log alone, when the screenshot is out of reach
-async function pageText(page) {
+async function pageText(page: Page): Promise<string> {
   try {
-    const text = await Promise.race([
-      page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').trim()),
-      sleep(2000).then(() => null),
-    ]);
+    const text = await Promise.race([page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').trim()), sleep(2000).then(() => null)]);
     return text ? `The page shows: "${text.length > 500 ? `${text.slice(0, 500)}…` : text}". ` : '';
   } catch {
     return '';
   }
 }
 
-function sleep(ms) {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-module.exports = { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep };
