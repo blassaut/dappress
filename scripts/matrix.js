@@ -1,12 +1,15 @@
-// Build the public conformance matrix from the reports: MATRIX.md, one row per
-// MetaMask version and one column per mode, and badge.json, a shields.io
-// endpoint for the latest version.
+// Build the public conformance matrix from the reports: MATRIX.md, with one
+// table of MetaMask versions by mode and one of actions by MetaMask version,
+// and badge.json, a shields.io endpoint for the latest version.
 //
 //   node scripts/matrix.js <reportsDir> <outDir>
 
 const fs = require('node:fs');
 const path = require('node:path');
 const { MODES } = require('./modes');
+
+// The actions table has one column per version: the latest ones, to stay readable
+const VERSIONS_BY_ACTION = 8;
 
 const REPORT_FILE = /^metamask-(\d+\.\d+\.\d+)(?:-([a-z]+))?\.json$/;
 
@@ -61,6 +64,37 @@ function failures(version, modes) {
     );
 }
 
+/**
+ * How one action did in one version: passed in every mode that ran it, failed
+ * in the modes named, or "–" when no report of the version has it.
+ */
+function actionCell(reportsByMode, action) {
+  const ran = Object.entries(reportsByMode)
+    .map(([mode, report]) => ({ mode, result: report.actions.find((candidate) => candidate.action === action) }))
+    .filter(({ result }) => result);
+  if (!ran.length) return '–';
+  const failed = ran.filter(({ result }) => result.status !== 'passed').map(({ mode }) => MODES[mode]?.label || mode);
+  return failed.length ? `❌ ${failed.join(', ')}` : '✅';
+}
+
+/** The table of actions by version: the actions in the order of the suite, newest version first. */
+function actionRows(versions) {
+  const latest = [...versions].slice(0, VERSIONS_BY_ACTION);
+  const actions = [];
+  for (const [, reportsByMode] of latest) {
+    for (const report of Object.values(reportsByMode)) {
+      for (const { action } of report.actions) if (!actions.includes(action)) actions.push(action);
+    }
+  }
+  return [
+    `| Action | ${latest.map(([version]) => version).join(' | ')} |`,
+    `| --- | ${latest.map(() => '---').join(' | ')} |`,
+    ...actions.map(
+      (action) => `| ${action.replace(/\|/g, '\\|')} | ${latest.map(([, reportsByMode]) => actionCell(reportsByMode, action)).join(' | ')} |`,
+    ),
+  ];
+}
+
 /** MATRIX.md for the reports. */
 function renderMatrix(reports) {
   const versions = byVersion(reports);
@@ -77,6 +111,16 @@ function renderMatrix(reports) {
     const any = Object.values(reportsByMode)[0];
     lines.push(
       `| ${version} | ${modes.map((mode) => cell(reportsByMode[mode])).join(' | ')} | ${any.dappressVersion} | ${any.date.slice(0, 10)} |`,
+    );
+  }
+  if (versions.size) {
+    lines.push(
+      '',
+      '## Actions',
+      '',
+      `One row per action of the suite, one column per MetaMask release${versions.size > VERSIONS_BY_ACTION ? `, the latest ${VERSIONS_BY_ACTION}` : ''}. ✅ passed in every mode that ran it, ❌ failed in the modes named, – not in the suite then.`,
+      '',
+      ...actionRows(versions),
     );
   }
   const failed = [...versions].flatMap(([version, reportsByMode]) => failures(version, reportsByMode));

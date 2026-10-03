@@ -71,3 +71,29 @@ test('badge: the latest version, green only when every mode passed', () => {
   assert.equal(renderBadge([entry('13.50.0', 'popup', ['connectToDapp'])]).color, 'red');
   assert.equal(renderBadge([]).message, 'no report');
 });
+
+test('one row per action, one column per version, with the modes an action failed in', () => {
+  const older = entry('13.49.0', 'sidepanel');
+  older.report.actions = older.report.actions.slice(0, 2);
+  const matrix = renderMatrix([
+    older,
+    entry('13.50.0', 'sidepanel'),
+    entry('13.50.0', 'headless', ['approveNewNetwork']),
+    entry('13.50.0', 'popup', ['approveNewNetwork']),
+  ]);
+  const rows = matrix.slice(matrix.indexOf('## Actions')).split('\n').filter((line) => line.startsWith('|'));
+  assert.deepEqual(rows, [
+    '| Action | 13.50.0 | 13.49.0 |',
+    '| --- | --- | --- |',
+    '| connectToDapp | ✅ | ✅ |',
+    '| approveNewNetwork | ❌ Headless, Popup | ✅ |',
+    '| confirmTransaction | ✅ | – |',
+  ]);
+});
+
+test('the actions table keeps the latest eight versions', () => {
+  const matrix = renderMatrix(Array.from({ length: 10 }, (_, minor) => entry(`13.${minor}.0`, 'sidepanel')));
+  const [header] = matrix.slice(matrix.indexOf('## Actions')).split('\n').filter((line) => line.startsWith('|'));
+  assert.equal(header, '| Action | 13.9.0 | 13.8.0 | 13.7.0 | 13.6.0 | 13.5.0 | 13.4.0 | 13.3.0 | 13.2.0 |');
+  assert.match(matrix, /one column per MetaMask release, the latest 8\./);
+});
