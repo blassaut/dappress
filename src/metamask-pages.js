@@ -41,8 +41,14 @@ async function findExtensionId(browser, timeout = 30000) {
 async function isMetaMask(browser, extensionId) {
   const [target] = pagesOf(browser, extensionId, HOME_PATH);
   if (target) {
-    const page = await target.page();
-    return (await page.title()).startsWith('MetaMask');
+    // A page still loading or redirecting loses its execution context while its
+    // title is read; not MetaMask yet, findExtensionId looks again
+    try {
+      const page = await target.page();
+      return (await page.title()).startsWith('MetaMask');
+    } catch {
+      return false;
+    }
   }
   const page = await browser.newPage();
   try {
