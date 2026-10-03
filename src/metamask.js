@@ -86,6 +86,8 @@ const selectors = {
   // sends many requests in a row, and it swallows the clicks
   modal: {
     content: '.mm-modal-content',
+    // The cross of the modal's header, when it has one
+    close: '.mm-modal-content button[aria-label="Close"]',
     lastButton: 'xpath/(.//div[contains(@class, "mm-modal-content")]//button)[last()]',
   },
 };
@@ -223,7 +225,7 @@ async function reloadHome(page) {
  * is pressed again when no account shows up.
  */
 async function addAccount(page) {
-  await click(page, selectors.home.accountMenu);
+  await openAccountList(page);
   const before = await accountNames(page);
   for (let attempt = 0; attempt < 3; attempt++) {
     const added = (await newAccount(page, before, 0)) || (await pressAddAccount(page, before));
@@ -258,8 +260,23 @@ async function accountNames(page) {
 
 /** Make `name` the selected account of the wallet. */
 async function switchAccount(page, name) {
-  await click(page, selectors.home.accountMenu);
+  await openAccountList(page);
   await selectAccount(page, name);
+}
+
+// A click on the menu is lost while the home screen settles, as with the
+// buttons in the list, or swallowed by a modal MetaMask shows over the home
+// screen after some activity (the Transaction Shield offer, for one): any
+// modal is dismissed first, and the menu is pressed again until the list shows.
+async function openAccountList(page) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // Back in front: a tab something opened meanwhile would hide this page and stall its rendering
+    await page.bringToFront().catch(() => {});
+    await dismissModal(page);
+    await click(page, selectors.home.accountMenu);
+    if (await isVisible(page, selectors.accounts.name, 10000)) return;
+  }
+  throw await failure(page, 'MetaMask did not open the account list');
 }
 
 // Picking an account closes the list and shows it in the home header. As with
@@ -389,11 +406,21 @@ async function scrollContentToEnd(page) {
   await page.mouse.wheel({ deltaY: 10000 });
 }
 
-/** Close a modal shown over the confirmation (Escape, or its last button: "Cancel"). */
+/**
+ * Close a modal shown over the screen: Escape, then the cross of its header,
+ * then its last button, which is "Cancel" on the "multiple requests" modal.
+ * The last button is the last resort: on an offer such as Transaction
+ * Shield's, it is a call to action that opens a page, which hides this one.
+ */
 async function dismissModal(page) {
   if (!(await isVisible(page, selectors.modal.content, 300))) return;
   await page.keyboard.press('Escape');
   if (await isGone(page, selectors.modal.content, 1000)) return;
+  const close = await page.$(selectors.modal.close);
+  if (close) {
+    await close.click().catch(() => {});
+    if (await isGone(page, selectors.modal.content, 1000)) return;
+  }
   await dispatchClick(page, selectors.modal.lastButton);
 }
 
