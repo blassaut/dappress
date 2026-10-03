@@ -37,6 +37,16 @@ Cypress.Commands.add('switchAccount', (name) => metamask('switchAccount', name, 
 // The private key is kept out of the command log
 Cypress.Commands.add('importAccount', (privateKey) => metamask('importAccount', privateKey));
 
+// A locked wallet keeps the dapp's requests behind its unlock screen
+Cypress.Commands.add('lockWallet', () => metamask('lockWallet'));
+Cypress.Commands.add('unlockWallet', () => metamask('unlockWallet'));
+
+// The wallet's side of a disconnection: the site to remove from its
+// permissions is the dapp under test, known by the origin of its window.
+Cypress.Commands.add('disconnectFromDapp', () => {
+  cy.location('origin', { log: false }).then((origin) => metamask('disconnectFromDapp', origin, origin));
+});
+
 // Connect, then move the dapp onto the network from the wallet setup, if there is one
 Cypress.Commands.add('connectToDapp', () => {
   metamask('connectToDapp');

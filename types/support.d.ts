@@ -12,6 +12,8 @@ declare global {
       /** Accepts the connection request, then moves the dapp onto the wallet setup's network if there is one. */
       connectToDapp(): Chainable<void>;
       rejectConnection(): Chainable<void>;
+      /** Disconnects the dapp from the wallet's permissions screen: the dapp gets an empty accountsChanged. */
+      disconnectFromDapp(): Chainable<void>;
       /** Answers a signature request (personal_sign, eth_signTypedData_*). */
       confirmSignature(): Chainable<void>;
       rejectSignature(): Chainable<void>;
@@ -33,6 +35,10 @@ declare global {
       switchAccount(name: string): Chainable<void>;
       /** Imports an account from its private key and selects it. Yields its name. */
       importAccount(privateKey: string): Chainable<string>;
+      /** Locks the wallet from MetaMask's menu: requests wait behind its unlock screen until it is unlocked. */
+      lockWallet(): Chainable<void>;
+      /** Unlocks a locked wallet with the configured password. Yields how it was found: "unlocked" when there was nothing to do. */
+      unlockWallet(): Chainable<WalletState>;
       /** Moves the dapp onto a network, adding it to MetaMask if needed. Defaults to the wallet setup's network. Yields the chain id. */
       useNetwork(network?: Network): Chainable<string>;
       /** The address the dapp is connected with. */

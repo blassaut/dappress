@@ -147,4 +147,31 @@ describe('MetaMask actions', () => {
     reconnect();
     cy.getAccountAddress().should('eq', account);
   });
+
+  it('lockWallet', () => {
+    cy.lockWallet();
+    // MetaMask tells a connected dapp nothing of the lock: its request waits behind the unlock form
+    provider.request('personal_sign', ['0x6c6f636b6564', account]);
+  });
+
+  it('unlockWallet', () => {
+    cy.unlockWallet().should('eq', 'locked');
+    // The request sent while it was locked
+    cy.confirmSignature();
+    provider.result().its('result').should('match', /^0x[0-9a-f]{130}$/);
+    // Already unlocked: nothing to do
+    cy.unlockWallet().should('eq', 'unlocked');
+    cy.getAccountAddress().should('eq', account);
+  });
+
+  it('disconnectFromDapp', () => {
+    cy.window().then((win) => win.ethereum.on('accountsChanged', cy.stub().as('accountsChanged')));
+    cy.disconnectFromDapp();
+    cy.get('@accountsChanged').should('have.been.calledWith', []);
+    provider.call('eth_accounts').should('deep.equal', []);
+    // Leave the dapp connected, as the tests before found it
+    testDapp.connect();
+    cy.connectToDapp();
+    cy.getAccountAddress().should('eq', account);
+  });
 });
