@@ -1,9 +1,9 @@
 {
-  "dappressVersion": "0.3.2",
+  "dappressVersion": "0.3.3",
   "metamaskVersion": "13.50.0",
   "mode": "headless",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-03T08:42:35.259Z",
+  "date": "2026-10-03T08:57:05.839Z",
   "passed": true,
   "actions": [
     {
