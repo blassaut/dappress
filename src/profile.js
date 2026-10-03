@@ -31,9 +31,14 @@ async function buildProfile(dir, { browserPath, extensionDir, options }) {
       executablePath: browserPath,
       headless: false,
       userDataDir: dir,
-      // No sandbox: Ubuntu 23.10+ (GitHub's ubuntu-latest) blocks the user
-      // namespaces it needs, and this browser only imports a test wallet
-      args: [`--load-extension=${extensionDir}`, `--disable-extensions-except=${extensionDir}`, '--no-first-run', '--no-sandbox'],
+      args: [
+        `--load-extension=${extensionDir}`,
+        `--disable-extensions-except=${extensionDir}`,
+        '--no-first-run',
+        // No sandbox on Linux: Ubuntu 23.10+ (GitHub's ubuntu-latest) blocks the
+        // user namespaces it needs, and this browser only imports a test wallet
+        ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
+      ],
     });
 
   await withMetaMask(launch, (home) => metamask.onboard(home, options));

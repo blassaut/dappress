@@ -44,13 +44,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$REQUESTED" ]; then
-            echo "version=$REQUESTED" >> "$GITHUB_OUTPUT"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            version=$REQUESTED
+          else
+            version=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
           fi
-          version=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/MetaMask/metamask-extension/releases/latest | jq -r .tag_name | sed 's/^v//')
+          # The version ends up in commands and file names, and comes from someone else's tag
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Not a MetaMask version: expected x.y.z"
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [ "$EVENT" = pull_request ]; then
+          if [ -n "$REQUESTED" ] || [ "$EVENT" = pull_request ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -68,6 +72,25 @@ jobs:
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
+
+  checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm ci
+        env:
+          # Neither check starts Cypress
+          CYPRESS_INSTALL_BINARY: 0
+
+      - run: npm test
+
+      - run: npm run check-types
 
   suite:
     needs: version
@@ -112,8 +135,9 @@ jobs:
 
       - name: Run the suite against MetaMask ${{ needs.version.outputs.version }}, ${{ matrix.mode }}
         # The headless mode needs no display; Xvfb is harmless there
-        run: xvfb-run --auto-servernum npm run conformance -- ${{ needs.version.outputs.version }}
+        run: xvfb-run --auto-servernum npm run conformance -- "$METAMASK_VERSION"
         env:
+          METAMASK_VERSION: ${{ needs.version.outputs.version }}
           DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
           DAPPRESS_MODE: ${{ matrix.mode }}
 
@@ -159,6 +183,8 @@ jobs:
 
       - name: Publish on ${{ env.REPORTS_BRANCH }}
         if: github.event_name != 'pull_request'
+        env:
+          METAMASK_VERSION: ${{ needs.version.outputs.version }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -181,5 +207,5 @@ jobs:
             echo "Nothing new to publish"
             exit 0
           fi
-          git commit -q -m "Conformance of MetaMask ${{ needs.version.outputs.version }}"
+          git commit -q -m "Conformance of MetaMask $METAMASK_VERSION"
           git push origin "HEAD:refs/heads/$REPORTS_BRANCH"
