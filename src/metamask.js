@@ -12,6 +12,7 @@ const testId = (id) => `[data-testid="${id}"]`;
 // XPath rather than Puppeteer's ::-p-text(): the latter needs MutationObserver,
 // which MetaMask's sandbox (LavaMoat) blocks in its pages.
 const buttonText = (text) => `xpath/.//button[normalize-space(.)="${text}"]`;
+const linkText = (text) => `xpath/.//a[normalize-space(.)="${text}"]`;
 const passwordInput = (position) => `xpath/(.//input[@type="password"])[${position}]`;
 
 const selectors = {
@@ -45,6 +46,27 @@ const selectors = {
   home: {
     header: testId('parent-selector-header-navbar'),
     accountMenu: testId('account-menu-icon'),
+  },
+  // The menu of the home header, a drawer: settings, permissions, lock
+  menu: {
+    open: [testId('account-options-menu-button'), 'button[aria-label="Account options"]'],
+    lock: [testId('global-menu-lock'), buttonText('Lock')],
+    permissions: [testId('global-menu-connected-sites'), linkText('Permissions')],
+  },
+  // "Permissions": the sites connected to the wallet, then the page of one site
+  permissions: {
+    list: testId('parent-selector-permission-list'),
+    // Shown first when the wallet also holds token permissions; "Connections" leads to the list
+    hub: testId('parent-selector-gator-permissions'),
+    connections: 'xpath/.//p[normalize-space(.)="Connections"]',
+    // A site is listed by its host, "localhost:3000"
+    site: (host) => [
+      `xpath/.//*[@data-testid="connection-list-item"][.//p[normalize-space(.)="${host}"]]`,
+      `xpath/.//p[normalize-space(.)="${host}"]`,
+    ],
+    disconnect: [testId('disconnect-button'), 'button[aria-label="Disconnect"]'],
+    // "Disconnect", in the modal that asks to confirm
+    confirmDisconnect: [testId('disconnect-all'), `xpath/.//*[@data-testid="disconnect-all-modal"]//button[normalize-space(.)="Disconnect"]`],
   },
   // The account list, opened from the home header
   accounts: {
@@ -151,9 +173,28 @@ async function fillSeedPhrase(page, seedPhrase) {
 }
 
 async function unlock(page, { password }) {
+  await submitPassword(page, password);
+  await reachHome(page, { password });
+}
+
+async function submitPassword(page, password) {
   await fill(page, selectors.unlock.password, password);
   await click(page, selectors.unlock.submit);
-  await reachHome(page, { password });
+}
+
+/**
+ * A page that was showing the unlock form when the wallet got unlocked from
+ * another one keeps showing it, and the dapp's requests wait behind it. The
+ * password is given there too, as a user would; what follows is the wallet
+ * or a request, so only the form is watched.
+ */
+async function leaveUnlockForm(page, { password }) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!(await isVisible(page, selectors.unlock.password, 500))) return;
+    await submitPassword(page, password);
+    if (await isGone(page, selectors.unlock.password, 10000)) return;
+  }
+  throw await failure(page, 'MetaMask kept showing its unlock form');
 }
 
 /**
@@ -184,10 +225,7 @@ async function reachHome(page, { password, backupAndSync }) {
       await sleep(1000);
       await reloadHome(page);
     }
-    if (await isVisible(page, selectors.unlock.password, 500)) {
-      await fill(page, selectors.unlock.password, password);
-      await click(page, selectors.unlock.submit);
-    }
+    if (await isVisible(page, selectors.unlock.password, 500)) await submitPassword(page, password);
   }
   throw await failure(page, 'MetaMask did not show the wallet');
 }
@@ -322,6 +360,73 @@ async function importAccount(page, privateKey) {
   throw await failure(page, 'MetaMask did not import the account');
 }
 
+/** Lock the wallet from the menu of its home page. Nothing to do on a wallet already locked. */
+async function lock(page) {
+  if ((await walletState(page)) === 'locked') return;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await openMenu(page);
+    await click(page, selectors.menu.lock);
+    if (await isVisible(page, selectors.unlock.password, 10000)) return;
+  }
+  throw await failure(page, 'MetaMask did not lock');
+}
+
+// As with the account list, a click on the menu is lost while the home screen
+// settles or swallowed by a modal, so it is pressed again until the menu shows.
+async function openMenu(page) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.bringToFront().catch(() => {});
+    await dismissModal(page);
+    await click(page, selectors.menu.open);
+    if (await isVisible(page, selectors.menu.lock, 5000)) return;
+  }
+  throw await failure(page, 'MetaMask did not open its menu');
+}
+
+/**
+ * Disconnect the site at `origin` from the wallet, on its page of the
+ * "Permissions" screen. The dapp gets an empty accountsChanged.
+ */
+async function disconnectSite(page, origin) {
+  const s = selectors.permissions;
+  const { host } = new URL(origin);
+  await openConnections(page);
+  if (!(await isVisible(page, s.site(host), 5000))) throw await failure(page, `MetaMask lists no connection to "${host}"`);
+  await openSite(page, host);
+  // Disconnecting goes back to the list, without the site. A lost click
+  // leaves the site's page or the modal showing, and is pressed again.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!(await isVisible(page, s.confirmDisconnect, 500))) await click(page, s.disconnect);
+    if (!(await isVisible(page, s.confirmDisconnect, 5000))) continue;
+    await click(page, s.confirmDisconnect);
+    if ((await isGone(page, [...s.confirmDisconnect, ...s.disconnect], 5000)) && (await isGone(page, s.site(host), 5000))) return;
+  }
+  throw await failure(page, `MetaMask did not disconnect "${host}"`);
+}
+
+/** The list of connected sites, from the menu's "Permissions". */
+async function openConnections(page) {
+  const s = selectors.permissions;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await openMenu(page);
+    await click(page, selectors.menu.permissions);
+    if (!(await isVisible(page, [s.list, s.hub], 10000))) continue;
+    if (await isVisible(page, s.list, 500)) return;
+    // The hub goes on to the list by itself when there is nothing else to show
+    if (await isVisible(page, s.connections, 3000)) await click(page, s.connections);
+    if (await isVisible(page, s.list, 10000)) return;
+  }
+  throw await failure(page, 'MetaMask did not open its permissions');
+}
+
+async function openSite(page, host) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await click(page, selectors.permissions.site(host));
+    if (await isVisible(page, selectors.permissions.disconnect, 5000)) return;
+  }
+  throw await failure(page, `MetaMask did not open the permissions of "${host}"`);
+}
+
 /** Press the button of `decision` on the confirmation shown on `page`. */
 function decide(decision, page, timeout) {
   return pressAndWaitForDismissal(page, decisions[decision], timeout);
@@ -424,4 +529,17 @@ async function dismissModal(page) {
   await dispatchClick(page, selectors.modal.lastButton);
 }
 
-module.exports = { decisions, walletState, onboard, unlock, addAccount, switchAccount, importAccount, decide, approveNetworkChange };
+module.exports = {
+  decisions,
+  walletState,
+  onboard,
+  unlock,
+  leaveUnlockForm,
+  lock,
+  addAccount,
+  switchAccount,
+  importAccount,
+  disconnectSite,
+  decide,
+  approveNetworkChange,
+};

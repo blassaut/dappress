@@ -8,7 +8,10 @@ type Settled = { result: unknown } | { error: { code: number; message: string } 
 
 declare global {
   interface Window {
-    ethereum: { request(args: { method: string; params?: unknown }): Promise<unknown> };
+    ethereum: {
+      request(args: { method: string; params?: unknown }): Promise<unknown>;
+      on(event: string, listener: (...args: unknown[]) => void): void;
+    };
     dappressPending?: Promise<Settled>;
   }
 }

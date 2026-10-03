@@ -4,7 +4,7 @@
 
 const { withBrowser } = require('./browser');
 const metamask = require('./metamask');
-const { findExtensionId, getHomePage, getConfirmationPage } = require('./metamask-pages');
+const { findExtensionId, getHomePage, getRequestPages, getConfirmationPage } = require('./metamask-pages');
 
 function createTasks(options) {
   // Found once: the browser is the same for the whole run
@@ -16,11 +16,13 @@ function createTasks(options) {
   }
 
   /** Onboard the wallet or unlock it, so the dapp can talk to it. Safe to call repeatedly. */
-  async function setupWallet(browser) {
+  const setupWallet = (browser) => openWallet(browser, { onboard: true });
+
+  async function openWallet(browser, { onboard }) {
     const home = await getHomePage(browser, await metamaskId(browser));
     const state = await metamask.walletState(home);
     console.log(`[dappress] MetaMask is ${state}`);
-    if (state === 'onboarding') await metamask.onboard(home, options);
+    if (state === 'onboarding' && onboard) await metamask.onboard(home, options);
     if (state === 'locked') await metamask.unlock(home, options);
     if (state === 'unknown') throw new Error(`[dappress] Unexpected MetaMask screen at ${home.url()}`);
     await home.close();
@@ -37,6 +39,18 @@ function createTasks(options) {
       await home.close();
     }
   };
+
+  /**
+   * Unlock a locked wallet with the configured password, and say how it was
+   * found. Nothing to do on one already unlocked.
+   */
+  async function unlockWallet(browser) {
+    const state = await openWallet(browser, { onboard: false });
+    if (state === 'onboarding') throw new Error('[dappress] No wallet to unlock: MetaMask is at its onboarding');
+    // The side panel, or a popup opened by a request, keeps its unlock form after an unlock made elsewhere
+    for (const page of await getRequestPages(browser, await metamaskId(browser))) await metamask.leaveUnlockForm(page, options);
+    return state;
+  }
 
   /** Approve the prompt a network change raised: "Add network" or the permission to switch. */
   async function approveNetworkChange(browser) {
@@ -56,6 +70,9 @@ function createTasks(options) {
     addAccount: onHomePage(metamask.addAccount),
     switchAccount: onHomePage(metamask.switchAccount),
     importAccount: onHomePage(metamask.importAccount),
+    lockWallet: onHomePage(metamask.lock),
+    unlockWallet,
+    disconnectFromDapp: onHomePage(metamask.disconnectSite),
   };
   for (const decision of Object.keys(metamask.decisions)) actions[decision] = decide(decision);
 

@@ -127,6 +127,7 @@ The wallet is imported once, before the first test of each spec. Each command wa
 |---|---|
 | `cy.connectToDapp()` | Accepts the connection request, then moves the dapp onto the network of the wallet setup |
 | `cy.rejectConnection()` | Rejects the connection request |
+| `cy.disconnectFromDapp()` | Disconnects the dapp from MetaMask's permissions screen. The dapp receives an empty `accountsChanged`. |
 | `cy.confirmSignature()` | Signs the message (`personal_sign`, `eth_signTypedData_*`) |
 | `cy.rejectSignature()` | Rejects the signature request |
 | `cy.confirmTransaction()` | Sends the transaction, including ERC-20 approvals |
@@ -140,6 +141,8 @@ The wallet is imported once, before the first test of each spec. Each command wa
 | `cy.addAccount()` | Adds an account to the wallet and selects it. Yields its name, such as `Account 2`. |
 | `cy.importAccount(privateKey)` | Imports an account from its private key and selects it. Yields its name. The key stays out of the command log. |
 | `cy.switchAccount(name)` | Selects an account of the wallet by its name |
+| `cy.lockWallet()` | Locks the wallet from MetaMask's menu. Requests wait behind its unlock screen until it is unlocked. |
+| `cy.unlockWallet()` | Unlocks the wallet with the configured password. Yields how it was found: `locked`, or `unlocked` when there was nothing to do. |
 | `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the network of the wallet setup. |
 | `cy.getAccountAddress()` | Yields the address the dapp is connected with |
 | `cy.setupMetaMask()` | Imports the wallet, or unlocks it. Called automatically before each spec. |
