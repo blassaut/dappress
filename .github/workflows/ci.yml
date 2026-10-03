@@ -1,0 +1,36 @@
+# The checks a change has to pass: lint, formatting, types, unit tests, and
+# the build of the package. The conformance suite has its own workflow.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: npm ci
+        env:
+          # None of the checks starts Cypress
+          CYPRESS_INSTALL_BINARY: 0
+
+      - run: npm run lint
+
+      - run: npm run format:check
+
+      - run: npm run check-types
+
+      - run: npm test
+
+      - run: npm run build

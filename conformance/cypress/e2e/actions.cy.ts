@@ -1,16 +1,14 @@
-/// <reference types="../../../types/support" />
-
 import { testDapp } from '../support/testDapp';
 import { provider } from '../support/provider';
 
 // One test per Dappress command, against MetaMask's test dapp and a local
-// Anvil node for the funded transaction. scripts/conformance.js starts Anvil
+// Anvil node for the funded transaction. scripts/conformance.ts starts Anvil
 // and makes the wallet: run the suite through it.
-// The wallet setup (cypress/wallet.setup.js) moves the dapp onto the Hoodi
+// The wallet setup (cypress/wallet.setup.ts) moves the dapp onto the Hoodi
 // testnet at connection, so nothing is signed on Ethereum mainnet. A failing
 // test means the MetaMask build under test moved something the adapter relies on.
 
-// The wallet of this run, made by scripts/conformance.js: its first two
+// The wallet of this run, made by scripts/conformance.ts: its first two
 // accounts, funded on Anvil, and a separate account to import from its key
 const { accounts, imported } = Cypress.expose('conformance') as {
   accounts: [string, string];
@@ -39,7 +37,9 @@ const minedTransaction = () =>
   provider
     .result()
     .its('result')
-    .then((hash) => provider.waitFor('eth_getTransactionByHash', [hash], (transaction) => Boolean((transaction as { blockNumber?: string } | null)?.blockNumber)));
+    .then((hash) =>
+      provider.waitFor('eth_getTransactionByHash', [hash], (transaction) => Boolean((transaction as { blockNumber?: string } | null)?.blockNumber)),
+    );
 
 const hoodi = '0x88bb0';
 // Known to MetaMask but not granted to the dapp (test networks are off by default), so switching asks the user
@@ -151,11 +151,14 @@ describe('MetaMask actions', () => {
   it('approveAddToken', () => {
     testDapp.createToken();
     cy.confirmTransaction();
-    testDapp.tokenAddress().should('match', /^0x[0-9a-fA-F]{40}$/).then((address) => {
-      provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
-      cy.approveAddToken();
-      provider.result().should('deep.equal', { result: true });
-    });
+    testDapp
+      .tokenAddress()
+      .should('match', /^0x[0-9a-fA-F]{40}$/)
+      .then((address) => {
+        provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
+        cy.approveAddToken();
+        provider.result().should('deep.equal', { result: true });
+      });
   });
 
   it('rejectAddToken', () => {
@@ -174,7 +177,9 @@ describe('MetaMask actions', () => {
         provider.call('eth_call', granted).then((value) => expect(BigInt(value as string)).to.eq(0n));
         testDapp.approveTokens();
         cy.confirmTransaction();
-        provider.waitFor('eth_call', granted, (value) => BigInt(value as string) > 0n).then((value) => expect(BigInt(value as string) > 0n, 'allowance granted').to.eq(true));
+        provider
+          .waitFor('eth_call', granted, (value) => BigInt(value as string) > 0n)
+          .then((value) => expect(BigInt(value as string) > 0n, 'allowance granted').to.eq(true));
       });
     });
   });
@@ -267,7 +272,10 @@ describe('MetaMask actions', () => {
     cy.unlockWallet().should('eq', 'locked');
     // The request sent while it was locked
     cy.confirmSignature();
-    provider.result().its('result').should('match', /^0x[0-9a-f]{130}$/);
+    provider
+      .result()
+      .its('result')
+      .should('match', /^0x[0-9a-f]{130}$/);
     // Already unlocked: nothing to do
     cy.unlockWallet().should('eq', 'unlocked');
     cy.getAccountAddress().should('eq', account);

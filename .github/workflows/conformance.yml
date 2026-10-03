@@ -13,6 +13,8 @@ on:
     paths:
       - .github/workflows/conformance.yml
       - conformance/**
+      - package*.json
+      - tsconfig*.json
       - scripts/**
       - src/**
   schedule:
@@ -73,25 +75,6 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-  checks:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-
-      - run: npm ci
-        env:
-          # Neither check starts Cypress
-          CYPRESS_INSTALL_BINARY: 0
-
-      - run: npm test
-
-      - run: npm run check-types
-
   suite:
     needs: version
     if: needs.version.outputs.run == 'true'
@@ -101,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # See scripts/modes.js
+        # See scripts/modes.ts
         mode: [sidepanel, headless, popup]
     name: suite (${{ matrix.mode }})
     steps:
@@ -169,6 +152,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: npm ci
+        env:
+          # The matrix doesn't start Cypress
+          CYPRESS_INSTALL_BINARY: 0
+
       - uses: actions/download-artifact@v8
         with:
           pattern: report-*
@@ -178,7 +170,7 @@ jobs:
       - name: Matrix of this run
         run: |
           mkdir -p incoming
-          node scripts/matrix.js incoming run
+          npm run matrix -- incoming run
           cat run/MATRIX.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish on ${{ env.REPORTS_BRANCH }}
@@ -200,7 +192,7 @@ jobs:
           fi
           mkdir -p published/reports
           cp incoming/*.json published/reports/ 2>/dev/null || true
-          node scripts/matrix.js published/reports published
+          npm run matrix -- published/reports published
           cd published
           git add -A
           if git diff --cached --quiet; then

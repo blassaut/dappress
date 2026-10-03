@@ -21,28 +21,28 @@
     "wallet",
     "dapp"
   ],
-  "main": "src/index.js",
-  "types": "types/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./support": {
-      "types": "./types/support.d.ts",
-      "default": "./src/support.js"
+      "types": "./dist/support.d.ts",
+      "default": "./dist/support.js"
     }
   },
   "typesVersions": {
     "*": {
       "support": [
-        "types/support.d.ts"
+        "dist/support.d.ts"
       ]
     }
   },
   "files": [
-    "src",
-    "types",
+    "dist",
+    "CHANGELOG.md",
     "README.md",
     "LICENSE"
   ],
@@ -50,10 +50,15 @@
     "node": ">=20"
   },
   "scripts": {
-    "conformance": "node scripts/conformance.js",
-    "matrix": "node scripts/matrix.js",
-    "test": "node --test scripts/*.test.js",
-    "check-types": "tsc -p tsconfig.json"
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "conformance": "tsx scripts/conformance.ts",
+    "matrix": "tsx scripts/matrix.ts",
+    "test": "tsx --test scripts/*.test.ts src/*.test.ts",
+    "check-types": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "peerDependencies": {
     "cypress": ">=13.6.0"
@@ -64,8 +69,15 @@
     "puppeteer-core": "^24.43.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.19.43",
     "cypress": "^16.1.1",
-    "typescript": "^5.6.0"
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.71.0"
   }
 }

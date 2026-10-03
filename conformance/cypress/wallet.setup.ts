@@ -1,4 +1,4 @@
-import type { WalletSetup } from '../../types';
+import type { WalletSetup } from '../../src';
 
 // The public Hardhat / Anvil test wallet, moved onto the Hoodi testnet at
 // connection so the suite never touches Ethereum mainnet.

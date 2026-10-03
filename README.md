@@ -216,7 +216,26 @@ The GitHub workflow runs the suite daily, in the three modes, against the latest
 
 1. Run the suite. Each failure names a screenshot of the MetaMask screen at that moment.
 2. Locate the new selector in MetaMask's page objects: `github.com/MetaMask/metamask-extension/tree/v<version>/test/e2e/page-objects/pages`.
-3. Update `src/metamask.js`, run the suite against the new and the previous release, bump the default version in `src/config.js`, and commit the report.
+3. Update `src/metamask.ts`, run the suite against the new and the previous release, bump the default version in `src/config.ts`, and commit the report.
+
+## Development
+
+```bash
+npm run lint            # ESLint
+npm run format          # Prettier, on everything but the Markdown files
+npm run check-types     # TypeScript, on the sources, the scripts and the suite
+npm test                # unit tests
+npm run build           # the package, compiled into dist
+```
+
+The CI workflow runs these on every pull request, with `format:check` in place of `format`.
+
+### Releasing
+
+1. Move what `CHANGELOG.md` lists under "Unreleased" to a section for the new version, and set the version in `package.json` (`npm version <version> --no-git-tag-version`).
+2. Commit, then tag the commit `v<version>` and push the tag.
+
+The release workflow checks the tag against `package.json`, publishes the package to npm and makes a GitHub release from the version's section of the changelog. npm trusts the workflow itself ([trusted publishing](https://docs.npmjs.com/trusted-publishers)): no npm token is stored.
 
 ## Architecture
 
@@ -229,17 +248,17 @@ Cypress leaves extensions out of a headless launch, so Dappress passes MetaMask 
 With `cache: true`, Dappress imports the wallet once before the run, in a browser of its own, and keeps the profile; MetaMask's storage is copied from it into the profile Cypress is about to launch, so each run starts from a wallet that has never seen the dapp.
 
 ```
-src/index.js            configureDappress(): plugin entry point
-src/config.js           options and wallet setup file
-src/download.js         download and cache of MetaMask builds
-src/browser.js          Puppeteer connection to the Cypress browser
-src/profile.js          wallet profile built once and reused across runs
-src/metamask-pages.js   discovery of MetaMask's pages
-src/metamask.js         MetaMask screens: selectors and flows
-src/page-helpers.js     wait, click and fill primitives with fallback selectors
-src/actions.js          Cypress tasks behind the commands
-src/support.js          cy.* commands
-types/                  TypeScript declarations
+src/index.ts            configureDappress(): plugin entry point
+src/config.ts           options and wallet setup file
+src/download.ts         download and cache of MetaMask builds
+src/browser.ts          Puppeteer connection to the Cypress browser
+src/profile.ts          wallet profile built once and reused across runs
+src/metamask-pages.ts   discovery of MetaMask's pages
+src/metamask.ts         MetaMask screens: selectors and flows
+src/page-helpers.ts     wait, click and fill primitives with fallback selectors
+src/actions.ts          Cypress tasks behind the commands
+src/support.ts          cy.* commands
+src/types.ts            types of the public API
 conformance/            conformance suite
 ```
 

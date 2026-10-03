@@ -1,0 +1,8 @@
+dist/
+reports/
+.claude/
+conformance/cypress/screenshots/
+conformance/cypress/debug/
+package-lock.json
+# Tables are kept as written
+*.md

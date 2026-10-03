@@ -2,34 +2,38 @@
 // page, and the surface where dapp requests show up. On Chrome that surface
 // is the side panel when it is open, and the "MetaMask Dialog" popup otherwise.
 
-const { sleep } = require('./page-helpers');
+import type { Browser, Page, Target } from 'puppeteer-core';
+import { sleep } from './page-helpers';
 
 const HOME_PATH = '/home.html';
 const CONFIRMATION_PATHS = ['/notification.html', '/sidepanel.html'];
 
-function extensionIdOf(url) {
+function extensionIdOf(url: string): string | null {
   const match = /^chrome-extension:\/\/([a-z]{32})\//.exec(url);
   return match ? match[1] : null;
 }
 
-function isHomeRoute(url) {
+function isHomeRoute(url: string): boolean {
   return url.includes('/notification.html') && /notification\.html(#\/?)?$/.test(url);
 }
 
-function pagesOf(browser, extensionId, pathname) {
-  return browser
-    .targets()
-    .filter((target) => target.type() === 'page' && target.url().startsWith(`chrome-extension://${extensionId}${pathname}`));
+function pagesOf(browser: Browser, extensionId: string, pathname: string): Target[] {
+  return browser.targets().filter((target) => target.type() === 'page' && target.url().startsWith(`chrome-extension://${extensionId}${pathname}`));
 }
 
 /**
  * MetaMask's extension id. Cypress loads its own extension in headed
  * Chromium browsers, so the id is the one whose home page is titled "MetaMask".
  */
-async function findExtensionId(browser, timeout = 30000) {
+export async function findExtensionId(browser: Browser, timeout = 30000): Promise<string> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const ids = new Set(browser.targets().map((target) => extensionIdOf(target.url())).filter(Boolean));
+    const ids = new Set(
+      browser
+        .targets()
+        .map((target) => extensionIdOf(target.url()))
+        .filter((id) => id !== null),
+    );
     for (const id of ids) {
       if (await isMetaMask(browser, id)) return id;
     }
@@ -38,13 +42,13 @@ async function findExtensionId(browser, timeout = 30000) {
   throw new Error('[dappress] MetaMask extension not found in the browser. Is it loaded in before:browser:launch?');
 }
 
-async function isMetaMask(browser, extensionId) {
+async function isMetaMask(browser: Browser, extensionId: string): Promise<boolean> {
   const [target] = pagesOf(browser, extensionId, HOME_PATH);
   if (target) {
     // A page still loading or redirecting loses its execution context while its
     // title is read; not MetaMask yet, findExtensionId looks again
     try {
-      const page = await target.page();
+      const page = await pageOf(target);
       return (await page.title()).startsWith('MetaMask');
     } catch {
       return false;
@@ -61,18 +65,25 @@ async function isMetaMask(browser, extensionId) {
   }
 }
 
+// A target of type "page" has a page; Puppeteer types it as one that may not
+async function pageOf(target: Target): Promise<Page> {
+  const page = await target.page();
+  if (!page) throw new Error(`[dappress] No page behind ${target.url()}`);
+  return page;
+}
+
 /** The full-screen MetaMask page, opened if it isn't already. */
-async function getHomePage(browser, extensionId) {
+export async function getHomePage(browser: Browser, extensionId: string): Promise<Page> {
   const [target] = pagesOf(browser, extensionId, HOME_PATH);
-  if (target) return target.page();
+  if (target) return pageOf(target);
   const page = await browser.newPage();
   await page.goto(`chrome-extension://${extensionId}${HOME_PATH}`, { waitUntil: 'domcontentloaded' });
   return page;
 }
 
 /** The pages open where dapp requests show up: the side panel, a popup. */
-async function getRequestPages(browser, extensionId) {
-  const pages = [];
+export async function getRequestPages(browser: Browser, extensionId: string): Promise<Page[]> {
+  const pages: Page[] = [];
   for (const pathname of CONFIRMATION_PATHS) {
     for (const target of pagesOf(browser, extensionId, pathname)) {
       const page = await target.page();
@@ -87,12 +98,12 @@ async function getRequestPages(browser, extensionId) {
  * the side panel. A popup still on its home route is one closing after the
  * previous request, or one that hasn't routed to the request yet: skipped.
  */
-async function getConfirmationPage(browser, extensionId, timeout) {
+export async function getConfirmationPage(browser: Browser, extensionId: string, timeout: number): Promise<Page> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (const pathname of CONFIRMATION_PATHS) {
       const [target] = pagesOf(browser, extensionId, pathname).filter((candidate) => !isHomeRoute(candidate.url()));
-      if (target) return pathname === '/notification.html' ? withUsableWindow(await target.page()) : target.page();
+      if (target) return pathname === '/notification.html' ? withUsableWindow(await pageOf(target)) : pageOf(target);
     }
     await sleep(250);
   }
@@ -101,9 +112,7 @@ async function getConfirmationPage(browser, extensionId, timeout) {
     .filter((target) => extensionIdOf(target.url()) === extensionId)
     .map((target) => `${target.type()} ${target.url()}`)
     .join(', ');
-  throw new Error(
-    `[dappress] MetaMask showed no confirmation within ${timeout}ms. Did the dapp send a request? MetaMask pages seen: ${seen || 'none'}`,
-  );
+  throw new Error(`[dappress] MetaMask showed no confirmation within ${timeout}ms. Did the dapp send a request? MetaMask pages seen: ${seen || 'none'}`);
 }
 
 // MetaMask asks Chrome for a 400x620 popup. Under Xvfb on a GitHub runner the
@@ -112,22 +121,20 @@ async function getConfirmationPage(browser, extensionId, timeout) {
 // its Confirm button stays disabled. The popup is given its size back first.
 const POPUP = { width: 400, height: 620 };
 
-async function withUsableWindow(page) {
+export async function withUsableWindow(page: Page): Promise<Page> {
   const session = await page.target().createCDPSession();
   try {
     const { windowId, bounds } = await session.send('Browser.getWindowForTarget');
-    if (bounds.windowState === 'normal' && bounds.width >= 200 && bounds.height >= 200) return page;
+    if (bounds.windowState === 'normal' && (bounds.width ?? 0) >= 200 && (bounds.height ?? 0) >= 200) return page;
     console.log(`[dappress] MetaMask's popup is ${bounds.width}x${bounds.height} (${bounds.windowState}); resizing it to ${POPUP.width}x${POPUP.height}`);
     if (bounds.windowState !== 'normal') await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
     await session.send('Browser.setWindowBounds', { windowId, bounds: { ...POPUP } });
     // Let the page lay itself out at its new size before anything is looked for in it
     await sleep(300);
   } catch (error) {
-    console.warn(`[dappress] Could not check the popup window's size: ${error.message}`);
+    console.warn(`[dappress] Could not check the popup window's size: ${(error as Error).message}`);
   } finally {
     await session.detach().catch(() => {});
   }
   return page;
 }
-
-module.exports = { findExtensionId, getHomePage, getRequestPages, getConfirmationPage, withUsableWindow };

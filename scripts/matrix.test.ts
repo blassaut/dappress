@@ -1,11 +1,11 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { readReports, renderMatrix, renderBadge } = require('./matrix');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { readReports, renderMatrix, renderBadge, type Report, type ReportEntry } from './matrix';
 
-const report = (metamaskVersion, mode, failing = []) => ({
+const report = (metamaskVersion: string, mode?: string, failing: string[] = []): Report => ({
   dappressVersion: '0.3.1',
   metamaskVersion,
   mode,
@@ -16,7 +16,7 @@ const report = (metamaskVersion, mode, failing = []) => ({
   ),
 });
 
-const entry = (version, mode, failing) => ({ version, mode, report: report(version, mode, failing) });
+const entry = (version: string, mode: string, failing?: string[]): ReportEntry => ({ version, mode, report: report(version, mode, failing) });
 
 test('reads mode reports, and a report without a mode as side panel', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dappress-matrix-'));
@@ -26,7 +26,9 @@ test('reads mode reports, and a report without a mode as side panel', () => {
   fs.writeFileSync(path.join(dir, 'metamask-13.50.0-popup.json'), JSON.stringify(report('13.50.0', 'popup')));
   fs.writeFileSync(path.join(dir, 'notes.txt'), 'not a report');
 
-  const reports = readReports(dir).map(({ version, mode }) => `${version} ${mode}`).sort();
+  const reports = readReports(dir)
+    .map(({ version, mode }) => `${version} ${mode}`)
+    .sort();
   assert.deepEqual(reports, ['13.49.0 sidepanel', '13.50.0 popup']);
 });
 
@@ -48,10 +50,7 @@ test('one row per version, newest first, one column per mode', () => {
     entry('13.50.0', 'popup', ['approveNewNetwork']),
   ]);
   const rows = matrix.split('\n').filter((line) => /^\| \d/.test(line));
-  assert.deepEqual(rows, [
-    '| 13.50.0 | ✅ 3/3 | ✅ 3/3 | ❌ 2/3 | 0.3.1 | 2026-10-02 |',
-    '| 13.9.0 | ✅ 3/3 | – | – | 0.3.1 | 2026-10-02 |',
-  ]);
+  assert.deepEqual(rows, ['| 13.50.0 | ✅ 3/3 | ✅ 3/3 | ❌ 2/3 | 0.3.1 | 2026-10-02 |', '| 13.9.0 | ✅ 3/3 | – | – | 0.3.1 | 2026-10-02 |']);
   assert.match(matrix, /- 13\.50\.0, Popup: approveNewNetwork: Timed out/);
 });
 
@@ -81,7 +80,10 @@ test('one row per action, one column per version, with the modes an action faile
     entry('13.50.0', 'headless', ['approveNewNetwork']),
     entry('13.50.0', 'popup', ['approveNewNetwork']),
   ]);
-  const rows = matrix.slice(matrix.indexOf('## Actions')).split('\n').filter((line) => line.startsWith('|'));
+  const rows = matrix
+    .slice(matrix.indexOf('## Actions'))
+    .split('\n')
+    .filter((line) => line.startsWith('|'));
   assert.deepEqual(rows, [
     '| Action | 13.50.0 | 13.49.0 |',
     '| --- | --- | --- |',
@@ -93,7 +95,10 @@ test('one row per action, one column per version, with the modes an action faile
 
 test('the actions table keeps the latest eight versions', () => {
   const matrix = renderMatrix(Array.from({ length: 10 }, (_, minor) => entry(`13.${minor}.0`, 'sidepanel')));
-  const [header] = matrix.slice(matrix.indexOf('## Actions')).split('\n').filter((line) => line.startsWith('|'));
+  const [header] = matrix
+    .slice(matrix.indexOf('## Actions'))
+    .split('\n')
+    .filter((line) => line.startsWith('|'));
   assert.equal(header, '| Action | 13.9.0 | 13.8.0 | 13.7.0 | 13.6.0 | 13.5.0 | 13.4.0 | 13.3.0 | 13.2.0 |');
   assert.match(matrix, /one column per MetaMask release, the latest 8\./);
 });

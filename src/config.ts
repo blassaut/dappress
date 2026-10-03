@@ -1,17 +1,18 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { generateMnemonic } = require('@scure/bip39');
-const { wordlist } = require('@scure/bip39/wordlists/english');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { generateMnemonic } from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english';
+import type { DappressOptions, Network, PublicOptions, ResolvedOptions, WalletSetup } from './types';
 
-const DEFAULTS = {
+export const DEFAULTS = {
   metamaskVersion: '13.50.0',
   // None: a new wallet is made for each run. A phrase known to others is not
   // blank, since MetaMask restores the accounts saved for it elsewhere.
-  seedPhrase: null,
+  seedPhrase: null as string | null,
   password: 'Tester@1234',
   // The network cy.connectToDapp() moves the dapp onto, as a wallet_addEthereumChain parameter; none by default
-  network: null,
+  network: null as Network | null,
   // MetaMask's backup and sync saves the accounts and contacts of a seed phrase
   // and restores them on other installs. Off, a test's accounts don't come back.
   backupAndSync: false,
@@ -33,7 +34,10 @@ const WALLET_SETUP_FILES = ['cypress/wallet.setup.ts', 'cypress/wallet.setup.js'
  * (cypress/wallet.setup.ts or .js), the options given to configureDappress(),
  * then the defaults above.
  */
-function resolveOptions(userOptions = {}, cypressConfig = {}) {
+export function resolveOptions(
+  userOptions: DappressOptions = {},
+  cypressConfig: Partial<Pick<Cypress.PluginConfigOptions, 'env' | 'projectRoot'>> = {},
+): ResolvedOptions {
   const env = cypressConfig.env || {};
   const fromEnv = {
     metamaskVersion: process.env.DAPPRESS_METAMASK_VERSION || env.DAPPRESS_METAMASK_VERSION,
@@ -42,37 +46,37 @@ function resolveOptions(userOptions = {}, cypressConfig = {}) {
   };
 
   const options = { ...DEFAULTS, ...userOptions, ...loadWalletSetup(cypressConfig.projectRoot) };
-  for (const [key, value] of Object.entries(fromEnv)) {
+  for (const [key, value] of Object.entries(fromEnv) as [keyof typeof fromEnv, string | undefined][]) {
     if (value) options[key] = value;
   }
-  if (!options.seedPhrase) useNewWallet(options);
-  return options;
+  const seedPhrase = options.seedPhrase || newWallet(options);
+  return { ...options, seedPhrase };
 }
 
 /** No seed phrase was given: make one for this run. It is never written anywhere. */
-function useNewWallet(options) {
-  options.seedPhrase = generateMnemonic(wordlist);
+function newWallet(options: { cache: boolean }): string {
   console.log('[dappress] No seed phrase configured: using a new wallet for this run');
   if (options.cache) {
     console.warn('[dappress] The profile cache needs a seed phrase of your own: importing the wallet in this run instead');
     options.cache = false;
   }
+  return generateMnemonic(wordlist);
 }
 
 /** The project's wallet setup file: { seedPhrase?, network? }. */
-function loadWalletSetup(projectRoot = process.cwd()) {
+function loadWalletSetup(projectRoot = process.cwd()): WalletSetup {
   const file = WALLET_SETUP_FILES.map((name) => path.join(projectRoot, name)).find((candidate) => fs.existsSync(candidate));
   if (!file) return {};
+  // The file is the project's, found at run time: there is nothing to import statically
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const loaded = require(file);
-  const setup = loaded.default || loaded; // `export default` or `module.exports`
+  const setup: WalletSetup = loaded.default || loaded; // `export default` or `module.exports`
   const unknown = Object.keys(setup).filter((key) => !['seedPhrase', 'network'].includes(key));
   if (unknown.length) throw new Error(`[dappress] Unknown keys in ${path.basename(file)}: ${unknown.join(', ')}`);
   return setup;
 }
 
 /** The subset of options that is safe to expose to the browser side (no secrets). */
-function publicOptions(options) {
+export function publicOptions(options: ResolvedOptions): PublicOptions {
   return { metamaskVersion: options.metamaskVersion, autoSetup: options.autoSetup, network: options.network };
 }
-
-module.exports = { DEFAULTS, resolveOptions, publicOptions };
