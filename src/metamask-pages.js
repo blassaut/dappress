@@ -70,6 +70,18 @@ async function getHomePage(browser, extensionId) {
   return page;
 }
 
+/** The pages open where dapp requests show up: the side panel, a popup. */
+async function getRequestPages(browser, extensionId) {
+  const pages = [];
+  for (const pathname of CONFIRMATION_PATHS) {
+    for (const target of pagesOf(browser, extensionId, pathname)) {
+      const page = await target.page();
+      if (page) pages.push(pathname === '/notification.html' ? await withUsableWindow(page) : page);
+    }
+  }
+  return pages;
+}
+
 /**
  * The page a dapp request is shown on. Waits for the popup to open, or takes
  * the side panel. A popup still on its home route is one closing after the
@@ -118,4 +130,4 @@ async function withUsableWindow(page) {
   return page;
 }
 
-module.exports = { findExtensionId, getHomePage, getConfirmationPage, withUsableWindow };
+module.exports = { findExtensionId, getHomePage, getRequestPages, getConfirmationPage, withUsableWindow };
