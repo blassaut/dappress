@@ -130,7 +130,7 @@ The wallet is imported once, before the first test of each spec. Each command wa
 | `cy.disconnectFromDapp()` | Disconnects the dapp from MetaMask's permissions screen. The dapp receives an empty `accountsChanged`. |
 | `cy.confirmSignature()` | Signs the message (`personal_sign`, `eth_signTypedData_*`) |
 | `cy.rejectSignature()` | Rejects the signature request |
-| `cy.confirmTransaction()` | Sends the transaction, including ERC-20 approvals |
+| `cy.confirmTransaction(options?)` | Sends the transaction, including ERC-20 approvals. With options, sets its spending cap or its network fee first: see [Transaction options](#transaction-options). |
 | `cy.rejectTransaction()` | Rejects the transaction |
 | `cy.approveNewNetwork()` | Adds the network requested by `wallet_addEthereumChain` |
 | `cy.rejectNewNetwork()` | Rejects the network |
@@ -146,6 +146,29 @@ The wallet is imported once, before the first test of each spec. Each command wa
 | `cy.useNetwork(network?)` | Moves the dapp onto a network, adding it to MetaMask when needed. Defaults to the network of the wallet setup. |
 | `cy.getAccountAddress()` | Yields the address the dapp is connected with |
 | `cy.setupMetaMask()` | Imports the wallet, or unlocks it. Called automatically before each spec. |
+
+### Transaction options
+
+`cy.confirmTransaction()` takes what a user may change on the confirmation before confirming it:
+
+```ts
+// An ERC-20 approval: let the spender use 2.5 tokens, whatever the dapp asked for
+cy.confirmTransaction({ spendingCap: '2.5' });
+
+// The network fee, from the advanced form of MetaMask's fee editor
+cy.confirmTransaction({ gas: { maxBaseFee: 30, priorityFee: 2, gasLimit: 100000 } });
+
+// Or one of the estimates the fee editor lists
+cy.confirmTransaction({ gas: 'aggressive' });
+```
+
+| Option | Value |
+|---|---|
+| `spendingCap` | The amount the spender may use, in tokens, as typed in MetaMask: `5` or `'2.5'`. The command fails on a transaction that is not an ERC-20 approval. |
+| `gas` | `'low'`, `'market'` or `'aggressive'` on a network MetaMask has fee estimates for; `'networkSuggested'` on one it only has a gas price for, such as a local node. The command fails when MetaMask does not list the estimate. |
+| `gas` | Or custom values, named as MetaMask labels them: `maxBaseFee` and `priorityFee` in GWEI, which become the transaction's `maxFeePerGas` and `maxPriorityFeePerGas`, and `gasLimit`. A field left out keeps MetaMask's value. EIP-1559 transactions only. |
+
+Both options can be given together. MetaMask remembers the fee chosen for an account on a network, and starts the next transactions from it.
 
 ### Configuration
 
