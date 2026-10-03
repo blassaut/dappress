@@ -173,12 +173,15 @@ With `cache: true`, the profile under `~/.cache/dappress/profiles` holds the wal
 The suite runs one test per command against [MetaMask's test dapp](https://metamask.github.io/test-dapp/). Each run makes a wallet nobody has used, with Foundry's `cast`, and starts a local [Anvil](https://getfoundry.sh) node that funds it. It requires Chrome for Testing and Foundry.
 
 ```bash
-npm run conformance                        # default MetaMask version
-npm run conformance -- 13.51.0             # a specific release
-DAPPRESS_HEADLESS=1 npm run conformance    # without a browser window
+npm run conformance                            # default MetaMask version, side panel
+npm run conformance -- 13.51.0                 # a specific release
+DAPPRESS_MODE=headless npm run conformance     # without a browser window
+DAPPRESS_MODE=popup npm run conformance        # wallet from the profile cache: requests in the popup
 ```
 
-Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the suite daily against the latest MetaMask release that has no report yet.
+A mode is where MetaMask shows the dapp's requests: `sidepanel` (the default), `headless`, or `popup`. Each run writes `reports/metamask-<version>-<mode>.json`, and `npm run matrix -- reports .` turns the reports into `MATRIX.md` and `badge.json`, a [shields.io endpoint](https://shields.io/badges/endpoint-badge) for the latest version.
+
+The GitHub workflow runs the suite daily, in the three modes, against the latest MetaMask release that has no report yet, and publishes the reports, the matrix and the badge on the [`conformance-reports`](https://github.com/blassaut/dappress/tree/conformance-reports) branch: [MATRIX.md](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md).
 
 ### Updating to a new MetaMask release
 
@@ -190,7 +193,7 @@ Each run writes `reports/metamask-<version>.json`. The GitHub workflow runs the 
 
 Cypress executes tests inside the dapp's tab and has no access to the extension. For each command, Dappress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, locates the MetaMask page displaying the request and interacts with it.
 
-MetaMask displays requests in its side panel when the panel is open, and in its popup window otherwise. Without the cache, the import of the wallet ends by opening the side panel, so requests appear there. With the cache, the wallet was imported in another browser, the panel is closed, and requests appear in the popup. Dappress handles both, and the conformance suite covers both.
+MetaMask displays requests in its side panel when the panel is open, and in its popup window otherwise. Without the cache, the import of the wallet ends by opening the side panel, so requests appear there. With the cache, the wallet was imported in another browser, the panel is closed, and requests appear in the popup. Dappress handles both, and the conformance suite runs in both: its `popup` mode turns the cache on.
 
 Cypress leaves extensions out of a headless launch, so Dappress passes MetaMask to Chrome itself. Headless Chrome displays the side panel but does not open the popup window, which is why the cache, whose requests appear in the popup, is limited to headed runs.
 

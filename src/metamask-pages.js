@@ -74,7 +74,7 @@ async function getConfirmationPage(browser, extensionId, timeout) {
   while (Date.now() < deadline) {
     for (const pathname of CONFIRMATION_PATHS) {
       const [target] = pagesOf(browser, extensionId, pathname).filter((candidate) => !isHomeRoute(candidate.url()));
-      if (target) return target.page();
+      if (target) return pathname === '/notification.html' ? withUsableWindow(await target.page()) : target.page();
     }
     await sleep(250);
   }
@@ -88,4 +88,28 @@ async function getConfirmationPage(browser, extensionId, timeout) {
   );
 }
 
-module.exports = { findExtensionId, getHomePage, getConfirmationPage };
+// MetaMask asks Chrome for a 400x620 popup. Under Xvfb on a GitHub runner the
+// window it gets is 1x1: nothing is laid out, the pane of a confirmation that
+// must be read to the end has no height, so it can never be scrolled there and
+// its Confirm button stays disabled. The popup is given its size back first.
+const POPUP = { width: 400, height: 620 };
+
+async function withUsableWindow(page) {
+  const session = await page.target().createCDPSession();
+  try {
+    const { windowId, bounds } = await session.send('Browser.getWindowForTarget');
+    if (bounds.windowState === 'normal' && bounds.width >= 200 && bounds.height >= 200) return page;
+    console.log(`[dappress] MetaMask's popup is ${bounds.width}x${bounds.height} (${bounds.windowState}); resizing it to ${POPUP.width}x${POPUP.height}`);
+    if (bounds.windowState !== 'normal') await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
+    await session.send('Browser.setWindowBounds', { windowId, bounds: { ...POPUP } });
+    // Let the page lay itself out at its new size before anything is looked for in it
+    await sleep(300);
+  } catch (error) {
+    console.warn(`[dappress] Could not check the popup window's size: ${error.message}`);
+  } finally {
+    await session.detach().catch(() => {});
+  }
+  return page;
+}
+
+module.exports = { findExtensionId, getHomePage, getConfirmationPage, withUsableWindow };
