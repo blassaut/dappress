@@ -187,6 +187,25 @@ describe('MetaMask actions', () => {
     cy.getAccountAddress().should('eq', account);
   });
 
+  it('connectToDapp ({ accounts })', () => {
+    const connected = () => provider.call('eth_accounts').then((addresses) => (addresses as string[]).map((address) => address.toLowerCase()).sort());
+    const addresses = (...list: string[]) => list.map((address) => address.toLowerCase()).sort();
+    // Two accounts where MetaMask suggests the selected one alone, and not the third the wallet has
+    provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+    testDapp.connect();
+    cy.connectToDapp({ accounts: ['Account 1', 'Account 2'] });
+    connected().should('deep.equal', addresses(account, secondAccount));
+    connected().should('not.include', imported.address.toLowerCase());
+    // One that isn't the selected account: the suggested one is left out
+    provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+    testDapp.connect();
+    cy.connectToDapp({ accounts: ['Account 2'] });
+    connected().should('deep.equal', addresses(secondAccount));
+    // Leave the dapp connected with the selected account, as the tests before found it
+    reconnect();
+    cy.getAccountAddress().should('eq', account);
+  });
+
   it('lockWallet', () => {
     cy.lockWallet();
     // MetaMask tells a connected dapp nothing of the lock: its request waits behind the unlock form

@@ -59,9 +59,9 @@ function createTasks(options) {
   }
 
   /** The task for a decision: find the confirmation, press its button. */
-  const decide = (decision) => async (browser) => {
+  const decide = (decision) => async (browser, argument) => {
     const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
-    await metamask.decide(decision, page, options.timeout);
+    await metamask.decide(decision, page, options.timeout, argument);
   };
 
   const actions = {

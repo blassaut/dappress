@@ -47,9 +47,10 @@ Cypress.Commands.add('disconnectFromDapp', () => {
   cy.location('origin', { log: false }).then((origin) => metamask('disconnectFromDapp', origin, origin));
 });
 
-// Connect, then move the dapp onto the network from the wallet setup, if there is one
-Cypress.Commands.add('connectToDapp', () => {
-  metamask('connectToDapp');
+// Connect, then move the dapp onto the network from the wallet setup, if there is one.
+// `accounts` names the accounts to connect with, in place of the one MetaMask suggests.
+Cypress.Commands.add('connectToDapp', (connection) => {
+  metamask('connectToDapp', connection, connection?.accounts?.join(', '));
   if (options.network) cy.useNetwork(options.network);
 });
 

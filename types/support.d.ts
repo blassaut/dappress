@@ -4,13 +4,23 @@ import type { Network } from './index';
 
 export type WalletState = 'onboarding' | 'locked' | 'unlocked';
 
+export type ConnectOptions = {
+  /**
+   * The accounts to connect the dapp with, by their names in MetaMask:
+   * `['Account 1', 'Account 2']`. These and no other are connected, in the
+   * order MetaMask gives them to the dapp, whatever their order here.
+   * Default: the account MetaMask suggests, the wallet's selected one.
+   */
+  accounts?: string[];
+};
+
 declare global {
   namespace Cypress {
     interface Chainable {
       /** Imports or unlocks the wallet. Runs by itself before each spec unless autoSetup is false. */
       setupMetaMask(): Chainable<WalletState>;
-      /** Accepts the connection request, then moves the dapp onto the wallet setup's network if there is one. */
-      connectToDapp(): Chainable<void>;
+      /** Accepts the connection request, with the accounts named in `accounts` if any, then moves the dapp onto the wallet setup's network if there is one. */
+      connectToDapp(options?: ConnectOptions): Chainable<void>;
       rejectConnection(): Chainable<void>;
       /** Disconnects the dapp from the wallet's permissions screen: the dapp gets an empty accountsChanged. */
       disconnectFromDapp(): Chainable<void>;
