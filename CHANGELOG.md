@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-03
+
 ### Changed
 
 - The sources are in TypeScript. The package ships compiled JavaScript in `dist`, and its type declarations are generated from the code. `dappress` and `dappress/support` are imported as before.
@@ -77,7 +79,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/blassaut/dappress/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/blassaut/dappress/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/blassaut/dappress/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/blassaut/dappress/compare/v0.3.1...v0.3.2
