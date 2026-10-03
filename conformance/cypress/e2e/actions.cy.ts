@@ -25,6 +25,11 @@ const reconnect = () => {
   cy.connectToDapp();
 };
 const USER_REJECTED = 4001;
+const SIGNATURE = /^0x[0-9a-f]{130}$/;
+
+// allowance(owner, spender) of an ERC-20 token, as the data of an eth_call
+const word = (address: string) => address.toLowerCase().replace('0x', '').padStart(64, '0');
+const allowance = (owner: string, spender: string) => `0xdd62ed3e${word(owner)}${word(spender)}`;
 
 const hoodi = '0x88bb0';
 // Known to MetaMask but not granted to the dapp (test networks are off by default), so switching asks the user
@@ -44,6 +49,15 @@ describe('MetaMask actions', () => {
     cy.window().its('ethereum').its('isMetaMask').should('eq', true);
   });
 
+  it('rejectConnection', () => {
+    testDapp.connect();
+    cy.rejectConnection();
+    // The dapp is left as it was: no account, and its button still offers to connect
+    provider.call('eth_accounts').should('deep.equal', []);
+    testDapp.connectButton().should('have.text', 'Connect').and('be.enabled');
+    testDapp.accounts().should('be.empty');
+  });
+
   it('connectToDapp, onto the network from the wallet setup', () => {
     testDapp.connect();
     cy.connectToDapp();
@@ -58,10 +72,23 @@ describe('MetaMask actions', () => {
     testDapp.personalSignResult().should('contain.text', '0x');
   });
 
+  it('rejectSignature (personal_sign)', () => {
+    testDapp.personalSign();
+    cy.rejectSignature();
+    // The test dapp writes the error of a personal_sign on the button itself
+    testDapp.personalSignButton().should('contain.text', 'rejected');
+  });
+
   it('rejectSignature (signTypedData_v4)', () => {
     testDapp.signTypedDataV4();
     cy.rejectSignature();
     testDapp.signTypedDataV4Result().should('contain.text', 'rejected');
+  });
+
+  it('confirmSignature (signTypedData_v4)', () => {
+    testDapp.signTypedDataV4();
+    cy.confirmSignature();
+    testDapp.signTypedDataV4Result().invoke('text').should('match', SIGNATURE);
   });
 
   it('rejectTransaction', () => {
@@ -129,6 +156,18 @@ describe('MetaMask actions', () => {
     });
   });
 
+  it('confirmTransaction (ERC-20 approval)', () => {
+    testDapp.tokenAddress().then((token) => {
+      testDapp.approveSpender().then((spender) => {
+        const granted = [{ to: token, data: allowance(account, spender) }, 'latest'];
+        // The token was just deployed: nothing is allowed yet
+        provider.call('eth_call', granted).then((value) => expect(BigInt(value as string)).to.eq(0n));
+        testDapp.approveTokens();
+        cy.confirmTransaction();
+        provider.waitFor('eth_call', granted, (value) => BigInt(value as string) > 0n).then((value) => expect(BigInt(value as string) > 0n, 'allowance granted').to.eq(true));
+      });
+    });
+  });
 
   it('addAccount', () => {
     cy.addAccount().should('eq', 'Account 2');
