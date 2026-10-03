@@ -427,8 +427,18 @@ async function openSite(page, host) {
   throw await failure(page, `MetaMask did not open the permissions of "${host}"`);
 }
 
-/** Press the button of `decision` on the confirmation shown on `page`. */
-function decide(decision, page, timeout) {
+// What a command sets on its confirmation before pressing the button, when the
+// test passed it options: adjustments[command](page, options, timeout)
+const adjustments = {};
+
+/** Press the button of `decision` on the confirmation shown on `page`, once it is set as `options` ask. */
+async function decide(decision, page, timeout, options) {
+  if (options) {
+    const adjust = adjustments[decision];
+    if (!adjust) throw new Error(`[dappress] ${decision} takes no options`);
+    await waitFor(page, decisions[decision], { timeout });
+    await adjust(page, options, timeout);
+  }
   return pressAndWaitForDismissal(page, decisions[decision], timeout);
 }
 
