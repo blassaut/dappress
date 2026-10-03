@@ -3,73 +3,72 @@
   "metamaskVersion": "13.50.0",
   "mode": "sidepanel",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-03T08:36:11.136Z",
-  "passed": false,
+  "date": "2026-10-03T08:42:16.971Z",
+  "passed": true,
   "actions": [
     {
       "action": "injects the provider into the dapp",
-      "status": "failed",
-      "error": "CypressError: `cy.task('dappress:setupWallet')` failed with the following error:"
+      "status": "passed"
     },
     {
       "action": "connectToDapp, onto the network from the wallet setup",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "confirmSignature (personal_sign)",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "rejectSignature (signTypedData_v4)",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "rejectTransaction",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "rejectNewNetwork",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "approveNewNetwork",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "rejectSwitchNetwork",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "approveSwitchNetwork",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "useNetwork, back to a network the dapp is allowed on",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "confirmTransaction",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "approveAddToken",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "rejectAddToken",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "addAccount",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "importAccount",
-      "status": "skipped"
+      "status": "passed"
     },
     {
       "action": "switchAccount",
-      "status": "skipped"
+      "status": "passed"
     }
   ]
 }
