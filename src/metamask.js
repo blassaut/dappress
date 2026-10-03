@@ -462,6 +462,7 @@ async function openSite(page, host) {
 // test passed it options: adjustments[command](page, options, timeout)
 const adjustments = {
   connectToDapp: chooseAccounts,
+  confirmTransaction: adjustTransaction,
 };
 
 /**
@@ -698,8 +699,6 @@ async function textOf(page, selector) {
   const element = await page.$(selector);
   return element ? element.evaluate((el) => el.textContent.trim()).catch(() => null) : null;
 }
-
-adjustments.confirmTransaction = adjustTransaction;
 
 /**
  * Press a footer button, then wait for the confirmation to go away: the
