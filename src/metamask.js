@@ -84,6 +84,19 @@ const selectors = {
     confirm: [testId('confirm-btn'), buttonText('Connect')],
     cancel: [testId('cancel-btn'), buttonText('Cancel')],
   },
+  // The accounts of a connection: the request names the one it suggests, and
+  // pressing it opens the list of the wallet's accounts, a checkbox on each
+  connectAccounts: {
+    // The suggested account, or their count when there are several
+    edit: [testId('account-selection-section'), '[data-testid="parent-selector-connect-page"] .multichain-account-cell, [data-testid^="accounts-count-"]'],
+    checkbox: (name) => `xpath/.//*[contains(@class, "multichain-account-cell")][.//*[@data-testid="multichain-account-cell-name-${name}"]]//input[@type="checkbox"]`,
+    save: [testId('connect-more-accounts-button'), buttonText('Save')],
+    // What the request shows once the list is saved: the account alone, or how many there are
+    chosen: (names) =>
+      names.length === 1
+        ? `[data-testid="parent-selector-connect-page"] [data-testid="multichain-account-cell-name-${names[0]}"]`
+        : testId(`accounts-count-${names.length}`),
+  },
   // Signatures, transactions and "Add network" share the same confirmation footer
   confirmation: {
     confirm: [testId('confirm-footer-button'), buttonText('Confirm'), buttonText('Approve')],
@@ -447,7 +460,73 @@ async function openSite(page, host) {
 
 // What a command sets on its confirmation before pressing the button, when the
 // test passed it options: adjustments[command](page, options, timeout)
-const adjustments = {};
+const adjustments = {
+  connectToDapp: chooseAccounts,
+};
+
+/**
+ * Connect the dapp with the accounts named in `accounts` and no other, in the
+ * list the connection request opens: the boxes of the others are unticked,
+ * theirs ticked, and the list saved, which goes back to the request.
+ */
+async function chooseAccounts(page, { accounts }) {
+  if (accounts === undefined) return;
+  if (!Array.isArray(accounts) || accounts.length === 0) throw new Error('[dappress] connectToDapp({ accounts }) needs the name of at least one account');
+  const wanted = [...new Set(accounts)];
+  await openConnectAccounts(page);
+  const listed = await accountNames(page);
+  const unknown = wanted.filter((name) => !listed.includes(name));
+  if (unknown.length) {
+    const quoted = (names) => names.map((name) => `"${name}"`).join(', ');
+    throw await failure(page, `MetaMask lists no account named ${quoted(unknown)} to connect: it lists ${quoted(listed)}`);
+  }
+  for (const name of listed) await tickAccount(page, name, wanted.includes(name));
+  await saveConnectAccounts(page, wanted);
+}
+
+// As elsewhere, a click that lands while the request settles is lost: pressed again until the list shows
+async function openConnectAccounts(page) {
+  const s = selectors.connectAccounts;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!(await isVisible(page, s.save, 500))) await click(page, s.edit);
+    if (await isVisible(page, s.save, 5000)) return;
+  }
+  throw await failure(page, 'MetaMask did not open the accounts of the connection');
+}
+
+// A click on an account's row ticks or unticks its box. The box is read
+// before each click: a second click on a row that took the first undoes it.
+async function tickAccount(page, name, ticked) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (await isTicked(page, name, ticked, 500)) return;
+    await click(page, selectors.accounts.cell(name));
+    if (await isTicked(page, name, ticked, 3000)) return;
+  }
+  throw await failure(page, `MetaMask did not ${ticked ? 'tick' : 'untick'} "${name}"`);
+}
+
+async function isTicked(page, name, ticked, timeout) {
+  const deadline = Date.now() + timeout;
+  do {
+    const checkbox = await page.$(selectors.connectAccounts.checkbox(name));
+    const state = checkbox ? await checkbox.evaluate((el) => el.checked).catch(() => null) : null;
+    if (state === ticked) return true;
+    await sleep(250);
+  } while (Date.now() < deadline);
+  return false;
+}
+
+// Saving goes back to the request, which then shows what was chosen
+async function saveConnectAccounts(page, names) {
+  const s = selectors.connectAccounts;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (await isVisible(page, s.save, 500)) await clickWhenEnabled(page, s.save);
+    if (!(await isGone(page, s.save, 5000))) continue;
+    if (await isVisible(page, s.chosen(names), 5000)) return;
+    break;
+  }
+  throw await failure(page, `MetaMask did not keep ${names.map((name) => `"${name}"`).join(', ')} as the accounts to connect`);
+}
 
 /** Press the button of `decision` on the confirmation shown on `page`, once it is set as `options` ask. */
 async function decide(decision, page, timeout, options) {

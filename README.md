@@ -126,6 +126,7 @@ The wallet is imported once, before the first test of each spec. Each command wa
 | Command | What it does |
 |---|---|
 | `cy.connectToDapp()` | Accepts the connection request, then moves the dapp onto the network of the wallet setup |
+| `cy.connectToDapp({ accounts })` | The same, with the accounts named in `accounts` and no other, such as `['Account 1', 'Account 2']`, in place of the wallet's selected account |
 | `cy.rejectConnection()` | Rejects the connection request |
 | `cy.disconnectFromDapp()` | Disconnects the dapp from MetaMask's permissions screen. The dapp receives an empty `accountsChanged`. |
 | `cy.confirmSignature()` | Signs the message (`personal_sign`, `eth_signTypedData_*`) |
