@@ -1,13 +1,17 @@
 {
-  "dappressVersion": "0.3.3",
+  "dappressVersion": "0.4.0",
   "metamaskVersion": "13.50.0",
   "mode": "sidepanel",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-03T08:56:51.652Z",
+  "date": "2026-10-03T17:57:44.812Z",
   "passed": true,
   "actions": [
     {
       "action": "injects the provider into the dapp",
+      "status": "passed"
+    },
+    {
+      "action": "rejectConnection",
       "status": "passed"
     },
     {
@@ -19,7 +23,15 @@
       "status": "passed"
     },
     {
+      "action": "rejectSignature (personal_sign)",
+      "status": "passed"
+    },
+    {
       "action": "rejectSignature (signTypedData_v4)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmSignature (signTypedData_v4)",
       "status": "passed"
     },
     {
@@ -59,6 +71,26 @@
       "status": "passed"
     },
     {
+      "action": "confirmTransaction (ERC-20 approval)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap, gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas: 'networkSuggested' })",
+      "status": "passed"
+    },
+    {
       "action": "addAccount",
       "status": "passed"
     },
@@ -68,6 +100,22 @@
     },
     {
       "action": "switchAccount",
+      "status": "passed"
+    },
+    {
+      "action": "connectToDapp ({ accounts })",
+      "status": "passed"
+    },
+    {
+      "action": "lockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "unlockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "disconnectFromDapp",
       "status": "passed"
     }
   ]
