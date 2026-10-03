@@ -5,7 +5,7 @@ One run of the suite per MetaMask release and mode. A mode is where MetaMask sho
 | MetaMask | Side panel | Headless | Popup | Dappress | Date |
 | --- | --- | --- | --- | --- | --- |
 | 13.50.0 | ✅ 28/28 | ✅ 28/28 | ✅ 28/28 | 0.4.0 | 2026-10-03 |
-| 13.49.0 | ✅ 11/11 | – | – | 0.1.0 | 2026-10-02 |
+| 13.49.0 | ✅ 28/28 | ✅ 28/28 | ✅ 28/28 | 0.4.0 | 2026-10-03 |
 
 ## Actions
 
@@ -14,12 +14,12 @@ One row per action of the suite, one column per MetaMask release. ✅ passed in 
 | Action | 13.50.0 | 13.49.0 |
 | --- | --- | --- |
 | injects the provider into the dapp | ✅ | ✅ |
-| rejectConnection | ✅ | – |
+| rejectConnection | ✅ | ✅ |
 | connectToDapp, onto the network from the wallet setup | ✅ | ✅ |
 | confirmSignature (personal_sign) | ✅ | ✅ |
-| rejectSignature (personal_sign) | ✅ | – |
+| rejectSignature (personal_sign) | ✅ | ✅ |
 | rejectSignature (signTypedData_v4) | ✅ | ✅ |
-| confirmSignature (signTypedData_v4) | ✅ | – |
+| confirmSignature (signTypedData_v4) | ✅ | ✅ |
 | rejectTransaction | ✅ | ✅ |
 | rejectNewNetwork | ✅ | ✅ |
 | approveNewNetwork | ✅ | ✅ |
@@ -27,17 +27,17 @@ One row per action of the suite, one column per MetaMask release. ✅ passed in 
 | approveSwitchNetwork | ✅ | ✅ |
 | useNetwork, back to a network the dapp is allowed on | ✅ | ✅ |
 | confirmTransaction | ✅ | ✅ |
-| approveAddToken | ✅ | – |
-| rejectAddToken | ✅ | – |
-| confirmTransaction (ERC-20 approval) | ✅ | – |
-| confirmTransaction ({ spendingCap }) | ✅ | – |
-| confirmTransaction ({ gas }) | ✅ | – |
-| confirmTransaction ({ spendingCap, gas }) | ✅ | – |
-| confirmTransaction ({ gas: 'networkSuggested' }) | ✅ | – |
-| addAccount | ✅ | – |
-| importAccount | ✅ | – |
-| switchAccount | ✅ | – |
-| connectToDapp ({ accounts }) | ✅ | – |
-| lockWallet | ✅ | – |
-| unlockWallet | ✅ | – |
-| disconnectFromDapp | ✅ | – |
+| approveAddToken | ✅ | ✅ |
+| rejectAddToken | ✅ | ✅ |
+| confirmTransaction (ERC-20 approval) | ✅ | ✅ |
+| confirmTransaction ({ spendingCap }) | ✅ | ✅ |
+| confirmTransaction ({ gas }) | ✅ | ✅ |
+| confirmTransaction ({ spendingCap, gas }) | ✅ | ✅ |
+| confirmTransaction ({ gas: 'networkSuggested' }) | ✅ | ✅ |
+| addAccount | ✅ | ✅ |
+| importAccount | ✅ | ✅ |
+| switchAccount | ✅ | ✅ |
+| connectToDapp ({ accounts }) | ✅ | ✅ |
+| lockWallet | ✅ | ✅ |
+| unlockWallet | ✅ | ✅ |
+| disconnectFromDapp | ✅ | ✅ |

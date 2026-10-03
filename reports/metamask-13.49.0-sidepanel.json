@@ -1,0 +1,122 @@
+{
+  "dappressVersion": "0.4.0",
+  "metamaskVersion": "13.49.0",
+  "mode": "sidepanel",
+  "browser": "chrome-for-testing 154.0.8037.92",
+  "date": "2026-10-03T18:04:34.236Z",
+  "passed": true,
+  "actions": [
+    {
+      "action": "injects the provider into the dapp",
+      "status": "passed"
+    },
+    {
+      "action": "rejectConnection",
+      "status": "passed"
+    },
+    {
+      "action": "connectToDapp, onto the network from the wallet setup",
+      "status": "passed"
+    },
+    {
+      "action": "confirmSignature (personal_sign)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSignature (personal_sign)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSignature (signTypedData_v4)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmSignature (signTypedData_v4)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectTransaction",
+      "status": "passed"
+    },
+    {
+      "action": "rejectNewNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "approveNewNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSwitchNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "approveSwitchNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "useNetwork, back to a network the dapp is allowed on",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction",
+      "status": "passed"
+    },
+    {
+      "action": "approveAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "rejectAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction (ERC-20 approval)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap, gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas: 'networkSuggested' })",
+      "status": "passed"
+    },
+    {
+      "action": "addAccount",
+      "status": "passed"
+    },
+    {
+      "action": "importAccount",
+      "status": "passed"
+    },
+    {
+      "action": "switchAccount",
+      "status": "passed"
+    },
+    {
+      "action": "connectToDapp ({ accounts })",
+      "status": "passed"
+    },
+    {
+      "action": "lockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "unlockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "disconnectFromDapp",
+      "status": "passed"
+    }
+  ]
+}
