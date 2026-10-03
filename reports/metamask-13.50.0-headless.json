@@ -3,7 +3,7 @@
   "metamaskVersion": "13.50.0",
   "mode": "headless",
   "browser": "chrome-for-testing 154.0.8037.92",
-  "date": "2026-10-03T08:08:23.973Z",
+  "date": "2026-10-03T08:37:40.073Z",
   "passed": true,
   "actions": [
     {
