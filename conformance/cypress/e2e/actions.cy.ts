@@ -30,6 +30,16 @@ const SIGNATURE = /^0x[0-9a-f]{130}$/;
 // allowance(owner, spender) of an ERC-20 token, as the data of an eth_call
 const word = (address: string) => address.toLowerCase().replace('0x', '').padStart(64, '0');
 const allowance = (owner: string, spender: string) => `0xdd62ed3e${word(owner)}${word(spender)}`;
+// approve(spender, amount), as the data of a transaction to the token
+const approve = (spender: string, amount: bigint) => `0x095ea7b3${word(spender)}${amount.toString(16).padStart(64, '0')}`;
+
+const gwei = (amount: number) => `0x${BigInt(amount * 1e9).toString(16)}`;
+// The transaction the provider was just asked to send, as the node holds it once mined
+const minedTransaction = () =>
+  provider
+    .result()
+    .its('result')
+    .then((hash) => provider.waitFor('eth_getTransactionByHash', [hash], (transaction) => Boolean((transaction as { blockNumber?: string } | null)?.blockNumber)));
 
 const hoodi = '0x88bb0';
 // Known to MetaMask but not granted to the dapp (test networks are off by default), so switching asks the user
@@ -166,6 +176,47 @@ describe('MetaMask actions', () => {
         cy.confirmTransaction();
         provider.waitFor('eth_call', granted, (value) => BigInt(value as string) > 0n).then((value) => expect(BigInt(value as string) > 0n, 'allowance granted').to.eq(true));
       });
+    });
+  });
+
+  it('confirmTransaction ({ spendingCap })', () => {
+    testDapp.tokenAddress().then((token) => {
+      testDapp.approveSpender().then((spender) => {
+        const granted = [{ to: token, data: allowance(account, spender) }, 'latest'];
+        testDapp.approveTokens();
+        cy.confirmTransaction({ spendingCap: '2.5' });
+        // The token has 4 decimals: the cap, not the amount the dapp asked for
+        provider.waitFor('eth_call', granted, (value) => BigInt(value as string) === 25000n).then((value) => expect(BigInt(value as string)).to.eq(25000n));
+      });
+    });
+  });
+
+  it('confirmTransaction ({ gas })', () => {
+    // No fee in the request: MetaMask makes it an EIP-1559 transaction, with its own estimate
+    provider.request('eth_sendTransaction', [{ from: account, to: secondAccount, value: '0x1' }]);
+    cy.confirmTransaction({ gas: { maxBaseFee: 30, priorityFee: 2.5, gasLimit: 50000 } });
+    minedTransaction().should('include', { maxFeePerGas: gwei(30), maxPriorityFeePerGas: gwei(2.5), gas: '0xc350' });
+  });
+
+  it('confirmTransaction ({ spendingCap, gas })', () => {
+    testDapp.tokenAddress().then((token) => {
+      testDapp.approveSpender().then((spender) => {
+        // The approval the test dapp asks for, sent from here to know its hash
+        provider.request('eth_sendTransaction', [{ from: account, to: token, data: approve(spender, 70000n) }]);
+        cy.confirmTransaction({ spendingCap: 5, gas: { gasLimit: 100000 } });
+        // The gas limit holds, though MetaMask estimates it again when the cap is saved
+        minedTransaction().should('include', { input: approve(spender, 50000n), gas: '0x186a0' });
+      });
+    });
+  });
+
+  it("confirmTransaction ({ gas: 'networkSuggested' })", () => {
+    // Anvil gives MetaMask a gas price and no fee estimates: the one estimate it offers is that price, as both fees
+    provider.call('eth_gasPrice').then((gasPrice) => {
+      provider.request('eth_sendTransaction', [{ from: account, to: secondAccount, value: '0x1' }]);
+      cy.confirmTransaction({ gas: 'networkSuggested' });
+      // Not the fees of the test before, which MetaMask remembers for the account and would start from
+      minedTransaction().should('include', { maxFeePerGas: gasPrice, maxPriorityFeePerGas: gasPrice });
     });
   });
 

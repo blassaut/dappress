@@ -25,7 +25,8 @@ Cypress.Commands.add('approveSwitchNetwork', () => metamask('approveSwitchNetwor
 Cypress.Commands.add('rejectSwitchNetwork', () => metamask('rejectSwitchNetwork'));
 Cypress.Commands.add('confirmSignature', () => metamask('confirmSignature'));
 Cypress.Commands.add('rejectSignature', () => metamask('rejectSignature'));
-Cypress.Commands.add('confirmTransaction', () => metamask('confirmTransaction'));
+// Options are what to set on the confirmation before confirming it: { spendingCap, gas }
+Cypress.Commands.add('confirmTransaction', (options) => metamask('confirmTransaction', options, options ? JSON.stringify(options) : ''));
 Cypress.Commands.add('rejectTransaction', () => metamask('rejectTransaction'));
 Cypress.Commands.add('approveAddToken', () => metamask('approveAddToken'));
 Cypress.Commands.add('rejectAddToken', () => metamask('rejectAddToken'));
