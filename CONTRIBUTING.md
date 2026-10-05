@@ -64,6 +64,19 @@ A GitHub workflow runs the suite every day, in the three modes, against the late
 ## Releasing
 
 1. Move what `CHANGELOG.md` lists under "Unreleased" to a section for the new version, and set the version in `package.json` (`npm version <version> --no-git-tag-version`).
-2. Commit, then tag the commit `v<version>` and push the tag.
+2. Commit, then tag the commit `v<version>` with `git tag -s`, and push the tag. A tag made from GitHub's API or interface carries no signature: make it from a machine with your signing key.
 
 The release workflow checks the tag against `package.json`, publishes the package to npm and creates a GitHub release from the version's section of the changelog. npm trusts the workflow itself ([trusted publishing](https://docs.npmjs.com/trusted-publishers)): no npm token is stored.
+
+Once npm serves the version, the [Reproducible build](.github/workflows/reproducible.yml) workflow builds the tag again, compares the result with the tarball npm serves, and verifies npm's signature and provenance of the version. Run it by hand, with a version, to check an older release.
+
+## Signing
+
+Commits and tags are signed, so GitHub shows them as verified. Add a signing key to your GitHub account ([SSH](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification#ssh-commit-signature-verification) is the simplest), then:
+
+```sh
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+```

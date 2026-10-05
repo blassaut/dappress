@@ -3,6 +3,7 @@
 **MetaMask automation for Cypress.**
 
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
+[![Reproducible build](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml/badge.svg)](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml)
 
 Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()` to answer what your dapp asks the wallet: a connection, a signature, a transaction.
 
@@ -274,7 +275,8 @@ Dappress reads a seed phrase and presses buttons in a wallet, which is also what
 
 - Three dependencies, `@scure/bip39`, `extract-zip` and `puppeteer-core`, and no install script.
 - Every version is built and published by [a GitHub Actions workflow](https://github.com/blassaut/dappress/blob/main/.github/workflows/release.yml) from the tagged commit, as an npm [trusted publisher](https://docs.npmjs.com/trusted-publishers): there is no npm token to steal. The version carries a provenance attestation naming this repository, the workflow, the commit and the run. See the Provenance panel on [npmjs.com](https://www.npmjs.com/package/dappress), or run `npm audit signatures`.
-- The build is reproducible. Clone the repository, `git checkout v<version>`, `npm ci`, `npm run build`: `dist` is byte for byte what `npm pack dappress@<version>` holds. Checked on 0.6.1.
+- The build is reproducible. Clone the repository, `git checkout v<version>`, `npm ci`, `npm run build`: `dist` is byte for byte what `npm pack dappress@<version>` holds. [A workflow](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml) does this after every release, verifies npm's signature and provenance of the version, and the "Reproducible build" badge above shows its last result.
+- Found a flaw? [SECURITY.md](https://github.com/blassaut/dappress/blob/main/SECURITY.md) says how to report it privately, and what counts as one.
 
 ## Troubleshooting
 
