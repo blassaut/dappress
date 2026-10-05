@@ -7,7 +7,21 @@
 // moves something, this is the file to fix.
 
 import type { ConsoleMessage, Page } from 'puppeteer-core';
-import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep, type Selector } from './page-helpers';
+import {
+  describe,
+  waitFor,
+  isVisible,
+  isGone,
+  click,
+  clickWhenEnabled,
+  dispatchClick,
+  fill,
+  failure,
+  textOf,
+  waitForTextChange,
+  sleep,
+  type Selector,
+} from './page-helpers';
 import { waitForDismissal } from './metamask-pages';
 import type { ConnectOptions, CustomGas, GasEstimate, ResolvedOptions, TransactionOptions, WalletState } from './types';
 
@@ -130,6 +144,8 @@ const selectors = {
     gasForm: testId('gas-fee-advanced-eip1559-modal'),
     gasField: (id: string) => [`#${id}`, `${testId(id)} input`],
     gasSave: [testId('gas-fee-modal-save-button'), buttonText('Save')],
+    // The "Network fee" row: its amount and the name of its estimate
+    feeSection: testId('gas-fee-section'),
   },
   // The older footer, still used by the permission update a network switch
   // asks for, by "Add suggested tokens", and by template confirmations
@@ -641,8 +657,7 @@ async function setSpendingCap(page: Page, cap: string): Promise<void> {
   // The modal closes before the confirmation has the new cap, and confirming
   // meanwhile approves the old one. Two caps may read the same once MetaMask
   // has rounded them, so a row that stays as it was is not a failure.
-  const deadline = Date.now() + (Number(asked) === Number(cap) ? 0 : 5000);
-  while (Date.now() < deadline && (await textOf(page, s.spendingCap)) === shown) await sleep(250);
+  await waitForTextChange(page, s.spendingCap, shown, Number(asked) === Number(cap) ? 0 : 5000);
 }
 
 /** Open the spending cap's modal. Yields the cap the dapp asked for, which its field starts with. */
@@ -662,9 +677,13 @@ async function openSpendingCap(page: Page): Promise<string> {
 async function setGas(page: Page, gas: GasEstimate | GasValues): Promise<void> {
   const s = selectors.transaction;
   if (!(await isVisible(page, s.editGas, 10000))) throw await failure(page, 'MetaMask shows no network fee to edit on this confirmation');
+  const shown = await textOf(page, s.feeSection);
   await openFeeEditor(page);
-  if (typeof gas === 'string') await pickGasEstimate(page, gas);
-  else await fillGasForm(page, gas);
+  const changed = typeof gas === 'string' ? await pickGasEstimate(page, gas) : await fillGasForm(page, gas);
+  // The editor closes before the confirmation carries the new fee, and
+  // confirming meanwhile sends MetaMask the old one, which it keeps: the row
+  // is waited for to change. A fee set as it already was changes nothing.
+  if (changed) await waitForTextChange(page, s.feeSection, shown, 5000);
 }
 
 async function openFeeEditor(page: Page): Promise<void> {
@@ -679,28 +698,42 @@ async function openFeeEditor(page: Page): Promise<void> {
 // Picking an estimate closes the editor. MetaMask lists the estimates it has
 // for the network: Low, Market and Aggressive where it has fee estimates,
 // "Network suggested" where it only has a gas price, as on a local node.
-async function pickGasEstimate(page: Page, name: GasEstimate): Promise<void> {
+// Yields whether the transaction had another estimate before.
+async function pickGasEstimate(page: Page, name: GasEstimate): Promise<boolean> {
   const s = selectors.transaction;
   const option = s.gasOption(...gasEstimates[name]);
   if (!(await isVisible(page, option, 5000))) throw await failure(page, `MetaMask offers no "${name}" fee for this transaction`);
+  const selected = await hasEstimate(page, option);
   for (let attempt = 0; attempt < 3; attempt++) {
     await click(page, option);
-    if (await isGone(page, s.gasEstimates, 10000)) return;
+    if (await isGone(page, s.gasEstimates, 10000)) return !selected;
   }
   throw await failure(page, `MetaMask did not take the "${name}" fee`);
 }
 
-async function fillGasForm(page: Page, values: GasValues): Promise<void> {
+// The estimate the transaction has is marked by a class on its row
+async function hasEstimate(page: Page, option: Selector): Promise<boolean> {
+  const element = await waitFor(page, option);
+  return element.evaluate((el) => el.className.includes('--selected')).catch(() => false);
+}
+
+// Yields whether a field is given another value than it had
+async function fillGasForm(page: Page, values: GasValues): Promise<boolean> {
   const s = selectors.transaction;
   await openGasForm(page);
+  const asked = (Object.keys(gasFields) as (keyof CustomGas)[]).filter((field) => values[field] !== undefined);
+  let changed = false;
+  for (const field of asked) {
+    if (Number(await valueOf(page, s.gasField(gasFields[field]))) !== Number(values[field])) changed = true;
+  }
   // The form checks each fee against the other as it stood, and keeps the old
   // value of a fee it refused: the max base fee is typed again once the
   // priority fee is in, for two fees that both move below or above the old ones.
-  const fields = (Object.keys(gasFields) as (keyof CustomGas)[]).filter((field) => values[field] !== undefined);
-  if (values.maxBaseFee !== undefined && values.priorityFee !== undefined) fields.push('maxBaseFee');
+  const fields = values.maxBaseFee !== undefined && values.priorityFee !== undefined ? [...asked, 'maxBaseFee' as const] : asked;
   for (const field of fields) await type(page, s.gasField(gasFields[field]), values[field]!, field);
   // "Save" stays disabled on a value the form refuses, and the error quotes what the form says of it
   if (!(await pressToClose(page, s.gasSave, s.gasForm))) throw await failure(page, 'MetaMask did not save the network fee');
+  return changed;
 }
 
 // "Advanced", in the list of estimates, replaces the list with the form. A
@@ -735,11 +768,6 @@ async function pressToClose(page: Page, button: Selector, content: Selector): Pr
 async function valueOf(page: Page, selector: Selector): Promise<string> {
   const field = await waitFor(page, selector);
   return field.evaluate((el) => (el as HTMLInputElement).value);
-}
-
-async function textOf(page: Page, selector: string): Promise<string | null> {
-  const element = await page.$(selector);
-  return element ? element.evaluate((el) => (el.textContent ?? '').trim()).catch(() => null) : null;
 }
 
 /**

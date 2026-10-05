@@ -1,19 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Page } from 'puppeteer-core';
-import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep } from './page-helpers';
+import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, textOf, waitForTextChange, sleep } from './page-helpers';
 
 const URL = 'chrome-extension://abc/home.html';
 const TEST_ID = '[data-testid="confirm-btn"]';
 const BUTTON = 'xpath/.//button[normalize-space(.)="Connect"]';
 
 /** An element of the fake page: it records what is done to it. */
-function fakeElement({ disabled = false, clickErrors = [] as string[] } = {}) {
+function fakeElement({ disabled = false, text = '', clickErrors = [] as string[] } = {}) {
   const element = {
     disabled,
+    text,
     done: [] as string[],
     // Stands for the DOM element inside the page
-    evaluate: async (inPage: (el: unknown) => unknown) => inPage({ disabled: element.disabled, click: () => element.done.push('dispatched click') }),
+    evaluate: async (inPage: (el: unknown) => unknown) =>
+      inPage({ disabled: element.disabled, textContent: element.text, click: () => element.done.push('dispatched click') }),
     boundingBox: async () => ({ x: 0, y: 0, width: 80, height: 30 }),
     click: async (options?: { clickCount?: number }) => {
       const error = clickErrors.shift();
@@ -32,6 +34,7 @@ function fakePage(elements: Record<string, ReturnType<typeof fakeElement>> = {},
     screenshots: [] as string[],
     url: () => URL,
     isClosed: () => closed,
+    $: async (selector: string) => elements[selector] ?? null,
     async waitForSelector(selector: string, { hidden = false, timeout = 0 }) {
       const deadline = Date.now() + timeout;
       for (;;) {
@@ -158,4 +161,34 @@ test('fill: selects what the field holds, then types over it', async () => {
   const field = fakeElement();
   await fill(asPage(fakePage({ [TEST_ID]: field })), TEST_ID, '2.5');
   assert.deepEqual(field.done, ['click x3', 'type 2.5']);
+});
+
+test('textOf: the text of the element, trimmed, or null without one', async () => {
+  const page = fakePage({ [TEST_ID]: fakeElement({ text: ' 0.0015 ETH ' }) });
+  assert.equal(await textOf(asPage(page), TEST_ID), '0.0015 ETH');
+  assert.equal(await textOf(asPage(page), '.absent'), null);
+});
+
+test('waitForTextChange: returns once the text differs from what was shown', async () => {
+  const row = fakeElement({ text: '0.0015 ETH' });
+  const page = fakePage({ [TEST_ID]: row });
+  setTimeout(() => (row.text = '0.0030 ETH'), 300);
+  const started = Date.now();
+  await waitForTextChange(asPage(page), TEST_ID, '0.0015 ETH', 5000);
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed >= 250 && elapsed < 2000, `returned when the text changed, after ${elapsed}ms`);
+});
+
+test('waitForTextChange: gives up at the deadline on a text that stays', async () => {
+  const page = fakePage({ [TEST_ID]: fakeElement({ text: '0.0015 ETH' }) });
+  const started = Date.now();
+  await waitForTextChange(asPage(page), TEST_ID, '0.0015 ETH', 300);
+  assert.ok(Date.now() - started >= 300);
+});
+
+test('waitForTextChange: a deadline of 0 is no wait at all', async () => {
+  const page = fakePage({ [TEST_ID]: fakeElement({ text: '0.0015 ETH' }) });
+  const started = Date.now();
+  await waitForTextChange(asPage(page), TEST_ID, '0.0015 ETH', 0);
+  assert.ok(Date.now() - started < 100);
 });

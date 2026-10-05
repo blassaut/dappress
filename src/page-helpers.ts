@@ -192,6 +192,22 @@ async function pageText(page: Page): Promise<string> {
   }
 }
 
+/** The text of the first element `selector` matches, or null when there is none. */
+export async function textOf(page: Page, selector: string): Promise<string | null> {
+  const element = await page.$(selector);
+  return element ? element.evaluate((el) => (el.textContent ?? '').trim()).catch(() => null) : null;
+}
+
+/**
+ * Wait for the text of `selector` to differ from `shown`, at most `timeout`
+ * ms. For a value MetaMask sets on its page a moment after a modal that
+ * edits it closes: acting on the page meanwhile acts on the old value.
+ */
+export async function waitForTextChange(page: Page, selector: string, shown: string | null, timeout: number): Promise<void> {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline && (await textOf(page, selector)) === shown) await sleep(250);
+}
+
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
