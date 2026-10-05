@@ -97,13 +97,19 @@ export async function getRequestPages(browser: Browser, extensionId: string): Pr
  * The page a dapp request is shown on. Waits for the popup to open, or takes
  * the side panel. A popup still on its home route is one closing after the
  * previous request, or one that hasn't routed to the request yet: skipped.
+ * The route is read from the page, which follows a change of hash at once,
+ * where the target can still name the request just answered.
  */
 export async function getConfirmationPage(browser: Browser, extensionId: string, timeout: number): Promise<Page> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (const pathname of CONFIRMATION_PATHS) {
-      const [target] = pagesOf(browser, extensionId, pathname).filter((candidate) => !isHomeRoute(candidate.url()));
-      if (target) return pathname === '/notification.html' ? withUsableWindow(await pageOf(target)) : pageOf(target);
+      for (const target of pagesOf(browser, extensionId, pathname)) {
+        // A target closing while its page is taken has none: not a confirmation either
+        const page = await target.page().catch(() => null);
+        if (!page || page.isClosed() || isHomeRoute(page.url())) continue;
+        return pathname === '/notification.html' ? withUsableWindow(page) : page;
+      }
     }
     await sleep(250);
   }
@@ -113,6 +119,24 @@ export async function getConfirmationPage(browser: Browser, extensionId: string,
     .map((target) => `${target.type()} ${target.url()}`)
     .join(', ');
   throw new Error(`[dappress] MetaMask showed no confirmation within ${timeout}ms. Did the dapp send a request? MetaMask pages seen: ${seen || 'none'}`);
+}
+
+/**
+ * Once the request shown on a popup is answered, wait for the popup to close,
+ * at most `timeout` ms. MetaMask closes it a moment after its button goes, and
+ * left to close on its own, the next command could find it, still listed on
+ * `request`, and act on a page that vanishes under it. A popup that goes on
+ * to another request instead is left to it; so is the side panel, which stays.
+ */
+export async function waitForDismissal(page: Page, request: string, timeout: number): Promise<void> {
+  if (!request.includes('/notification.html')) return;
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (page.isClosed()) return;
+    const url = page.url();
+    if (url !== request && !isHomeRoute(url)) return;
+    await sleep(100);
+  }
 }
 
 // MetaMask asks Chrome for a 400x620 popup. Under Xvfb on a GitHub runner the

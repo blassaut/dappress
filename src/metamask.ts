@@ -8,6 +8,7 @@
 
 import type { ConsoleMessage, Page } from 'puppeteer-core';
 import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, fill, failure, sleep, type Selector } from './page-helpers';
+import { waitForDismissal } from './metamask-pages';
 import type { ConnectOptions, CustomGas, GasEstimate, ResolvedOptions, TransactionOptions, WalletState } from './types';
 
 const testId = (id: string) => `[data-testid="${id}"]`;
@@ -549,10 +550,27 @@ export async function decide(decision: Decision, page: Page, timeout: number, op
   if (options) {
     const adjust = adjustments[decision];
     if (!adjust) throw new Error(`[dappress] ${decision} takes no options`);
-    await waitFor(page, decisions[decision], { timeout });
+    await waitForButton(page, decisions[decision], timeout);
     await adjust(page, options, timeout);
   }
   return pressAndWaitForDismissal(page, decisions[decision], timeout);
+}
+
+/**
+ * Thrown when the confirmation page closed before its button was pressed: it
+ * was the popup of the request before, found as it closed. The request's own
+ * popup is there to be looked for.
+ */
+export class ConfirmationClosed extends Error {}
+
+// The button of a confirmation, or ConfirmationClosed if the page went meanwhile
+async function waitForButton(page: Page, button: Selector, timeout: number): Promise<void> {
+  try {
+    await waitFor(page, button, { timeout });
+  } catch (error) {
+    if (page.isClosed()) throw new ConfirmationClosed(`[dappress] The confirmation closed before "${describe(button)}" was pressed`);
+    throw error;
+  }
 }
 
 /** wallet_addEthereumChain on a network MetaMask knows behaves like a switch: either prompt may show. */
@@ -733,7 +751,7 @@ async function textOf(page: Page, selector: string): Promise<string | null> {
  * what MetaMask logged.
  */
 async function pressAndWaitForDismissal(page: Page, button: Selector, timeout: number): Promise<void> {
-  await waitFor(page, button, { timeout });
+  await waitForButton(page, button, timeout);
   await dismissModal(page);
   const logged = recordErrors(page);
   const request = page.url();
@@ -741,7 +759,7 @@ async function pressAndWaitForDismissal(page: Page, button: Selector, timeout: n
     await clickWhenEnabled(page, button, { whileDisabled: () => scrollContentToEnd(page) });
     for (let attempt = 0; attempt < 3; attempt++) {
       if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
-      if (await isGone(page, button, 3000)) return;
+      if (await isGone(page, button, 3000)) return waitForDismissal(page, request, 3000);
       await dismissModal(page);
       await dispatchClick(page, button, { timeout: 3000 }).catch(() => {});
     }

@@ -60,19 +60,30 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
     return state;
   }
 
-  /** Approve the prompt a network change raised: "Add network" or the permission to switch. */
-  async function approveNetworkChange(browser: Browser): Promise<void> {
-    const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
-    await metamask.approveNetworkChange(page, options.timeout);
+  /**
+   * Find the confirmation and act on it. One that closes before it is acted
+   * on was the popup of the request before, found as it closed: the request's
+   * own is looked for once more.
+   */
+  async function onConfirmation(browser: Browser, act: (page: Page) => Promise<void>): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+      const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
+      try {
+        return await act(page);
+      } catch (error) {
+        if (attempt > 0 || !(error instanceof metamask.ConfirmationClosed)) throw error;
+      }
+    }
   }
+
+  /** Approve the prompt a network change raised: "Add network" or the permission to switch. */
+  const approveNetworkChange = (browser: Browser) => onConfirmation(browser, (page) => metamask.approveNetworkChange(page, options.timeout));
 
   /** The task for a decision: find the confirmation, press its button. */
   const decide =
     (decision: metamask.Decision): Action =>
-    async (browser, argument) => {
-      const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
-      await metamask.decide(decision, page, options.timeout, argument);
-    };
+    (browser, argument) =>
+      onConfirmation(browser, (page) => metamask.decide(decision, page, options.timeout, argument));
 
   const actions: Record<string, Action> = {
     setupWallet,
