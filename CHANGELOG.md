@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Fixed
+
+- The peer dependency on Cypress asks for 15.10 or later, the first version with `Cypress.expose()`, which the commands read their options with. Earlier versions were accepted at install, then failed as soon as the support file loaded.
+
 ## [0.5.0] - 2026-10-03
 
 ### Changed
