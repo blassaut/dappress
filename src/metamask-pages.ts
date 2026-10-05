@@ -150,7 +150,9 @@ export async function withUsableWindow(page: Page): Promise<Page> {
   try {
     const { windowId, bounds } = await session.send('Browser.getWindowForTarget');
     if (bounds.windowState === 'normal' && (bounds.width ?? 0) >= 200 && (bounds.height ?? 0) >= 200) return page;
-    console.log(`[dappress] MetaMask's popup is ${bounds.width}x${bounds.height} (${bounds.windowState}); resizing it to ${POPUP.width}x${POPUP.height}`);
+    console.log(
+      `[dappress] MetaMask's popup is ${bounds.width}x${bounds.height} (${bounds.windowState}), as under Xvfb without a window manager; resizing it to ${POPUP.width}x${POPUP.height}`,
+    );
     if (bounds.windowState !== 'normal') await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
     await session.send('Browser.setWindowBounds', { windowId, bounds: { ...POPUP } });
     // Let the page lay itself out at its new size before anything is looked for in it

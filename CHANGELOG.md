@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Fixed
+
+- `cy.confirmTransaction({ gas })` no longer confirms, now and then, with the fee MetaMask estimated in place of the one asked. MetaMask's confirmation carries the new fee a moment after the fee editor closes, and confirming meanwhile sent it the old one, which it kept. The command now waits for the "Network fee" row to change, as it did for the spending cap.
+
 ## [0.6.0] - 2026-10-05
 
 ### Fixed
