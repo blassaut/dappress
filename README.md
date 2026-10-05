@@ -10,6 +10,18 @@ Your dapp asks MetaMask to connect, sign or send a transaction, and a real user 
 - **Plain Cypress.** No second browser, no proxy. Commands are typed for TypeScript.
 - **Stable selectors.** They come from MetaMask's own end-to-end tests, each with a fallback.
 
+## Why Dappress exists
+
+A dapp's end-to-end tests have to drive MetaMask: connect, sign, confirm. MetaMask is a browser extension, out of reach of Cypress on its own, and its screens change from one release to the next. A tool pinned to one MetaMask version tests a wallet your users no longer have, and a tool nobody keeps up with MetaMask stops working.
+
+Of the tools that did this, [dAppeteer](https://github.com/ChainSafe/dappeteer) was deprecated in April 2024, and [Synpress](https://github.com/Synthetixio/synpress) ships with one MetaMask version built in: 13.13.1 in Synpress 4.1.2, where MetaMask is at 13.50.0.
+
+Dappress makes three choices instead:
+
+- **Your MetaMask version**, with the latest release as the default. A workflow runs every command against each new MetaMask release the day it comes out, and the result goes on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md): a MetaMask change shows up there before it shows up in your pipeline.
+- **Cypress only.** The extension is loaded into the browser Cypress launches, and the commands are `cy.*` commands. Puppeteer connects to that same browser to click in MetaMask's pages; there is no second browser and no proxy.
+- **MetaMask's own selectors**, from the page objects of its end-to-end tests, each with a fallback. That is what keeps up with the UI.
+
 ## Contents
 
 - [Requirements](#requirements)
