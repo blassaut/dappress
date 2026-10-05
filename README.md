@@ -4,7 +4,7 @@
 
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
 
-Your dapp asks MetaMask to connect, sign or send a transaction, and a real user clicks a button in the wallet. Dappress clicks it for you. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()`.
+Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()` to answer what your dapp asks the wallet: a connection, a signature, a transaction.
 
 ## Why Dappress exists
 
