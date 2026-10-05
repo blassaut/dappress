@@ -4,6 +4,12 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-05
+
+### Changed
+
+- The README is shorter and keeps to what using Dappress needs. What contributors need moves to `CONTRIBUTING.md`.
+
 ## [0.5.0] - 2026-10-03
 
 ### Changed
@@ -79,7 +85,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/blassaut/dappress/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/blassaut/dappress/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/blassaut/dappress/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/blassaut/dappress/compare/v0.3.2...v0.3.3
