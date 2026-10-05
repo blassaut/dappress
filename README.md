@@ -4,11 +4,17 @@
 
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
 
-Your dapp asks MetaMask to connect, sign or send a transaction, and a real user clicks a button in the wallet. Dappress clicks it for you. It loads the real MetaMask extension into the browser Cypress launches, imports a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()`.
+Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()` to answer what your dapp asks the wallet: a connection, a signature, a transaction.
 
-- **The latest MetaMask.** You choose the extension version. Every MetaMask release is tested daily, one test per command: see the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md).
-- **Plain Cypress.** No second browser, no proxy. Commands are typed for TypeScript.
-- **Stable selectors.** They come from MetaMask's own end-to-end tests, each with a fallback.
+## Why Dappress exists
+
+To test a dapp end to end, you have to drive MetaMask: connect, sign, confirm. Cypress cannot reach into the extension, and MetaMask's screens change with every release. Dappress does that part for you, and keeps up with MetaMask so your tests don't have to.
+
+- **Write the test, not the wallet.** Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`. The commands are plain Cypress commands, typed for TypeScript, in the browser Cypress launches: no second browser, no proxy, nothing new to learn.
+- **Test what your users run.** The MetaMask version is yours to pick, with the latest release as the default, so the wallet in your tests is the one in your users' browsers.
+- **Know before your pipeline does.** Every command is run against each new MetaMask release the day it comes out, and the result goes on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md). When MetaMask changes a screen, it shows there first, and it is Dappress that adapts, not your tests.
+- **Set the wallet up once.** Its network in a committed setup file, its seed phrase and password in the environment. MetaMask imports it on the first run, from a profile cache when you opt in.
+- **Fail with the screen in hand.** When a command cannot go on, the error says which MetaMask screen it was on, quotes what it shows, and points to a screenshot.
 
 ## Contents
 
