@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-05
+
 ### Fixed
 
 - The peer dependency on Cypress asks for 15.10 or later, the first version with `Cypress.expose()`, which the commands read their options with. Earlier versions were accepted at install, then failed as soon as the support file loaded.
@@ -90,7 +92,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/blassaut/dappress/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/blassaut/dappress/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/blassaut/dappress/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/blassaut/dappress/compare/v0.3.3...v0.4.0
