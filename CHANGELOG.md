@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-05
+
 ### Fixed
 
 - `cy.confirmTransaction({ gas })` no longer confirms, now and then, with the fee MetaMask estimated in place of the one asked. MetaMask's confirmation carries the new fee a moment after the fee editor closes, and confirming meanwhile sent it the old one, which it kept. The command now waits for the "Network fee" row to change, as it did for the spending cap.
@@ -96,7 +98,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/blassaut/dappress/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/blassaut/dappress/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/blassaut/dappress/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/blassaut/dappress/compare/v0.4.0...v0.5.0
