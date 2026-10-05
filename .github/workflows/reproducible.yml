@@ -1,0 +1,91 @@
+# Checks that what npm serves for a version is what its tag builds. The
+# package is built again from the tag and compared, file by file, with the
+# tarball npm serves, and npm's signature and provenance of the version are
+# verified. Runs after each release, and on demand for any version.
+name: Reproducible build
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to check, as npm names it (0.6.1)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      # From the input, or from the tag the release was made from
+      - name: The version to check
+        id: version
+        env:
+          INPUT: ${{ inputs.version }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          version="${INPUT:-${TAG#v}}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ steps.version.outputs.version }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: npm ci
+        env:
+          # The build starts no Cypress
+          CYPRESS_INSTALL_BINARY: 0
+
+      - run: npm run build
+
+      # npm takes a few minutes to serve a version after its publication
+      - name: Wait for npm to serve the version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if npm view "dappress@$VERSION" version >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::npm does not serve dappress@$VERSION after 15 minutes"
+          exit 1
+
+      - name: The package as npm serves it
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/published"
+          cd "$RUNNER_TEMP/published"
+          npm pack "dappress@$VERSION" --pack-destination . >/dev/null
+          tar -xzf dappress-*.tgz
+
+      - name: The build of the tag is the published package, file by file
+        run: |
+          published="$RUNNER_TEMP/published/package"
+          diff -r dist "$published/dist"
+          for file in package.json README.md CHANGELOG.md LICENSE; do
+            cmp "$file" "$published/$file"
+          done
+
+      # The registry's signature of the tarball, and the provenance attestation
+      # that names this repository, the workflow and the commit
+      - name: npm's signature and provenance of the version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/signatures"
+          cd "$RUNNER_TEMP/signatures"
+          npm init -y >/dev/null
+          npm install "dappress@$VERSION" --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+          npm audit signatures
