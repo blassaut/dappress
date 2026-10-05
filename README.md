@@ -12,7 +12,7 @@ Your dapp asks MetaMask to connect, sign or send a transaction, and a real user 
 
 ## Why Dappress exists
 
-A dapp's end-to-end tests have to drive MetaMask: connect, sign, confirm. MetaMask is a browser extension, out of reach of Cypress on its own, and its screens change from one release to the next: a test that clicked the right button in last month's MetaMask may not find it in this month's. Dappress takes that work out of your tests, and keeps it out as MetaMask moves.
+To test a dapp end to end, you have to drive MetaMask: connect, sign, confirm. Cypress cannot reach into the extension, and MetaMask's screens change with every release. Dappress does that part for you, and keeps up with MetaMask so your tests don't have to.
 
 - **Write the test, not the wallet.** Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`. The commands are plain Cypress commands, typed for TypeScript, in the browser Cypress launches: no second browser, no proxy, nothing new to learn.
 - **Test what your users run.** The MetaMask version is yours to pick, with the latest release as the default, so the wallet in your tests is the one in your users' browsers.
