@@ -4,11 +4,7 @@
 
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
 
-Your dapp asks MetaMask to connect, sign or send a transaction, and a real user clicks a button in the wallet. Dappress clicks it for you. It loads the real MetaMask extension into the browser Cypress launches, imports a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()`.
-
-- **The latest MetaMask.** You choose the extension version. Every MetaMask release is tested daily, one test per command: see the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md).
-- **Plain Cypress.** No second browser, no proxy. Commands are typed for TypeScript.
-- **Stable selectors.** They come from MetaMask's own end-to-end tests, each with a fallback.
+Your dapp asks MetaMask to connect, sign or send a transaction, and a real user clicks a button in the wallet. Dappress clicks it for you. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()`.
 
 ## Why Dappress exists
 
