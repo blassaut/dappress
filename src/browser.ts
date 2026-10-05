@@ -1,5 +1,5 @@
 // Connects Puppeteer to the browser Cypress launched, through the debugging
-// URL Cypress hands out in after:browser:launch (Cypress 13.6+).
+// URL Cypress hands out in after:browser:launch (Cypress 15.10+).
 
 import puppeteer, { type Browser } from 'puppeteer-core';
 
