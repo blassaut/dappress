@@ -253,10 +253,28 @@ When a setting appears in several places, the first one found wins: environment 
 
 ## Security
 
-- **Use a seed phrase made for testing**, funded on test networks only.
-- **Avoid well-known phrases**, such as the Hardhat or Anvil development mnemonic. MetaMask restores the accounts other people saved for them, and your wallet will not be the one you expect.
-- **Secrets stay in Node.js.** The seed phrase and the password never reach the browser or the Cypress log.
-- **With `cache: true`**, `~/.cache/dappress/profiles` holds the wallet's encrypted vault. Treat it like the seed phrase: keep it on the machine, and keep it out of any CI cache that other people or workflows can restore.
+Dappress reads a seed phrase and presses buttons in a wallet, which is also what a wallet drainer does. This section says what it does with your secrets, what it talks to and what you install, and how to check each point yourself rather than take it on trust.
+
+### Your secrets
+
+- The seed phrase and the password are read in Node.js, from the environment or `cypress.env.json` (`src/config.ts`), and typed into MetaMask's own onboarding and unlock screens (`src/metamask.ts`). They go nowhere else.
+- They never reach the browser side. What the `cy.*` commands can read is the subset `src/config.ts` names as public: the MetaMask version, `autoSetup` and the network.
+- They are never logged. The one line about the seed phrase says that none is configured, and the private key given to `cy.importAccount()` is kept out of the Cypress command log.
+- Without a seed phrase, a new one is generated on your machine, with `@scure/bip39`.
+- Use a seed phrase made for testing, funded on test networks only, and avoid well-known phrases such as the Hardhat or Anvil development mnemonic: MetaMask restores the accounts other people saved for them, and your wallet will not be the one you expect.
+- With `cache: true`, `~/.cache/dappress/profiles` holds the wallet's encrypted vault. Treat it like the seed phrase: keep it on the machine, and keep it out of any CI cache that other people or workflows can restore.
+
+### What it talks to
+
+- One outbound request, in `src/download.ts`: the MetaMask build you asked for, from [MetaMask's GitHub releases](https://github.com/MetaMask/metamask-extension/releases), once per version. It is the only URL in the package: `grep -r "https://" node_modules/dappress/dist`.
+- Three requests to the wallet, from `src/support.ts`: `eth_accounts` for `cy.getAccountAddress()`, `eth_chainId` and `wallet_addEthereumChain` for `cy.useNetwork()`. Dappress never asks the wallet for a signature or a transaction. Those are your dapp's requests, and Dappress presses the button you name on the screen they open.
+- No telemetry, no analytics, nothing else on the network.
+
+### What you install
+
+- Three dependencies, `@scure/bip39`, `extract-zip` and `puppeteer-core`, and no install script.
+- Every version is built and published by [a GitHub Actions workflow](https://github.com/blassaut/dappress/blob/main/.github/workflows/release.yml) from the tagged commit, as an npm [trusted publisher](https://docs.npmjs.com/trusted-publishers): there is no npm token to steal. The version carries a provenance attestation naming this repository, the workflow, the commit and the run. See the Provenance panel on [npmjs.com](https://www.npmjs.com/package/dappress), or run `npm audit signatures`.
+- The build is reproducible. Clone the repository, `git checkout v<version>`, `npm ci`, `npm run build`: `dist` is byte for byte what `npm pack dappress@<version>` holds. Checked on 0.6.1.
 
 ## Troubleshooting
 
