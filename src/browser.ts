@@ -1,5 +1,5 @@
 // Connects Puppeteer to the browser Cypress launched, through the debugging
-// URL Cypress hands out in after:browser:launch (Cypress 13.6+).
+// URL Cypress hands out in after:browser:launch (Cypress 15.10+).
 
 import puppeteer, { type Browser } from 'puppeteer-core';
 
@@ -17,7 +17,7 @@ export function captureDebuggerUrl(on: Cypress.PluginEvents): void {
  */
 export async function withBrowser<T>(action: (browser: Browser) => Promise<T>): Promise<T> {
   if (!debuggerUrl) {
-    throw new Error('[dappress] No browser to connect to. Is configureDappress() called in setupNodeEvents, with Cypress 13.6 or later?');
+    throw new Error('[dappress] No browser to connect to. Is configureDappress() called in setupNodeEvents, with Cypress 15.10 or later?');
   }
   const browser = await puppeteer.connect({ browserWSEndpoint: debuggerUrl, defaultViewport: null });
   try {

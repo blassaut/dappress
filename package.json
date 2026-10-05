@@ -61,7 +61,7 @@
     "format:check": "prettier --check ."
   },
   "peerDependencies": {
-    "cypress": ">=13.6.0"
+    "cypress": ">=15.10.0"
   },
   "dependencies": {
     "@scure/bip39": "^1.6.0",

@@ -4,6 +4,11 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Fixed
+
+- The peer dependency on Cypress asks for 15.10 or later, the first version with `Cypress.expose()`, which the commands read their options with. Earlier versions were accepted at install, then failed as soon as the support file loaded.
+- A command sent right after another was answered in the popup no longer fails on "Timed out waiting for confirm-footer-button". The popup closes a moment after its button goes, and the next command could find it, still listed on the request just answered, then lose it. A decision now waits for the popup to close, and a confirmation that closes before it is acted on is looked for again.
+
 ## [0.5.1] - 2026-10-05
 
 ### Changed
