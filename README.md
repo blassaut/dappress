@@ -19,7 +19,7 @@ Cypress cannot reach into a browser extension, and MetaMask's screens change wit
 
 ## Cypress, and only Cypress
 
-A wallet driver is screen-by-screen code: selectors, retries for the clicks a screen loses while it settles, the waits between a button and the next screen. That code cannot be shared across test frameworks without serving each one worse, so Dappress serves one. [Synpress](https://github.com/Synthetixio/synpress) serves Playwright first and runs its Cypress mode through a Playwright driver inside the Cypress process; [dappwright](https://github.com/TenKeyLabs/dappwright) serves Playwright only. If you are on Playwright, use one of them. If you are on Cypress, this is the native one, and the only one checked against each MetaMask release.
+A wallet driver is screen-by-screen code: selectors, retries for the clicks a screen loses while it settles, the waits between a button and the next screen. That code cannot be shared across test frameworks without serving each one worse, so Dappress serves one, natively: the commands run in the browser Cypress launches, through Cypress's own plugin and task APIs, with nothing else in the process.
 
 Dappress does not mock the provider: the dapp talks to the real MetaMask. Other wallets are recorded, not driven.
 

@@ -1,6 +1,6 @@
 // The Node side of every cy.* command, registered as Cypress tasks. Each
 // action gets a Puppeteer browser connected to the Cypress browser, finds the
-// MetaMask page it needs and drives it through src/metamask.ts.
+// MetaMask page it needs and drives it through the metamask-* modules.
 
 import type { Browser, Page } from 'puppeteer-core';
 import { withBrowser } from './browser';

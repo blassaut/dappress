@@ -109,7 +109,7 @@ export function renderMatrix(reports: ReportEntry[]): string {
   const lines = [
     '# Dappress conformance',
     '',
-    "One run of the suite per MetaMask release and mode. A mode is where MetaMask shows the dapp's requests: its side panel, the same without a browser window, or its popup when the wallet comes from the profile cache.",
+    "One run of the suite per MetaMask release and mode. A mode is where MetaMask shows the dapp's requests: its side panel, the same without a browser window, or its popup when the wallet comes from the wallet cache.",
     '',
     `| MetaMask | ${modes.map((mode) => MODES[mode].label).join(' | ')} | Dappress | Date |`,
     `| --- | ${modes.map(() => '---').join(' | ')} | --- | --- |`,

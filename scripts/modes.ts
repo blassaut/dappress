@@ -6,7 +6,7 @@ export const MODES: Record<string, { label: string; headed: boolean; cache: bool
   sidepanel: { label: 'Side panel', headed: true, cache: false },
   // The same, without a window: Dappress passes MetaMask to Chrome itself
   headless: { label: 'Headless', headed: false, cache: false },
-  // The wallet comes from the profile cache, the side panel is closed: requests open the popup
+  // The wallet comes from the wallet cache, the side panel is closed: requests open the popup
   popup: { label: 'Popup', headed: true, cache: true },
 };
 
