@@ -75,7 +75,7 @@ test('a value too long to say anything of the wallet is kept by its shape', () =
   );
   assert.deepEqual(profile.methods.eth_sendTransaction[0].params, {
     $truncated: JSON.stringify([{ from: '0xabc', data: bytecode }]).length,
-    shape: '[{data, from}]',
+    shape: '{data, from}[]',
   });
   assert.equal(profile.methods.eth_sendTransaction[0].result, '0x1');
   // Two blocks of the same shape: one observation
@@ -128,13 +128,17 @@ test('the trace is read as one chunk, a list of chunks, or one chunk per line', 
 });
 
 test('the shape of a value keeps what a dapp branches on', () => {
-  assert.equal(shape('0x88bb0'), 'hex(5)');
-  assert.equal(shape('0x' + 'a'.repeat(130)), 'hex(130)');
+  assert.equal(shape('0x88bb0'), 'hex');
+  assert.equal(shape('0x' + 'a'.repeat(40)), 'address');
+  assert.equal(shape('0x' + 'a'.repeat(64)), 'hash');
+  assert.equal(shape('0x' + 'a'.repeat(130)), 'signature');
   assert.equal(shape(34999), 'number(34999)');
   assert.equal(shape('User rejected the request.'), '"User rejected the request."');
   assert.equal(shape('x'.repeat(200)), 'string(200)');
-  assert.equal(shape(['0xabc']), '[hex(3)]');
-  assert.equal(shape([1, 2, 3, 4]), 'array(4)');
+  assert.equal(shape([]), '[]');
+  assert.equal(shape(['0x' + 'a'.repeat(40), '0x' + 'b'.repeat(40)]), 'address[]');
+  assert.equal(shape(['0xabc', 1]), '[hex, number(1)]');
+  assert.equal(shape(['a', 1, true, null]), 'array(4)');
   assert.equal(shape({ chainId: '0x1', rpcUrls: [] }), '{chainId, rpcUrls}');
   assert.equal(shape(null), 'null');
   assert.equal(shape(true), 'true');
@@ -158,9 +162,9 @@ test('the diff names the methods and events the two wallets answer differently',
   assert.match(diff, /^# MetaMask 13\.50\.0 vs Other 1\.0\.0/);
   assert.match(diff, /\| isRabby \| false \| true \|/);
   assert.match(diff, /\| EIP-6963 \| io\.metamask \| io\.other \|/);
-  assert.match(diff, /\| `eth_requestAccounts` \| result \[hex\(3\)\] \| result \[hex\(3\)\] \| yes \|/);
+  assert.match(diff, /\| `eth_requestAccounts` \| result hex\[\] \| result hex\[\] \| yes \|/);
   assert.match(diff, /\| `personal_sign` \| error 4001 "User rejected the request\." \| error 4001 "User denied message signature\." \| \*\*no\*\* \|/);
   assert.match(diff, /\| `wallet_switchEthereumChain` \| not observed \| result null \| \*\*no\*\* \|/);
-  assert.match(diff, /\| `chainChanged` \| hex\(5\) \| number\(559171\) \| \*\*no\*\* \|/);
-  assert.match(diff, /\| `accountsChanged` \| \[hex\(3\)\] \| not observed \| \*\*no\*\* \|/);
+  assert.match(diff, /\| `chainChanged` \| hex \| number\(559171\) \| \*\*no\*\* \|/);
+  assert.match(diff, /\| `accountsChanged` \| hex\[\] \| not observed \| \*\*no\*\* \|/);
 });

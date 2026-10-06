@@ -32,10 +32,14 @@ export interface ProviderError {
   data?: unknown;
 }
 
-/** One line of the recorder's trace: a request settled, or an event received. */
+/**
+ * One line of the recorder's trace: a request settled, or an event received.
+ * `via` says which provider it went through: `injected` for window.ethereum,
+ * `eip6963:<rdns>` for one announced that is another object.
+ */
 export type TraceEntry =
-  | { kind: 'request'; seq: number; at: number; method: string; params?: unknown; result?: unknown; error?: ProviderError; ms: number }
-  | { kind: 'event'; seq: number; at: number; name: string; payload: unknown };
+  | { kind: 'request'; seq: number; at: number; via?: string; method: string; params?: unknown; result?: unknown; error?: ProviderError; ms: number }
+  | { kind: 'event'; seq: number; at: number; via?: string; name: string; payload: unknown };
 
 /** What the recorder holds in the page, and what the suite sends after each test. */
 export interface TraceChunk {
@@ -49,6 +53,7 @@ export interface TraceChunk {
 /** A request as observed: its parameters and what came back. Repeats in a row are counted, not listed. */
 export interface Observation {
   test?: string;
+  via?: string;
   params?: unknown;
   result?: unknown;
   error?: ProviderError;
@@ -57,6 +62,7 @@ export interface Observation {
 
 export interface EventObservation {
   test?: string;
+  via?: string;
   payload: unknown;
   count?: number;
 }
@@ -85,11 +91,14 @@ export function buildProfile(chunks: TraceChunk[], meta: ProfileMeta): Profile {
   for (const { entry, test } of entries) {
     if (entry.kind === 'request') {
       const observation: Observation = { test, params: trim(entry.params) };
+      if (entry.via) observation.via = entry.via;
       if (entry.error) observation.error = entry.error.data === undefined ? entry.error : { ...entry.error, data: trim(entry.error.data) };
       else observation.result = trim(entry.result);
       push(methods, entry.method, observation);
     } else {
-      push(events, entry.name, { test, payload: trim(entry.payload) });
+      const observation: EventObservation = { test, payload: trim(entry.payload) };
+      if (entry.via) observation.via = entry.via;
+      push(events, entry.name, observation);
     }
   }
   return {
@@ -137,19 +146,29 @@ export function readTrace(file: string): TraceChunk[] {
   return text.split('\n').map((line) => JSON.parse(line) as TraceChunk);
 }
 
+// The hex lengths that tell what a value is: an address, a hash, a signature. Any other is a quantity
+const HEX_KINDS: Record<number, string> = { 40: 'address', 64: 'hash', 130: 'signature' };
+
 /**
  * The shape of a value, with what a dapp would branch on and nothing it would
- * not: a hex string by its length, a string by its text when short, numbers,
- * booleans, arrays by their length, objects by their keys.
+ * not: a hex string as an address, a hash, a signature or a quantity, a string
+ * by its text when short, numbers, booleans, arrays by their elements, objects
+ * by their keys.
  */
 export function shape(value: unknown): string {
   if (value === null || value === undefined) return String(value);
   if (typeof value === 'string') {
-    if (/^0x[0-9a-fA-F]*$/.test(value)) return `hex(${value.length - 2})`;
+    if (/^0x[0-9a-fA-F]*$/.test(value)) return HEX_KINDS[value.length - 2] ?? 'hex';
     return value.length <= 80 ? JSON.stringify(value) : `string(${value.length})`;
   }
   if (typeof value !== 'object') return typeof value === 'number' ? `number(${value})` : String(value);
-  if (Array.isArray(value)) return value.length <= 3 ? `[${value.map(shape).join(', ')}]` : `array(${value.length})`;
+  if (Array.isArray(value)) {
+    const shapes = [...new Set(value.map(shape))];
+    if (value.length === 0) return '[]';
+    // Elements of one shape, however many: a list of addresses is a list of addresses
+    if (shapes.length === 1) return `${shapes[0]}[]`;
+    return value.length <= 3 ? `[${value.map(shape).join(', ')}]` : `array(${value.length})`;
+  }
   // A value the profile kept by its shape
   const kept = value as { $truncated?: unknown; shape?: unknown };
   if (kept.$truncated !== undefined && typeof kept.shape === 'string') return kept.shape;

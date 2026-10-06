@@ -9,7 +9,7 @@
 (() => {
   if (window.__dappressTrace) return;
   // Whether the provider was there when the recorder ran, or came later
-  const trace = { recorder: '1', discovery: { injected: window.ethereum ? 'before' : 'after', flags: {}, eip6963: [] }, entries: [] };
+  const trace = { recorder: '2', discovery: { injected: window.ethereum ? 'before' : 'after', flags: {}, eip6963: [] }, entries: [] };
   window.__dappressTrace = trace;
 
   // The identity flags wallets set on their provider, some of them on others' behalf
@@ -32,6 +32,15 @@
     for (const flag of FLAGS) trace.discovery.flags[flag] = Boolean(provider[flag]);
   };
 
+  // Which provider an entry went through: window.ethereum, or one announced
+  // through EIP-6963 that is another object. A wallet may have both, and emit
+  // its events on each: a dapp listening to one gets them once
+  const via = (provider) => {
+    if (provider === window.ethereum) return 'injected';
+    const known = announced.find((candidate) => candidate.provider === provider);
+    return known && known.entry.rdns ? `eip6963:${known.entry.rdns}` : 'eip6963';
+  };
+
   // Wrap request() and listen to the events. The wrapper is transparent: a
   // value, a promise or a synchronous error comes back to the dapp as it was.
   const wrap = (provider) => {
@@ -39,7 +48,7 @@
     const request = provider.request;
     const recording = function (args) {
       const started = now();
-      const entry = { kind: 'request', method: args && args.method, params: args && args.params };
+      const entry = { kind: 'request', via: via(provider), method: args && args.method, params: args && args.params };
       const settled = (outcome) => record({ ...entry, ...outcome, ms: now() - started });
       let returned;
       try {
@@ -78,7 +87,7 @@
       }
     }
     if (typeof provider.on === 'function') {
-      for (const name of EVENTS) provider.on(name, (payload) => record({ kind: 'event', name, payload }));
+      for (const name of EVENTS) provider.on(name, (payload) => record({ kind: 'event', via: via(provider), name, payload }));
     }
   };
 
