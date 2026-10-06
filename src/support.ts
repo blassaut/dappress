@@ -12,6 +12,13 @@ import type { ConnectOptions, Network, PublicOptions, TransactionOptions, Wallet
 
 export type { ConnectOptions, CustomGas, GasEstimate, TransactionOptions, WalletState } from './types';
 
+/** The wallet under test: its name as it announces itself to dapps (EIP-6963), its version, and whether it is a mock. */
+export interface WalletInfo {
+  name: string;
+  version: string;
+  mock: boolean;
+}
+
 declare global {
   // Cypress declares its commands in a namespace: that is where they are added
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -53,6 +60,11 @@ declare global {
       useNetwork(network?: Network): Chainable<string>;
       /** The address the dapp is connected with. */
       getAccountAddress(): Chainable<string>;
+      /**
+       * The wallet under test, as a dapp's wallet picker names it: `{ name: 'Rabby Wallet', version: '0.94.11', mock: true }`.
+       * Pick it with `cy.getWallet().then(({ name }) => cy.contains('button', name).click())`.
+       */
+      getWallet(): Chainable<WalletInfo>;
       /** Sends a JSON-RPC request to the chain the dapp is on, and yields its result: `cy.rpc('eth_blockNumber')`. */
       rpc<T = unknown>(method: string, params?: unknown[]): Chainable<T>;
       /** Mines `blocks` blocks, 1 by default, on the chain the dapp is on: a development node, Anvil or Hardhat. */
@@ -190,6 +202,15 @@ Cypress.Commands.add('useNetwork', (network = options.network ?? undefined) => {
 
 // The address the dapp sees, asked to the injected provider rather than to the
 // MetaMask UI, so it keeps working across MetaMask versions.
+// The wallet the dapp sees, by the name a wallet picker shows: Privy, RainbowKit and others list wallets by their EIP-6963 name
+Cypress.Commands.add('getWallet', () => {
+  const wallet: WalletInfo = mock
+    ? { name: mock.profile.discovery?.eip6963[0]?.name ?? mock.profile.wallet.name, version: mock.profile.wallet.version, mock: true }
+    : { name: 'MetaMask', version: options.metamaskVersion ?? '', mock: false };
+  Cypress.log({ name: 'wallet', message: `${wallet.name} ${wallet.version}${wallet.mock ? ', mock' : ''}` });
+  return cy.wrap(wallet, { log: false });
+});
+
 Cypress.Commands.add('getAccountAddress', () => {
   Cypress.log({ name: 'metamask', message: 'getAccountAddress' });
   return provider<string[]>('eth_accounts').then(([address]) => address);

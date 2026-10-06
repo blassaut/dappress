@@ -47,6 +47,12 @@ test('getConfirmationPage: skips a popup back on its home route, though its targ
   assert.equal(await getConfirmationPage(fakeBrowser([closing, opened]), extensionId, 500), opened as unknown as Page);
 });
 
+test('getConfirmationPage: skips a side panel on the home screen, for the one showing the request', async () => {
+  const home = fakePage(`${EXTENSION}/sidepanel.html#/`);
+  const request = fakePage(`${EXTENSION}/sidepanel.html#/connect/13lA3wvDo0lOLha00M52k`);
+  assert.equal(await getConfirmationPage(fakeBrowser([home, request]), extensionId, 500), request as unknown as Page);
+});
+
 test('getConfirmationPage: skips a popup that closed', async () => {
   const closed = fakePage(SWITCH, { closed: true });
   const opened = fakePage(TRANSACTION);

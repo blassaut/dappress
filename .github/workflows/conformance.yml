@@ -86,7 +86,13 @@ jobs:
       matrix:
         # See scripts/modes.ts
         mode: [sidepanel, headless, popup]
-    name: suite (${{ matrix.mode }})
+        chrome: [stable]
+        # Chrome for Testing's previous major too, once: a Chrome release that
+        # changes how MetaMask shows its requests fails a job the day it ships
+        include:
+          - mode: headless
+            chrome: previous
+    name: suite (${{ matrix.mode }}${{ matrix.chrome == 'previous' && ', previous Chrome' || '' }})
     steps:
       - uses: actions/checkout@v7
 
@@ -100,11 +106,18 @@ jobs:
         id: chrome
         # The download fails now and then (ECONNRESET): three tries, and the
         # step fails rather than handing Cypress an empty browser path
+        env:
+          CHROME: ${{ matrix.chrome }}
         run: |
           set -o pipefail
+          release=stable
+          if [ "$CHROME" = previous ]; then
+            major=$(curl -fsS https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json | jq -r .channels.Stable.version | cut -d. -f1)
+            release=$((major - 1))
+          fi
           path=''
           for attempt in 1 2 3; do
-            path=$(npx --yes @puppeteer/browsers@3 install chrome@stable --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1) && [ -x "$path" ] && break
+            path=$(npx --yes @puppeteer/browsers@3 install "chrome@$release" --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1) && [ -x "$path" ] && break
             echo "Chrome for Testing did not install (attempt $attempt)"
             path=''
             sleep 15
@@ -124,8 +137,9 @@ jobs:
           DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
           DAPPRESS_MODE: ${{ matrix.mode }}
 
+      # The report of a mode is the one on the stable Chrome: the previous one only has to pass
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && matrix.chrome == 'stable'
         with:
           name: report-${{ needs.version.outputs.version }}-${{ matrix.mode }}
           # The report, and the wallet profile recorded during the suite
@@ -137,7 +151,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: screenshots-${{ needs.version.outputs.version }}-${{ matrix.mode }}
+          name: screenshots-${{ needs.version.outputs.version }}-${{ matrix.mode }}-${{ matrix.chrome }}
           # Dappress saves what MetaMask showed when a command failed under /tmp/dappress
           path: /tmp/dappress
           if-no-files-found: ignore

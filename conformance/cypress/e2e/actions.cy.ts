@@ -166,6 +166,16 @@ describe('MetaMask actions', () => {
     testDapp.chainId().should('have.text', sepolia);
   });
 
+  it('switch to a chain the wallet does not know', () => {
+    // No prompt: MetaMask answers EIP-3326's 4902, for the dapp to add the chain; the others, what they were recorded answering
+    provider.request('wallet_switchEthereumChain', [{ chainId: '0x1234' }]);
+    provider
+      .result()
+      .its('error.code')
+      .should('eq', differences.switchRefused ?? 4902);
+    testDapp.chainId().should('not.have.text', '0x1234');
+  });
+
   it('useNetwork, back to a network the dapp is allowed on', () => {
     cy.useNetwork(anvil);
     testDapp.chainId().should('have.text', anvil.chainId);
