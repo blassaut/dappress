@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import type { TraceChunk } from './profile';
+import type { TraceChunk } from '../scripts/profile';
 
-const SOURCE = fs.readFileSync(path.join(__dirname, '..', 'conformance', 'recorder.js'), 'utf8');
+const SOURCE = fs.readFileSync(path.join(__dirname, 'recorder.js'), 'utf8');
 
 /** A provider as a wallet injects it: request(), on(), and its flags. */
 function fakeProvider(answer: (method: string) => unknown) {

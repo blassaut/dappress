@@ -25,12 +25,7 @@ jobs:
           # None of the checks starts Cypress
           CYPRESS_INSTALL_BINARY: 0
 
-      - run: npm run lint
-
-      - run: npm run format:check
-
-      - run: npm run check-types
-
-      - run: npm test
+      # Lint, formatting, types and unit tests, as `npm run check` does for a contributor
+      - run: npm run check
 
       - run: npm run build

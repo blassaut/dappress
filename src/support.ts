@@ -87,7 +87,7 @@ function provider<T>(method: string, params?: unknown): Cypress.Chainable<T> {
   return dappWindow().then((win) => win.ethereum.request({ method, params }) as Promise<T>);
 }
 
-Cypress.Commands.add('setupMetaMask', () => metamask<WalletState>('setupWallet'));
+Cypress.Commands.add('setupMetaMask', () => metamask<WalletState>('setupMetaMask'));
 Cypress.Commands.add('rejectConnection', () => metamask('rejectConnection'));
 Cypress.Commands.add('approveNewNetwork', () => metamask('approveNewNetwork'));
 Cypress.Commands.add('rejectNewNetwork', () => metamask('rejectNewNetwork'));

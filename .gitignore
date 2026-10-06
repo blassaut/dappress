@@ -5,3 +5,5 @@ conformance/cypress/videos/
 conformance/cypress/downloads/
 .DS_Store
 conformance/cypress/debug/
+.claude/
+.gstack/

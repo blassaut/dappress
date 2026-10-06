@@ -114,11 +114,11 @@ test('without a seed phrase, a new wallet is made for each run', (t) => {
   assert.ok(!output.logged().includes(first.seedPhrase));
 });
 
-test('without a seed phrase, the profile cache is turned off', (t) => {
+test('without a seed phrase, the wallet cache is turned off', (t) => {
   const output = quiet(t);
   const options = resolveOptions({ cache: true }, { projectRoot: project() });
   assert.equal(options.cache, false);
-  assert.match(output.logged(), /The profile cache needs a seed phrase of your own/);
+  assert.match(output.logged(), /The wallet cache needs a seed phrase of your own/);
 });
 
 test('the defaults are left as they were', (t) => {

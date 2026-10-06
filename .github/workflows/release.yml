@@ -56,11 +56,8 @@ jobs:
           npx tsx scripts/release-notes.ts "$version" > "$RUNNER_TEMP/notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - run: npm run lint
-
-      - run: npm run check-types
-
-      - run: npm test
+      # The same checks as CI: nothing is published that a pull request would not pass
+      - run: npm run check
 
       # prepack builds dist
       - run: npm publish --access public

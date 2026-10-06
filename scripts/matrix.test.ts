@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { readReports, renderMatrix, renderBadge, type Report, type ReportEntry } from './matrix';
 
-const report = (metamaskVersion: string, mode?: string, failing: string[] = []): Report => ({
+const report = (metamaskVersion: string, mode: string, failing: string[] = []): Report => ({
   dappressVersion: '0.3.1',
   metamaskVersion,
   mode,
@@ -18,28 +18,17 @@ const report = (metamaskVersion: string, mode?: string, failing: string[] = []):
 
 const entry = (version: string, mode: string, failing?: string[]): ReportEntry => ({ version, mode, report: report(version, mode, failing) });
 
-test('reads mode reports, and a report without a mode as side panel', () => {
+test('reads the reports of a folder by version and mode, and nothing else in it', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dappress-matrix-'));
-  const legacy = report('13.49.0', undefined);
-  delete legacy.mode;
-  fs.writeFileSync(path.join(dir, 'metamask-13.49.0.json'), JSON.stringify(legacy));
+  fs.writeFileSync(path.join(dir, 'metamask-13.49.0-sidepanel.json'), JSON.stringify(report('13.49.0', 'sidepanel')));
   fs.writeFileSync(path.join(dir, 'metamask-13.50.0-popup.json'), JSON.stringify(report('13.50.0', 'popup')));
   fs.writeFileSync(path.join(dir, 'notes.txt'), 'not a report');
+  fs.mkdirSync(path.join(dir, 'profiles'));
 
   const reports = readReports(dir)
     .map(({ version, mode }) => `${version} ${mode}`)
     .sort();
   assert.deepEqual(reports, ['13.49.0 sidepanel', '13.50.0 popup']);
-});
-
-test('a side panel report wins over a legacy report of the same version', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dappress-matrix-'));
-  const legacy = report('13.50.0', undefined, ['connectToDapp']);
-  delete legacy.mode;
-  fs.writeFileSync(path.join(dir, 'metamask-13.50.0.json'), JSON.stringify(legacy));
-  fs.writeFileSync(path.join(dir, 'metamask-13.50.0-sidepanel.json'), JSON.stringify(report('13.50.0', 'sidepanel')));
-
-  assert.match(renderMatrix(readReports(dir)), /\| 13\.50\.0 \| ✅ 3\/3 \|/);
 });
 
 test('one row per version, newest first, one column per mode', () => {

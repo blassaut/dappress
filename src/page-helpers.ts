@@ -59,10 +59,6 @@ export async function isGone(page: Page, selector: Selector, timeout = 1500): Pr
   }
 }
 
-export async function click(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
-  await clickFresh(page, selector, options);
-}
-
 /**
  * Wait until the element is both visible and enabled, then click it. The
  * element is taken again at each turn: MetaMask re-renders its screens, and
@@ -88,7 +84,7 @@ export async function clickWhenEnabled(
     }
     await sleep(100);
   }
-  await clickFresh(page, selector, { timeout });
+  await click(page, selector, { timeout });
 }
 
 // What may keep a button disabled: the button itself (a spinner, a class),
@@ -126,8 +122,8 @@ async function windowBounds(page: Page): Promise<string> {
   }
 }
 
-// Find the element and click it; once more if a re-render replaced it between the two
-async function clickFresh(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
+/** Find the element and click it; once more if a re-render replaced it between the two. */
+export async function click(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     const element = await waitFor(page, selector, options);
     await waitForStill(element);
