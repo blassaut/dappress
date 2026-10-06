@@ -12,40 +12,30 @@ import { MODES } from './modes';
 export type Report = {
   dappressVersion: string;
   metamaskVersion: string;
-  // Missing from the reports that predate the modes
-  mode?: string;
+  mode: string;
   browser?: string;
   date: string;
   passed: boolean;
   actions: { action: string; status: string; error?: string }[];
 };
 
-export type ReportEntry = { version: string; mode: string; legacy?: boolean; report: Report };
+export type ReportEntry = { version: string; mode: string; report: Report };
 
 type ReportsByMode = Record<string, Report>;
 
 // The actions table has one column per version: the latest ones, to stay readable
 const VERSIONS_BY_ACTION = 8;
 
-const REPORT_FILE = /^metamask-(\d+\.\d+\.\d+)(?:-([a-z]+))?\.json$/;
+// metamask-<version>-<mode>.json, as scripts/modes.ts names them
+const REPORT_FILE = /^metamask-(\d+\.\d+\.\d+)-([a-z]+)\.json$/;
 
-/**
- * The reports in `dir`, as { version, mode, report }. A report without a mode
- * predates them and counts as side panel, unless a side panel report exists.
- */
+/** The reports in `dir`, as { version, mode, report }. Anything else in there is left alone. */
 export function readReports(dir: string): ReportEntry[] {
-  return (
-    fs
-      .readdirSync(dir)
-      .map((file) => ({ file, match: REPORT_FILE.exec(file) }))
-      .flatMap(({ file, match }) => (match ? [{ file, match }] : []))
-      .map(({ file, match }) => {
-        const report: Report = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
-        return { version: match[1], mode: report.mode || match[2] || 'sidepanel', legacy: !match[2], report };
-      })
-      // Legacy reports first, so a report of the mode replaces them
-      .sort((a, b) => Number(b.legacy) - Number(a.legacy))
-  );
+  return fs
+    .readdirSync(dir)
+    .map((file) => ({ file, match: REPORT_FILE.exec(file) }))
+    .flatMap(({ file, match }) => (match ? [{ file, match }] : []))
+    .map(({ file, match }) => ({ version: match[1], mode: match[2], report: JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as Report }));
 }
 
 /** Newest first. */
@@ -119,7 +109,7 @@ export function renderMatrix(reports: ReportEntry[]): string {
   const lines = [
     '# Dappress conformance',
     '',
-    "One run of the suite per MetaMask release and mode. A mode is where MetaMask shows the dapp's requests: its side panel, the same without a browser window, or its popup when the wallet comes from the profile cache.",
+    "One run of the suite per MetaMask release and mode. A mode is where MetaMask shows the dapp's requests: its side panel, the same without a browser window, or its popup when the wallet comes from the wallet cache.",
     '',
     `| MetaMask | ${modes.map((mode) => MODES[mode].label).join(' | ')} | Dappress | Date |`,
     `| --- | ${modes.map(() => '---').join(' | ')} | --- | --- |`,

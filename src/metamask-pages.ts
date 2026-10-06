@@ -13,12 +13,29 @@ function extensionIdOf(url: string): string | null {
   return match ? match[1] : null;
 }
 
+// A popup on its home route shows no request: it has not routed to one yet, or it is closing
 function isHomeRoute(url: string): boolean {
-  return url.includes('/notification.html') && /notification\.html(#\/?)?$/.test(url);
+  return /notification\.html(#\/?)?$/.test(url);
 }
 
 function pagesOf(browser: Browser, extensionId: string, pathname: string): Target[] {
   return browser.targets().filter((target) => target.type() === 'page' && target.url().startsWith(`chrome-extension://${extensionId}${pathname}`));
+}
+
+/**
+ * The pages open where dapp requests show up, the side panel and the popup,
+ * with the popup given a usable window. A target closing while its page is
+ * taken has none, and is left out.
+ */
+export async function getRequestPages(browser: Browser, extensionId: string): Promise<Page[]> {
+  const pages: Page[] = [];
+  for (const pathname of CONFIRMATION_PATHS) {
+    for (const target of pagesOf(browser, extensionId, pathname)) {
+      const page = await target.page().catch(() => null);
+      if (page && !page.isClosed()) pages.push(pathname === '/notification.html' ? await withUsableWindow(page) : page);
+    }
+  }
+  return pages;
 }
 
 /**
@@ -81,36 +98,17 @@ export async function getHomePage(browser: Browser, extensionId: string): Promis
   return page;
 }
 
-/** The pages open where dapp requests show up: the side panel, a popup. */
-export async function getRequestPages(browser: Browser, extensionId: string): Promise<Page[]> {
-  const pages: Page[] = [];
-  for (const pathname of CONFIRMATION_PATHS) {
-    for (const target of pagesOf(browser, extensionId, pathname)) {
-      const page = await target.page();
-      if (page) pages.push(pathname === '/notification.html' ? await withUsableWindow(page) : page);
-    }
-  }
-  return pages;
-}
-
 /**
  * The page a dapp request is shown on. Waits for the popup to open, or takes
- * the side panel. A popup still on its home route is one closing after the
- * previous request, or one that hasn't routed to the request yet: skipped.
- * The route is read from the page, which follows a change of hash at once,
- * where the target can still name the request just answered.
+ * the side panel. A popup still on its home route is skipped. The route is
+ * read from the page, which follows a change of hash at once, where the
+ * target can still name the request just answered.
  */
 export async function getConfirmationPage(browser: Browser, extensionId: string, timeout: number): Promise<Page> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    for (const pathname of CONFIRMATION_PATHS) {
-      for (const target of pagesOf(browser, extensionId, pathname)) {
-        // A target closing while its page is taken has none: not a confirmation either
-        const page = await target.page().catch(() => null);
-        if (!page || page.isClosed() || isHomeRoute(page.url())) continue;
-        return pathname === '/notification.html' ? withUsableWindow(page) : page;
-      }
-    }
+    const page = (await getRequestPages(browser, extensionId)).find((candidate) => !isHomeRoute(candidate.url()));
+    if (page) return page;
     await sleep(250);
   }
   const seen = browser
@@ -145,7 +143,7 @@ export async function waitForDismissal(page: Page, request: string, timeout: num
 // its Confirm button stays disabled. The popup is given its size back first.
 const POPUP = { width: 400, height: 620 };
 
-export async function withUsableWindow(page: Page): Promise<Page> {
+async function withUsableWindow(page: Page): Promise<Page> {
   const session = await page.target().createCDPSession();
   try {
     const { windowId, bounds } = await session.send('Browser.getWindowForTarget');

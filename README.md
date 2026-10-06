@@ -1,21 +1,27 @@
 # Dappress
 
-**MetaMask automation for Cypress.**
+**Test your dapp against the wallets your users run, starting with MetaMask.**
 
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
 [![Reproducible build](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml/badge.svg)](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml)
 
-Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet, and gives you `cy.*` commands such as `cy.connectToDapp()` or `cy.confirmTransaction()` to answer what your dapp asks the wallet: a connection, a signature, a transaction.
+Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet. Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`; Dappress presses the button on MetaMask's screen and waits for the request to close. It also records what a dapp sees of other wallets, as [wallet profiles](#wallet-profiles), to compare them with MetaMask.
 
 ## Why Dappress exists
 
-To test a dapp end to end, you have to drive MetaMask: connect, sign, confirm. Cypress cannot reach into the extension, and MetaMask's screens change with every release. Dappress does that part for you, and keeps up with MetaMask so your tests don't have to.
+Cypress cannot reach into a browser extension, and MetaMask's screens change with every release. Dappress does that part, and keeps up with MetaMask so your tests don't have to.
 
-- **Write the test, not the wallet.** Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`. The commands are plain Cypress commands, typed for TypeScript, in the browser Cypress launches: no second browser, no proxy, nothing new to learn.
-- **Test what your users run.** The MetaMask version is yours to pick, with the latest release as the default, so the wallet in your tests is the one in your users' browsers.
-- **Know before your pipeline does.** Every command is run against each new MetaMask release the day it comes out, and the result goes on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md). When MetaMask changes a screen, it shows there first, and it is Dappress that adapts, not your tests.
-- **Set the wallet up once.** Its network in a committed setup file, its seed phrase and password in the environment. MetaMask imports it on the first run, from a profile cache when you opt in.
-- **Fail with the screen in hand.** When a command cannot go on, the error says which MetaMask screen it was on, quotes what it shows, and points to a screenshot.
+- **Plain Cypress commands.** `cy.connectToDapp()`, `cy.confirmSignature()`, `cy.confirmTransaction()`, typed for TypeScript, in the browser Cypress launches: no second browser, no proxy, nothing new to learn.
+- **The MetaMask version is yours.** The latest release by default, any other on request, so the wallet in your tests is the one in your users' browsers.
+- **Checked against each release.** Every command runs against each new MetaMask release the day it comes out, and the result goes on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md). When MetaMask moves a screen, Dappress adapts, not your tests.
+- **Set up once.** The network in a committed setup file, the seed phrase and the password in the environment. MetaMask imports the wallet on the first run, or from the wallet cache when you opt in.
+- **Errors name the screen.** When a command cannot go on, the error says which MetaMask screen it was on, quotes what it shows, and points to a screenshot.
+
+## Cypress, and only Cypress
+
+A wallet driver is screen-by-screen code: selectors, retries for the clicks a screen loses while it settles, the waits between a button and the next screen. That code cannot be shared across test frameworks without serving each one worse, so Dappress serves one, natively: the commands run in the browser Cypress launches, through Cypress's own plugin and task APIs, with nothing else in the process.
+
+Dappress does not mock the provider: the dapp talks to the real MetaMask. Other wallets are recorded, not driven.
 
 ## Contents
 
@@ -23,6 +29,7 @@ To test a dapp end to end, you have to drive MetaMask: connect, sign, confirm. C
 - [Quick start](#quick-start)
 - [Commands](#commands)
 - [Configuration](#configuration)
+- [Wallet profiles](#wallet-profiles)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -45,7 +52,15 @@ Tested on macOS and on GitHub's Linux runners.
 npm install --save-dev dappress
 ```
 
-### 2. Register the plugin
+### 2. Get a browser that loads extensions
+
+```sh
+npx @puppeteer/browsers install chrome@stable
+```
+
+The command downloads Chrome for Testing and prints the path of its executable. Google Chrome itself no longer loads extensions. `npx cypress info` lists the browsers Cypress finds by itself.
+
+### 3. Register the plugin
 
 ```ts
 // cypress.config.ts
@@ -65,7 +80,7 @@ export default defineConfig({
 
 `testIsolation: false` is required. The tests of a spec share one wallet, and Cypress must not reset the page between them. Each test starts where the previous one ended, so write the tests of a spec to run in order.
 
-### 3. Load the commands
+### 4. Load the commands
 
 ```ts
 // cypress/support/e2e.ts
@@ -83,7 +98,7 @@ import 'dappress/support';
 
 JavaScript projects use the same files with a `.js` extension and `module.exports`, and skip `tsconfig.json`.
 
-### 4. Choose the network
+### 5. Choose the network
 
 Dappress reads `cypress/wallet.setup.ts` (or `.js`) by itself. It holds no secret, so commit it.
 
@@ -105,14 +120,6 @@ export default wallet;
 ```
 
 This step is optional. Without a network, the dapp stays on Ethereum mainnet, where MetaMask starts.
-
-### 5. Get a browser that loads extensions
-
-```sh
-npx @puppeteer/browsers install chrome@stable
-```
-
-The command downloads Chrome for Testing and prints the path of its executable. `npx cypress info` lists the browsers Cypress finds by itself.
 
 ### 6. Write a test and run it
 
@@ -137,9 +144,13 @@ Pass `--browser chrome-for-testing` instead when `npx cypress info` lists it. Ad
 
 Before the first test of each spec, Dappress imports the wallet. Each command then waits for MetaMask to show the request, answers it, and waits for the request to close.
 
+### How it works
+
+Dappress connects Puppeteer to the browser Cypress launched, through the debugging URL Cypress provides, and presses MetaMask's own buttons by their test ids. Nothing is injected into MetaMask, nothing is mocked: what your test drives is the extension your users have.
+
 ### Testing with funds
 
-By default, Dappress creates a new, empty wallet for each run. That is enough to connect and sign. To send transactions, use a wallet of yours that holds test funds, and give its seed phrase outside the repository.
+By default, Dappress creates a new, empty wallet for each run. That is enough to connect and sign. To send transactions, use a wallet of yours that holds test funds, and keep its seed phrase outside the repository.
 
 On your machine, in `cypress.env.json` (add it to `.gitignore`):
 
@@ -158,6 +169,29 @@ env:
 ```
 
 Read [Security](#security) before you pick that seed phrase.
+
+### Running in CI
+
+The job needs Chrome for Testing, and a display for the headed run on Linux. On GitHub Actions:
+
+```yaml
+jobs:
+  metamask:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - id: chrome
+        run: echo "path=$(npx @puppeteer/browsers install chrome@stable --format '{{path}}' | tail -n 1)" >> "$GITHUB_OUTPUT"
+      - run: npx cypress run --browser "${{ steps.chrome.outputs.path }}" --headed
+        env:
+          DAPPRESS_SEED_PHRASE: ${{ secrets.DAPPRESS_SEED_PHRASE }}
+```
+
+Cypress starts Xvfb itself for the headed run. Drop `--headed` to run headless; MetaMask then shows its requests in the side panel, and the wallet cache is not used.
 
 ## Commands
 
@@ -246,16 +280,22 @@ When a setting appears in several places, the first one found wins: environment 
 | `seedPhrase`      | `DAPPRESS_SEED_PHRASE`      | None. A new wallet is created for each run. It is never written to disk.                                                                                                    |
 | `password`        | `DAPPRESS_PASSWORD`         | `Tester@1234`. It only protects the throwaway browser profile of the run.                                                                                                   |
 | `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0`. Downloaded from MetaMask's GitHub releases on first use, then cached.                                                                                             |
-| `metamaskChecksum` | `DAPPRESS_METAMASK_CHECKSUM` | The SHA-256 of the archive of the version, when Dappress knows it: `src/config.ts` lists them. Set it to pin the archive of another version, which is otherwise loaded as downloaded. |
+| `metamaskChecksum` | `DAPPRESS_METAMASK_CHECKSUM` | The SHA-256 Dappress accepts the archive with. Known for the versions `src/config.ts` lists; set it for another version, which is otherwise loaded as downloaded, with a warning. |
 | `timeout`         |                             | `20000` ms. How long a command waits for MetaMask to show the request.                                                                                                       |
 | `autoSetup`       |                             | `true`. Set to `false` to call `cy.setupMetaMask()` yourself.                                                                                                                |
 | `cache`           |                             | `false`. Importing the wallet takes about fifteen seconds per run. With `true`, Dappress imports it once and reuses the browser profile. Needs your own seed phrase and a headed run. |
 | `backupAndSync`   |                             | `false`. Dappress turns off MetaMask's backup and sync, so accounts added by a test do not come back on the next run.                                                        |
-| `cacheDir`        |                             | `~/.cache/dappress`. Where MetaMask builds and cached profiles are kept.                                                                                                     |
+| `cacheDir`        |                             | `~/.cache/dappress`. Where MetaMask builds and the wallet cache are kept.                                                                                                     |
+
+## Wallet profiles
+
+A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of an event, a method one wallet has and another has not. A wallet profile records those answers on the real wallet, request by request and event by event. MetaMask's comes out of the conformance suite at each release; Rabby's and Phantom's were recorded by hand. They live in [`reports/profiles`](reports/profiles), and `npm run profile -- diff` lists where two wallets answer differently: `isMetaMask: true` on all three, a rejected transaction that says "User rejected the request." on two of them and "MetaMask Tx Signature: User denied transaction signature." on the third, a switch to an unknown chain that fails with `4902`, `-32603` or `4901`.
+
+Recording a wallet takes twenty minutes and a browser console: see [CONTRIBUTING.md](CONTRIBUTING.md#wallet-profiles).
 
 ## Security
 
-Dappress reads a seed phrase and drives a wallet. In short, what it does with them; [SECURITY.md](https://github.com/blassaut/dappress/blob/main/SECURITY.md) has the details, a way to check each point, and how to report a flaw.
+Dappress reads a seed phrase and drives a wallet. What it does with them, in short; [SECURITY.md](https://github.com/blassaut/dappress/blob/main/SECURITY.md) has the details, a way to check each point, and how to report a flaw.
 
 - **Secrets stay in Node.js.** The seed phrase and the password are typed into MetaMask's own screens and go nowhere else: not the browser side, not the logs. Without a seed phrase, one is generated on your machine.
 - **One download, checked.** The MetaMask build, from MetaMask's GitHub releases, once per version, against the SHA-256 Dappress knows for it. No other host, no telemetry.
@@ -269,7 +309,7 @@ Dappress reads a seed phrase and drives a wallet. In short, what it does with th
 - **"MetaMask showed no confirmation".** The dapp sent no request, or the network's RPC endpoint is unreachable.
 - **Adding or importing an account never finishes.** `chromeWebSecurity: false` is set in your Cypress config. MetaMask then cannot start the snaps its account screens wait for. Remove that setting.
 - **The wallet shows accounts you did not create.** The seed phrase is used elsewhere, and MetaMask restored what it saved for it. Use a phrase made for your tests, or none.
-- **"MetaMask extension not found in the browser".** The browser did not load the extension. Most often it is Google Chrome 137 or later, which no longer can. Use Chrome for Testing: see [step 5](#5-get-a-browser-that-loads-extensions).
+- **"MetaMask extension not found in the browser".** The browser did not load the extension. Most often it is Google Chrome 137 or later, which no longer loads extensions. Use Chrome for Testing: see [step 2](#2-get-a-browser-that-loads-extensions).
 
 ## Contributing
 

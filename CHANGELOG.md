@@ -4,11 +4,15 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Changed
+
+- The README says what Dappress is for, that it serves Cypress and only Cypress, how it works, how to run it in CI, and what the wallet profiles are. The browser to install is step 2 of the quick start, since nothing runs without it.
+
 ## [0.7.0] - 2026-10-06
 
 ### Added
 
-- The MetaMask archive is checked against its SHA-256 before it is unpacked, for the releases the conformance suite ran against: 13.49.0 and 13.50.0. An archive with another digest is refused and removed. `metamaskChecksum`, or `DAPPRESS_METAMASK_CHECKSUM`, pins the archive of another version; without one, it is loaded as downloaded, with a warning.
+- The MetaMask archive is checked against its SHA-256 before it is unpacked, for the releases `src/config.ts` lists. An archive with another digest is refused and removed. `metamaskChecksum`, or `DAPPRESS_METAMASK_CHECKSUM`, pins the archive of another version; without one, it is loaded as downloaded, with a warning.
 - The conformance suite records what the dapp sees of MetaMask, request by request and event by event, as a wallet profile published next to the reports: the first of the profiles a dapp will be tested against. `conformance/recorder.js` records any wallet from a browser console, and `npm run profile` builds a profile from a trace and compares two.
 
 ### Changed
@@ -19,14 +23,14 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Fixed
 
-- `cy.confirmTransaction({ gas })` no longer confirms, now and then, with the fee MetaMask estimated in place of the one asked. MetaMask's confirmation carries the new fee a moment after the fee editor closes, and confirming meanwhile sent it the old one, which it kept. The command now waits for the "Network fee" row to change, as it did for the spending cap.
+- `cy.confirmTransaction({ gas })` no longer confirms, now and then, with the fee MetaMask estimated in place of the one asked: the command waits for the "Network fee" row to carry the new fee before confirming, as it did for the spending cap.
 
 ## [0.6.0] - 2026-10-05
 
 ### Fixed
 
 - The peer dependency on Cypress asks for 15.10 or later, the first version with `Cypress.expose()`, which the commands read their options with. Earlier versions were accepted at install, then failed as soon as the support file loaded.
-- A command sent right after another was answered in the popup no longer fails on "Timed out waiting for confirm-footer-button". The popup closes a moment after its button goes, and the next command could find it, still listed on the request just answered, then lose it. A decision now waits for the popup to close, and a confirmation that closes before it is acted on is looked for again.
+- A command sent right after another was answered in the popup no longer fails on "Timed out waiting for confirm-footer-button": a decision waits for the popup to close, and a confirmation that closes before it is acted on is looked for again.
 
 ## [0.5.1] - 2026-10-05
 

@@ -1,9 +1,13 @@
 /// <reference types="cypress" preserve="true" />
 
+// The plugin's entry point. configureDappress() resolves the options,
+// downloads MetaMask, loads it into the browser Cypress launches (from the
+// wallet cache when asked), and registers the tasks behind the cy.* commands.
+
 import { resolveOptions, publicOptions } from './config';
 import { captureDebuggerUrl } from './browser';
 import { prepareExtension } from './download';
-import { prepareProfile, installProfile } from './profile';
+import { prepareCachedWallet, installCachedWallet } from './wallet-cache';
 import { createTasks } from './actions';
 import type { DappressOptions } from './types';
 
@@ -32,9 +36,9 @@ export function configureDappress(
   // A cached wallet gets its requests in MetaMask's popup window, which headless Chrome doesn't open
   const usesCache = (browser: Cypress.Browser) => options.cache && !browser.isHeadless;
 
-  // Build the wallet profile before the run, out of the time Cypress allows a browser to come up
+  // Import the wallet into the cache before the run, out of the time Cypress allows a browser to come up
   on('before:run', async ({ browser }) => {
-    if (browser && usesCache(browser)) await prepareProfile({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
+    if (browser && usesCache(browser)) await prepareCachedWallet({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
   });
 
   on('before:browser:launch', async (browser, launchOptions) => {
@@ -49,8 +53,8 @@ export function configureDappress(
       if (options.cache) console.warn('[dappress] The wallet cache needs a headed browser: importing the wallet in this run instead');
     }
     if (usesCache(browser)) {
-      const profileDir = await prepareProfile({ browserPath: browser.path, extensionDir, options });
-      await installProfile(profileDir, browser, config.isTextTerminal);
+      const cachedWallet = await prepareCachedWallet({ browserPath: browser.path, extensionDir, options });
+      await installCachedWallet(cachedWallet, browser, config.isTextTerminal);
     }
     return launchOptions;
   });

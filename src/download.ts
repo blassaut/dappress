@@ -1,3 +1,7 @@
+// The MetaMask build: downloaded once per version from MetaMask's GitHub
+// releases, checked against its SHA-256, and unpacked under cacheDir. The
+// only outbound request the package makes.
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,6 +1,6 @@
 // The Node side of every cy.* command, registered as Cypress tasks. Each
 // action gets a Puppeteer browser connected to the Cypress browser, finds the
-// MetaMask page it needs and drives it through src/metamask.ts.
+// MetaMask page it needs and drives it through the metamask-* modules.
 
 import type { Browser, Page } from 'puppeteer-core';
 import { withBrowser } from './browser';
@@ -22,7 +22,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   }
 
   /** Onboard the wallet or unlock it, so the dapp can talk to it. Safe to call repeatedly. */
-  const setupWallet = (browser: Browser) => openWallet(browser, { onboard: true });
+  const setupMetaMask = (browser: Browser) => openWallet(browser, { onboard: true });
 
   async function openWallet(browser: Browser, { onboard }: { onboard: boolean }): Promise<WalletState> {
     const home = await getHomePage(browser, await metamaskId(browser));
@@ -86,7 +86,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
       onConfirmation(browser, (page) => metamask.decide(decision, page, options.timeout, argument));
 
   const actions: Record<string, Action> = {
-    setupWallet,
+    setupMetaMask,
     approveNetworkChange,
     addAccount: onHomePage(metamask.addAccount),
     switchAccount: onHomePage(metamask.switchAccount),

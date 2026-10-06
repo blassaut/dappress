@@ -1,3 +1,8 @@
+// The plugin's options, from their three sources: the environment (or the
+// Cypress env block) for secrets and the MetaMask version, the wallet setup
+// file for the network, the argument of configureDappress() for the rest.
+// publicOptions() is the subset the browser side may read: no secret in it.
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,18 +67,17 @@ export function resolveOptions(
   for (const [key, value] of Object.entries(fromEnv) as [keyof typeof fromEnv, string | undefined][]) {
     if (value) options[key] = value;
   }
-  const seedPhrase = options.seedPhrase || newWallet(options);
+  const seedPhrase = options.seedPhrase || newWallet();
+  // The wallet cache keeps a wallet across runs: nothing to keep of one made for this run
+  const cache = options.cache && Boolean(options.seedPhrase);
+  if (options.cache && !cache) console.warn('[dappress] The wallet cache needs a seed phrase of your own: importing the wallet in this run instead');
   const metamaskChecksum = options.metamaskChecksum || METAMASK_CHECKSUMS[options.metamaskVersion] || null;
-  return { ...options, seedPhrase, metamaskChecksum };
+  return { ...options, seedPhrase, cache, metamaskChecksum };
 }
 
 /** No seed phrase was given: make one for this run. It is never written anywhere. */
-function newWallet(options: { cache: boolean }): string {
+function newWallet(): string {
   console.log('[dappress] No seed phrase configured: using a new wallet for this run');
-  if (options.cache) {
-    console.warn('[dappress] The profile cache needs a seed phrase of your own: importing the wallet in this run instead');
-    options.cache = false;
-  }
   return generateMnemonic(wordlist);
 }
 
