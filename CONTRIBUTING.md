@@ -76,7 +76,7 @@ Twenty minutes, in a browser where that wallet alone is active, with a wallet ma
 3. In the console, `copy(JSON.stringify(window.__dappressTrace))`, and paste it in a file, say `trace.json`.
 4. `npm run profile -- build trace.json --wallet Rabby --version 0.93.0 --out reports/profiles/rabby-0.93.0.json`.
 
-Then run the diff above against the MetaMask profile, and open a pull request with the profile: it is published with the others, and the next person with a dapp to check has it.
+Then run the diff above against the MetaMask profile, and open a pull request with the profile in `reports/profiles/`: the workflow publishes what that folder holds with the suite's own, and the next person with a dapp to check has it.
 
 ### How the recorder works
 

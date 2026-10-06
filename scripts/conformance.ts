@@ -36,6 +36,7 @@ async function main(): Promise<void> {
   // Read by conformance/cypress.config.ts, in the process Cypress starts for the plugins
   process.env.DAPPRESS_CONFORMANCE_CACHE = mode.cache ? '1' : '0';
   const traceFile = path.join(os.tmpdir(), `dappress-trace-${process.pid}.jsonl`);
+  fs.rmSync(traceFile, { force: true });
   process.env.DAPPRESS_TRACE_FILE = traceFile;
   const anvil = await startAnvil(wallet.seedPhrase);
   let results;

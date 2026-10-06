@@ -8,7 +8,8 @@
 // scripts/profile.ts turns it into a wallet profile.
 (() => {
   if (window.__dappressTrace) return;
-  const trace = { recorder: '1', discovery: { injected: null, flags: {}, eip6963: [] }, entries: [] };
+  // Whether the provider was there when the recorder ran, or came later
+  const trace = { recorder: '1', discovery: { injected: window.ethereum ? 'before' : 'after', flags: {}, eip6963: [] }, entries: [] };
   window.__dappressTrace = trace;
 
   // The identity flags wallets set on their provider, some of them on others' behalf
@@ -19,31 +20,50 @@
   const record = (entry) => trace.entries.push({ seq: ++seq, at: now(), ...entry });
   // What a dapp can read off a rejection: the code, the message, the data
   const plain = (error) => (error && typeof error === 'object' ? { code: error.code, message: error.message, data: error.data } : { message: String(error) });
-  const wrapped = new WeakSet();
+  // The request() functions this recorder installed: a provider wrapped once, through a proxy of it or not
+  const recordings = new WeakSet();
   // The providers announced through EIP-6963, to tell later whether window.ethereum is one of them:
   // MetaMask announces before it sets window.ethereum
   const announced = [];
   const refresh = () => announced.forEach(({ provider, entry }) => (entry.sameAsInjected = provider === window.ethereum));
 
-  const wrap = (provider, injected) => {
-    if (!provider || typeof provider.request !== 'function' || wrapped.has(provider)) return;
-    wrapped.add(provider);
-    trace.discovery.injected = trace.discovery.injected || injected;
-    refresh();
+  // The flags of the injected provider, the one a dapp reads them on
+  const describe = (provider) => {
     for (const flag of FLAGS) trace.discovery.flags[flag] = Boolean(provider[flag]);
+  };
+
+  // Wrap request() and listen to the events. The wrapper is transparent: a
+  // value, a promise or a synchronous error comes back to the dapp as it was.
+  const wrap = (provider) => {
+    if (!provider || typeof provider.request !== 'function' || recordings.has(provider.request)) return;
     const request = provider.request;
-    const recording = async (args) => {
+    const recording = function (args) {
       const started = now();
       const entry = { kind: 'request', method: args && args.method, params: args && args.params };
+      const settled = (outcome) => record({ ...entry, ...outcome, ms: now() - started });
+      let returned;
       try {
-        const result = await request.call(provider, args);
-        record({ ...entry, result, ms: now() - started });
-        return result;
+        returned = request.call(this === recording ? provider : this, args);
       } catch (error) {
-        record({ ...entry, error: plain(error), ms: now() - started });
+        settled({ error: plain(error) });
         throw error;
       }
+      if (!returned || typeof returned.then !== 'function') {
+        settled({ result: returned });
+        return returned;
+      }
+      return returned.then(
+        (result) => {
+          settled({ result });
+          return result;
+        },
+        (error) => {
+          settled({ error: plain(error) });
+          throw error;
+        },
+      );
     };
+    recordings.add(recording);
     // A plain assignment, then a definition when the provider's proxy ignores it
     try {
       provider.request = recording;
@@ -62,7 +82,8 @@
     }
   };
 
-  // EIP-6963: the providers announced, and whether the injected one is among them
+  // EIP-6963: the providers announced, and whether the injected one is among them.
+  // A dapp may send its requests through one of them rather than window.ethereum
   window.addEventListener('eip6963:announceProvider', (event) => {
     const detail = event.detail || {};
     const info = detail.info || {};
@@ -71,14 +92,19 @@
     const entry = { rdns: info.rdns, name: info.name, sameAsInjected: detail.provider === window.ethereum };
     announced.push({ provider: detail.provider, entry });
     trace.discovery.eip6963.push(entry);
-    wrap(detail.provider, 'after');
+    wrap(detail.provider);
   });
   window.addEventListener('ethereum#initialized', refresh);
   window.dispatchEvent(new Event('eip6963:requestProvider'));
 
   // window.ethereum: there already, or injected after this script
+  const injected = (provider) => {
+    describe(provider);
+    refresh();
+    wrap(provider);
+  };
   if (window.ethereum) {
-    wrap(window.ethereum, 'before');
+    injected(window.ethereum);
   } else {
     let provider;
     try {
@@ -88,7 +114,7 @@
         get: () => provider,
         set: (value) => {
           provider = value;
-          wrap(value, 'after');
+          if (value) injected(value);
         },
       });
     } catch {
@@ -97,7 +123,7 @@
     // A wallet that defines the property itself goes around the setter
     const poll = setInterval(() => {
       if (!window.ethereum) return;
-      wrap(window.ethereum, 'after');
+      injected(window.ethereum);
       clearInterval(poll);
     }, 50);
     setTimeout(() => clearInterval(poll), 10000);

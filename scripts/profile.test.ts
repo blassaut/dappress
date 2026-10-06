@@ -84,6 +84,27 @@ test('a value too long to say anything of the wallet is kept by its shape', () =
   ]);
 });
 
+test('the observations keep the order of the chunks, whatever the page clock says', () => {
+  const profile = buildProfile(
+    [
+      { recorder: '1', test: 'first', entries: [{ kind: 'request', seq: 7, at: 900, method: 'eth_chainId', result: '0x1', ms: 1 }] },
+      // After a reload: the clock and the sequence start again
+      { recorder: '1', test: 'second', entries: [{ kind: 'request', seq: 1, at: 10, method: 'eth_chainId', result: '0x2', ms: 1 }] },
+    ],
+    meta,
+  );
+  assert.deepEqual(
+    profile.methods.eth_chainId.map((observation) => observation.test),
+    ['first', 'second'],
+  );
+});
+
+test('the discovery is the last recorded: it fills in as the page goes', () => {
+  const later = { ...discovery, eip6963: [...discovery.eip6963, { rdns: 'io.other', name: 'Other', sameAsInjected: false }] };
+  const profile = buildProfile([chunks[0], { ...chunks[1], discovery: later }], meta);
+  assert.deepEqual(profile.discovery, later);
+});
+
 test('a trace with no discovery and no test, as a console copy gives it, still builds', () => {
   const profile = buildProfile([{ recorder: '1', entries: chunks[1].entries }], meta);
   assert.equal(profile.discovery, null);

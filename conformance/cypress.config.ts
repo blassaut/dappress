@@ -19,8 +19,13 @@ export default defineConfig({
     setupNodeEvents(on, config) {
       const traceFile = process.env.DAPPRESS_TRACE_FILE;
       on('task', {
+        // A failure here would fail the test and skip the rest of the suite: logged instead
         'dappress:trace': (chunk: unknown) => {
-          if (traceFile) fs.appendFileSync(traceFile, `${JSON.stringify(chunk)}\n`);
+          try {
+            if (traceFile) fs.appendFileSync(traceFile, `${JSON.stringify(chunk)}\n`);
+          } catch (error) {
+            console.warn(`[dappress] trace not recorded: ${(error as Error).message}`);
+          }
           return null;
         },
       });

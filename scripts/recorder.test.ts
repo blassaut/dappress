@@ -81,10 +81,10 @@ test('the events of the provider are recorded with their payload', () => {
 
 test('a provider injected after the recorder is wrapped when it is set', async () => {
   const { win, trace } = page();
-  assert.equal(trace().discovery?.injected, null);
+  assert.equal(trace().discovery?.injected, 'after');
   const provider = fakeProvider(() => '0x2');
   win.ethereum = provider;
-  assert.equal(trace().discovery?.injected, 'after');
+  assert.equal(trace().discovery?.flags.isMetaMask, true);
   await (win.ethereum as typeof provider).request({ method: 'eth_chainId' });
   assert.equal(trace().entries.length, 1);
 });
@@ -99,6 +99,38 @@ test('a provider announced through EIP-6963 is listed, and told from the injecte
     { rdns: 'io.metamask', name: 'MetaMask', sameAsInjected: true },
     { rdns: 'io.other', name: 'Other', sameAsInjected: false },
   ]);
+});
+
+test('a provider announced through EIP-6963 and injected behind a proxy is wrapped once', async () => {
+  const provider = fakeProvider(() => '0x1');
+  const { win, trace } = page();
+  const dispatch = win.dispatchEvent as (event: unknown) => void;
+  dispatch({ type: 'eip6963:announceProvider', detail: { info: { rdns: 'io.metamask', name: 'MetaMask' }, provider } });
+  // The pattern @metamask/providers uses: the same provider, behind a proxy
+  win.ethereum = new Proxy(provider, { deleteProperty: () => true });
+  await (win.ethereum as typeof provider).request({ method: 'eth_chainId' });
+  provider.emit('chainChanged', '0x2');
+  assert.deepEqual(
+    trace().entries.map((entry) => entry.kind),
+    ['request', 'event'],
+  );
+  assert.equal(trace().discovery?.flags.isMetaMask, true);
+});
+
+test('the wrapper is transparent: a synchronous error and a plain value come back as they were', () => {
+  const provider = fakeProvider(() => null) as unknown as { request: (args: { method: string }) => unknown };
+  const thrown = new TypeError('method is required');
+  provider.request = ({ method }) => {
+    if (!method) throw thrown;
+    return 'sync';
+  };
+  const { win, trace } = page(provider as unknown as ReturnType<typeof fakeProvider>);
+  const ethereum = win.ethereum as typeof provider;
+  assert.throws(() => ethereum.request({ method: '' }), thrown);
+  assert.equal(ethereum.request({ method: 'eth_chainId' }), 'sync');
+  const entries = trace().entries as { error?: { message?: string }; result?: unknown }[];
+  assert.equal(entries[0].error?.message, 'method is required');
+  assert.equal(entries[1].result, 'sync');
 });
 
 test('run twice in a page, the recorder keeps the first trace', () => {

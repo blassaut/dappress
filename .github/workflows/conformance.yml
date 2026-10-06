@@ -195,6 +195,8 @@ jobs:
           fi
           mkdir -p published/reports/profiles
           cp incoming/*.json published/reports/ 2>/dev/null || true
+          # The profiles recorded by hand live on main; the suite's own, fresher, come after
+          cp reports/profiles/*.json published/reports/profiles/ 2>/dev/null || true
           cp incoming/profiles/*.json published/reports/profiles/ 2>/dev/null || true
           npm run matrix -- published/reports published
           cd published

@@ -79,9 +79,9 @@ export interface ProfileMeta {
 export function buildProfile(chunks: TraceChunk[], meta: ProfileMeta): Profile {
   const methods: Record<string, Observation[]> = {};
   const events: Record<string, EventObservation[]> = {};
-  const entries = chunks
-    .flatMap((chunk) => chunk.entries.map((entry) => ({ entry, test: chunk.test })))
-    .sort((a, b) => a.entry.at - b.entry.at || a.entry.seq - b.entry.seq);
+  // In the order recorded: the chunks as they came, then the sequence within each.
+  // `at` restarts with the page, so it orders nothing across chunks
+  const entries = chunks.flatMap((chunk) => [...chunk.entries].sort((a, b) => a.seq - b.seq).map((entry) => ({ entry, test: chunk.test })));
   for (const { entry, test } of entries) {
     if (entry.kind === 'request') {
       const observation: Observation = { test, params: trim(entry.params) };
@@ -96,7 +96,8 @@ export function buildProfile(chunks: TraceChunk[], meta: ProfileMeta): Profile {
     schema: SCHEMA,
     wallet: meta.wallet,
     recorded: { ...meta.recorded, recorder: chunks.find((chunk) => chunk.recorder)?.recorder ?? 'unknown' },
-    discovery: chunks.find((chunk) => chunk.discovery)?.discovery ?? null,
+    // The last one: the discovery fills in as the page goes, with the providers announced later
+    discovery: [...chunks].reverse().find((chunk) => chunk.discovery)?.discovery ?? null,
     methods: sorted(methods),
     events: sorted(events),
   };
@@ -162,6 +163,7 @@ export function diffProfiles(a: Profile, b: Profile): string {
   lines.push(`# ${label(a)} vs ${label(b)}`, '');
 
   lines.push('## Discovery', '', '| | ' + label(a) + ' | ' + label(b) + ' |', '| --- | --- | --- |');
+  lines.push(`| injected | ${a.discovery?.injected ?? '?'} | ${b.discovery?.injected ?? '?'} |`);
   const flags = new Set([...Object.keys(a.discovery?.flags ?? {}), ...Object.keys(b.discovery?.flags ?? {})]);
   for (const flag of [...flags].sort()) lines.push(`| ${flag} | ${a.discovery?.flags[flag] ?? '?'} | ${b.discovery?.flags[flag] ?? '?'} |`);
   const rdns = (profile: Profile) => (profile.discovery?.eip6963 ?? []).map((p) => p.rdns ?? '?').join(', ') || 'none';
