@@ -56,10 +56,18 @@ export interface DappressOptions extends WalletSetup {
    */
   mock?: string;
   /**
-   * The RPC endpoint of the mock wallet: reads go there, and its unlocked
-   * accounts sign and send, as Anvil's do. Default: http://127.0.0.1:8545.
+   * The endpoint that holds the mock wallet's keys: its unlocked accounts sign,
+   * as Anvil's do, and it stands for a chain the mock has no RPC for.
+   * Default: http://127.0.0.1:8545.
    */
   rpcUrl?: string;
+  /**
+   * The RPC endpoint of each chain the dapp uses, by chain id, for the mock
+   * wallet: `{ '0xaa36a7': 'https://…' }`. Reads go there, and transactions
+   * are sent there once the keys signed them. A chain the dapp adds with
+   * wallet_addEthereumChain needs none here: the mock takes the RPC it gives.
+   */
+  chains?: Record<string, string>;
 }
 
 /** The options once resolved: every one has a value, the seed phrase included. */
@@ -76,6 +84,7 @@ export interface ResolvedOptions {
   cacheDir: string;
   mock: string | null;
   rpcUrl: string;
+  chains: Record<string, string>;
 }
 
 /**
@@ -83,7 +92,7 @@ export interface ResolvedOptions {
  * With a mock, the profile it replays and what the mock needs to run.
  */
 export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'> & {
-  mock?: { profile: Profile; rpcUrl: string; timeout: number };
+  mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number };
 };
 
 export type WalletState = 'onboarding' | 'locked' | 'unlocked';

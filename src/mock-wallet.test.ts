@@ -43,8 +43,8 @@ const rabby: Profile = {
 };
 
 /** A wallet over a fake RPC endpoint, which answers as Anvil would and keeps what was sent to it. */
-function wallet(profile = metamask, timeout = 500) {
-  const sent: { method: string; params: unknown[] }[] = [];
+function wallet(profile = metamask, timeout = 500, chains: Record<string, string> = {}) {
+  const sent: { url: string; method: string; params: unknown[] }[] = [];
   const answers: Record<string, (params: unknown[]) => unknown> = {
     eth_accounts: () => ACCOUNTS,
     eth_call: ([call]) => ((call as { data: string }).data === '0x313ce567' ? '0x' + word(4n) : '0x'),
@@ -53,17 +53,22 @@ function wallet(profile = metamask, timeout = 500) {
     eth_sendTransaction: () => '0xsent',
     personal_sign: () => '0xsignature',
     eth_blockNumber: () => '0x10',
+    eth_getTransactionCount: () => '0x7',
+    eth_getBlockByNumber: () => ({ number: '0x10', baseFeePerGas: '0x64' }),
+    eth_maxPriorityFeePerGas: () => '0x2',
+    eth_signTransaction: () => '0xraw',
+    eth_sendRawTransaction: () => '0xlive',
   };
-  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+  globalThis.fetch = (async (url: string, init: { body: string }) => {
     const { id, method, params } = JSON.parse(init.body) as { id: number; method: string; params: unknown[] };
-    sent.push({ method, params });
+    sent.push({ url, method, params });
     const answer = answers[method];
     const body = answer
       ? { jsonrpc: '2.0', id, result: answer(params) }
       : { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } };
     return new Response(JSON.stringify(body));
   }) as typeof fetch;
-  const mock = createMockWallet({ profile, rpcUrl: 'http://anvil', timeout });
+  const mock = createMockWallet({ profile, rpcUrl: 'http://anvil', chains, timeout });
   return { mock, provider: mock.provider, sent, lastSent: (method: string) => sent.filter((call) => call.method === method).at(-1) };
 }
 
@@ -231,6 +236,107 @@ test('the accounts: added, switched, disconnected, as the wallet names them', as
   assert.deepEqual(await provider.request({ method: 'eth_accounts' }), []);
   assert.deepEqual(events, [[ACCOUNTS[0]], [ACCOUNTS[1]], [ACCOUNTS[0]], []]);
   await assert.rejects(mock.act('switchAccount', 'Account 9'), /no account named "Account 9"/);
+});
+
+test("a recorded refusal names the chain asked for now, not the recording's", async () => {
+  const { provider } = wallet({
+    ...rabby,
+    methods: {
+      ...rabby.methods,
+      wallet_switchEthereumChain: [{ params: [{ chainId: '0x53a' }], error: { code: -32603, message: 'Unrecognized chain ID "0x53a".' } }],
+    },
+  });
+  await assert.rejects(
+    provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] }),
+    (error: ProviderRpcError) => error.message === 'Unrecognized chain ID "0xaa36a7".',
+  );
+});
+
+test('a command waiting for a request the wallet refused without asking fails at once, and says why', async () => {
+  const { mock, provider } = wallet(rabby, 5000);
+  await assert.rejects(provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1234' }] }));
+  const started = Date.now();
+  await assert.rejects(mock.act('approveSwitchNetwork'), /Nothing for approveSwitchNetwork to decide on: Rabby 0\.94\.11 answers -32603 .*, without asking/);
+  assert.ok(Date.now() - started < 1000);
+});
+
+test('a method the wallet refused whenever it was asked, other than by the user, is refused without asking', async () => {
+  const phantom: Profile = {
+    ...metamask,
+    wallet: { name: 'Phantom', version: '26.32.0' },
+    methods: { ...metamask.methods, wallet_watchAsset: [{ error: { code: -32000, message: 'Missing or invalid parameters.' } }] },
+  };
+  const { provider } = wallet(phantom);
+  await assert.rejects(provider.request({ method: 'wallet_watchAsset', params: { type: 'ERC20' } }), (error: ProviderRpcError) => error.code === -32000);
+});
+
+test("on a chain the dapp added, reads go to the chain's RPC, and a transaction is signed by the keys and sent there", async () => {
+  const { mock, provider, sent } = wallet();
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await mock.act('connectToDapp');
+  await connecting;
+  const adding = provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x88BB0', chainName: 'Hoodi', rpcUrls: ['http://hoodi'] }] });
+  await mock.act('approveNewNetwork');
+  await adding;
+  sent.length = 0;
+
+  assert.equal(await provider.request({ method: 'eth_blockNumber' }), '0x10');
+  assert.equal(sent.at(-1)?.url, 'http://hoodi');
+
+  const sending = provider.request({ method: 'eth_sendTransaction', params: [{ from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1' }] });
+  await mock.act('confirmTransaction');
+  assert.equal(await sending, '0xlive');
+  const where = sent.map(({ url, method }) => `${method} ${url}`);
+  assert.deepEqual(where, [
+    'eth_blockNumber http://hoodi',
+    'eth_getTransactionCount http://hoodi',
+    'eth_estimateGas http://hoodi',
+    'eth_getBlockByNumber http://hoodi',
+    'eth_maxPriorityFeePerGas http://hoodi',
+    'eth_signTransaction http://anvil',
+    'eth_sendRawTransaction http://hoodi',
+  ]);
+  // Signed for the chain, with the nonce there, and fees that leave room for the base fee to rise
+  assert.deepEqual(sent.find(({ method }) => method === 'eth_signTransaction')?.params, [
+    { from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1', chainId: '0x88bb0', nonce: '0x7', gas: '0xd0c3', maxPriorityFeePerGas: '0x2', maxFeePerGas: '0xca' },
+  ]);
+});
+
+test('a chain named in the options keeps its RPC, whatever the dapp gives; signatures stay with the keys', async () => {
+  const { mock, provider, sent } = wallet(metamask, 500, { '0x88bb0': 'http://fork' });
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await mock.act('connectToDapp');
+  await connecting;
+  const adding = provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x88bb0', rpcUrls: ['http://hoodi'] }] });
+  await mock.act('approveNewNetwork');
+  await adding;
+  sent.length = 0;
+  await provider.request({ method: 'eth_blockNumber' });
+  const signing = provider.request({ method: 'personal_sign', params: ['0x68656c6c6f', ACCOUNTS[0]] });
+  await mock.act('confirmSignature');
+  await signing;
+  assert.deepEqual(
+    sent.map(({ url, method }) => `${method} ${url}`),
+    ['eth_blockNumber http://fork', 'personal_sign http://anvil'],
+  );
+});
+
+test("a chain whose RPC is the keys' own sends through the keys, unlocked: a fork, or Anvil itself", async () => {
+  const { mock, provider, sent } = wallet(metamask, 500, { '0xa4b1': 'http://anvil/' });
+  const switching = provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xa4b1' }] });
+  await mock.act('approveNewNetwork');
+  await switching;
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await mock.act('connectToDapp');
+  await connecting;
+  sent.length = 0;
+  const sending = provider.request({ method: 'eth_sendTransaction', params: [{ from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1' }] });
+  await mock.act('confirmTransaction');
+  assert.equal(await sending, '0xsent');
+  assert.deepEqual(
+    sent.map(({ url, method }) => `${method} ${url}`),
+    ['eth_sendTransaction http://anvil'],
+  );
 });
 
 test('a command with nothing to decide on says so, within the timeout', async () => {

@@ -3,10 +3,12 @@
 // MetaMask: what the dapp saw of it during the suite (scripts/profile.ts).
 // Starts a local Anvil node (Foundry) for the tests that need a funded account.
 //
-//   npm run conformance -- [metamaskVersion]
+//   npm run conformance -- [metamaskVersion] [--open]
 //
 // DAPPRESS_MODE picks where MetaMask shows the requests (see scripts/modes.ts):
-// sidepanel (default), headless, or popup. DAPPRESS_HEADLESS=1 still means headless.
+// sidepanel (default), headless, or popup; mock replays a wallet profile,
+// DAPPRESS_MOCK names it. --open opens the Cypress app on the suite, with the
+// same wallet and the same Anvil node, and writes no report.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,7 +22,9 @@ import type { Report } from './matrix';
 import { buildProfile, readTrace } from './profile';
 import { loadProfile } from '../src/wallet-profile';
 
-const metamaskVersion = process.argv[2] || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
+const args = process.argv.slice(2);
+const open = args.includes('--open');
+const metamaskVersion = args.find((arg) => !arg.startsWith('--')) || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
 const modeName = process.env.DAPPRESS_MODE || (process.env.DAPPRESS_HEADLESS === '1' ? 'headless' : 'sidepanel');
 const mode = modeName === 'mock' ? MOCK_MODE : MODES[modeName];
 if (!mode) {
@@ -46,11 +50,13 @@ async function main(): Promise<void> {
     process.env.DAPPRESS_MOCK = mockWallet;
     process.env.DAPPRESS_RPC_URL = ANVIL_URL;
   }
+  // Read by conformance/cypress.config.ts: the wallet's accounts, for the tests to check against
+  process.env.DAPPRESS_CONFORMANCE_WALLET = JSON.stringify({ accounts: wallet.accounts, imported: wallet.imported });
   const anvil = await startAnvil(wallet.seedPhrase);
+  if (open) return openApp(anvil);
   let results;
   try {
     results = await cypress.run({
-      config: { expose: { conformance: { accounts: wallet.accounts, imported: wallet.imported } } },
       project: path.join(__dirname, '..', 'conformance'),
       // Chrome for Testing, or a path to one: it loads MetaMask, and runs the mock as the other modes do
       browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
@@ -92,9 +98,7 @@ async function main(): Promise<void> {
   for (const action of actions) console.log(`  ${action.status === 'passed' ? '✓' : '✗'} ${action.action}${action.error ? `: ${action.error}` : ''}`);
 
   if (!mockWallet) writeProfile(traceFile, report, wallet);
-  // The suite is written for MetaMask: on the mock of another wallet, a failure is the wallet's difference, and the report is the point
-  const informative = Boolean(report.wallet && report.wallet.name !== 'MetaMask');
-  process.exit(report.passed || informative ? 0 : 1);
+  process.exit(report.passed ? 0 : 1);
 }
 
 /**
@@ -144,7 +148,32 @@ function newWallet(): { seedPhrase: string; accounts: string[]; imported: { addr
   };
 }
 
+/**
+ * The Cypress app on the suite, in the browser the run would take, with the
+ * wallet of this run. Anvil stays up until the app is closed.
+ */
+async function openApp(anvil: ChildProcess): Promise<void> {
+  const browser = process.env.DAPPRESS_BROWSER || 'chrome-for-testing';
+  const project = path.join(__dirname, '..', 'conformance');
+  const app = spawn('npx', ['cypress', 'open', '--e2e', '--project', project, '--browser', browser, '--env', `DAPPRESS_METAMASK_VERSION=${metamaskVersion}`], {
+    stdio: 'inherit',
+  });
+  // Closing the app, or Ctrl-C, stops Anvil with it
+  const stop = () => {
+    app.kill();
+    anvil.kill();
+  };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+  const code = await new Promise<number>((resolve) => app.on('exit', (exitCode) => resolve(exitCode ?? 0)));
+  anvil.kill();
+  process.exit(code);
+}
+
 async function startAnvil(seedPhrase: string): Promise<ChildProcess> {
+  // Another run's node would answer for this one, with other accounts
+  if (await isUp(ANVIL_URL))
+    throw new Error(`[dappress] Something already answers on ${ANVIL_URL}: another conformance run, or an Anvil of yours. Stop it first`);
   const anvil = spawn(foundry('anvil'), ['--silent', '--mnemonic', seedPhrase], { stdio: 'inherit' });
   anvil.on('error', () => {
     console.error('[dappress] Anvil is needed for the funded transaction tests: https://getfoundry.sh');

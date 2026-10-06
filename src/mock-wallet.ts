@@ -15,8 +15,17 @@ import type { Observation, Profile, ProviderError } from './wallet-profile';
 
 export interface MockWalletOptions {
   profile: Profile;
-  /** The RPC endpoint reads go to, and whose accounts sign and send: Anvil. */
+  /**
+   * The endpoint that holds the keys: its unlocked accounts are the wallet's,
+   * and sign. Anvil. It is also the chain of a chain the mock has no RPC for.
+   */
   rpcUrl: string;
+  /**
+   * The RPC endpoint of each chain, by chain id: reads go there, and signed
+   * transactions are sent there. A chain the dapp adds brings its own, from
+   * wallet_addEthereumChain; these come first.
+   */
+  chains?: Record<string, string>;
   /** How long a command waits for the dapp to send the request it decides on, in ms. */
   timeout: number;
   /** Told what the mock answers from the profile, for the test's log: the wallet's name, and what it answered. */
@@ -88,10 +97,13 @@ const DECIDES: Record<string, { kinds: Kind[]; accept: boolean }> = {
 const SIGNING = ['personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4'];
 
 /** Create the mock wallet of `profile`. `createMockWallet(options).provider` is what to give the page as window.ethereum. */
-export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOptions): MockWallet {
+export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }: MockWalletOptions): MockWallet {
   const wallet = `${profile.wallet.name} ${profile.wallet.version}`;
   // An answer taken from the profile is worth a line in the test's log: it is what the wallet does
   let lastRecorded: string | undefined;
+  // The decisions the wallet took itself, from its profile, since the last command: a command
+  // waiting for one of them has nothing to wait for
+  const answeredWithoutAsking: { kind: Kind; line: string }[] = [];
   const recorded = <T extends ProviderRpcError | unknown>(method: string, answer: T): T => {
     const said = answer instanceof ProviderRpcError ? `${String(answer.code)} "${answer.message}"` : JSON.stringify(answer);
     lastRecorded = `${wallet} answers ${said} to ${method}, as recorded`;
@@ -112,8 +124,21 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
   let locked = false;
   let rpcId = 0;
 
-  async function rpc<T = unknown>(method: string, params: unknown[] = []): Promise<T> {
-    const response = await fetch(rpcUrl, {
+  // The RPC endpoint of each chain: given in the options, or by the dapp as it adds the chain
+  const endpoints = new Map<string, string>(Object.entries(chains).map(([chain, url]) => [chain.toLowerCase(), url]));
+  const same = (a: string, b: string) => a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
+  /** Where the chain the dapp is on keeps its state: its RPC, or the keys' endpoint when the mock knows none. */
+  const chainEndpoint = () => endpoints.get(chainId) ?? rpcUrl;
+  /** Whether the chain the dapp is on is another than the keys' own: transactions are then signed here and sent there. */
+  const onAnotherChain = () => !same(chainEndpoint(), rpcUrl);
+
+  /** A request to the chain the dapp is on: reads, and what a transaction needs to be filled in. */
+  const rpc = <T = unknown>(method: string, params: unknown[] = []) => call<T>(chainEndpoint(), method, params);
+  /** A request to the keys' endpoint: the accounts, and what they sign. */
+  const keys = <T = unknown>(method: string, params: unknown[] = []) => call<T>(rpcUrl, method, params);
+
+  async function call<T = unknown>(url: string, method: string, params: unknown[] = []): Promise<T> {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params }),
@@ -123,7 +148,7 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
     return body.result as T;
   }
 
-  const allAccounts = () => (accounts ??= rpc<string[]>('eth_accounts').then((list) => list.map((address) => address.toLowerCase())));
+  const allAccounts = () => (accounts ??= keys<string[]>('eth_accounts').then((list) => list.map((address) => address.toLowerCase())));
   const nameOf = (index: number) => `Account ${index + 1}`;
 
   // The wallet outlives the pages: a listener of a page gone by is left to fail quietly
@@ -150,9 +175,24 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
   }
 
   /** An error the wallet gave to `method` that is not a user's rejection: the method it lacks, the chain it has not. */
-  function refusal(method: string): ProviderRpcError | undefined {
-    const error = observations(method).find((observation) => observation.error && observation.error.code !== USER_REJECTED)?.error;
-    return error && recorded(method, new ProviderRpcError(error));
+  function refusal(method: string, params: unknown[] = []): ProviderRpcError | undefined {
+    const observation = observations(method).find((candidate) => candidate.error && candidate.error.code !== USER_REJECTED);
+    if (!observation?.error) return undefined;
+    return recorded(method, new ProviderRpcError(retarget(observation.error, observation.params, params)));
+  }
+
+  /** A refusal the wallet gives without asking, for a request a command would otherwise decide on. */
+  function refuseWithoutAsking(kind: Kind, method: string, params: unknown[]): ProviderRpcError | undefined {
+    const refused = refusal(method, params);
+    if (refused && lastRecorded) answeredWithoutAsking.push({ kind, line: lastRecorded });
+    return refused;
+  }
+
+  /** A method the wallet refused whenever it was asked, other than by a user's rejection: refused without asking. */
+  function alwaysRefused(kind: Kind, method: string, params: unknown[]): ProviderRpcError | undefined {
+    const seen = observations(method);
+    if (!seen.length || !seen.every((observation) => observation.error && observation.error.code !== USER_REJECTED)) return undefined;
+    return refuseWithoutAsking(kind, method, params);
   }
 
   /** What the wallet answered to `method` when accepted, or `fallback` when the profile has no such answer. */
@@ -209,6 +249,9 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
       case 'wallet_addEthereumChain': {
         const chain = chainOf(list[0]);
         if (!known.has(chain)) await answered('network', method, list);
+        // The chain's own RPC, unless the options name one
+        const [given] = ((list[0] as { rpcUrls?: unknown }).rpcUrls ?? []) as string[];
+        if (typeof given === 'string' && !endpoints.has(chain)) endpoints.set(chain, given);
         known.add(chain);
         permitted.add(chain);
         switchTo(chain);
@@ -217,7 +260,7 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
       case 'wallet_switchEthereumChain': {
         const chain = chainOf(list[0]);
         if (!permitted.has(chain)) {
-          const refused = refusal(method);
+          const refused = refuseWithoutAsking('switch', method, list);
           if (refused) throw refused;
           await answered('switch', method, list);
           permitted.add(chain);
@@ -225,9 +268,12 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
         switchTo(chain);
         return result(method, null);
       }
-      case 'wallet_watchAsset':
+      case 'wallet_watchAsset': {
+        const refused = alwaysRefused('token', method, list);
+        if (refused) throw refused;
         await answered('token', method, list);
         return result(method);
+      }
       case 'eth_sendTransaction':
         return answered('transaction', method, list);
     }
@@ -316,12 +362,36 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
     return set;
   }
 
+  /** What a transaction needs to be signed for the chain the dapp is on: its chain id, the account's nonce there, gas and fees there. */
+  async function filledIn(transaction: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const filled: Record<string, unknown> = { ...transaction, chainId, nonce: await rpc<string>('eth_getTransactionCount', [transaction.from, 'pending']) };
+    if (filled.gas === undefined) filled.gas = await rpc<string>('eth_estimateGas', [transaction]);
+    if (filled.gasPrice === undefined && filled.maxFeePerGas === undefined) {
+      const latest = await rpc<{ baseFeePerGas?: string }>('eth_getBlockByNumber', ['latest', false]);
+      if (latest.baseFeePerGas) {
+        // EIP-1559, with room for the base fee to rise twice, as wallets do
+        const priority = BigInt(await rpc<string>('eth_maxPriorityFeePerGas').catch(() => '0x3b9aca00'));
+        filled.maxPriorityFeePerGas = `0x${priority.toString(16)}`;
+        filled.maxFeePerGas = `0x${(2n * BigInt(latest.baseFeePerGas) + priority).toString(16)}`;
+      } else {
+        filled.gasPrice = await rpc<string>('eth_gasPrice');
+      }
+    }
+    return filled;
+  }
+
   /** Settle the first pending request of one of `kinds`, once the dapp has sent it. */
   async function decide(action: string, argument: unknown): Promise<void> {
     const { kinds, accept } = DECIDES[action];
     const deadline = Date.now() + timeout;
     let request: Pending | undefined;
     while (!(request = pending.find((candidate) => kinds.includes(candidate.kind)))) {
+      // The wallet answered it without asking: nothing will come to decide on
+      const taken = answeredWithoutAsking.find((answer) => kinds.includes(answer.kind));
+      if (taken) {
+        answeredWithoutAsking.length = 0;
+        throw new Error(`[dappress] Nothing for ${action} to decide on: ${taken.line}, without asking`);
+      }
       // A request the wallet answered from its profile never waits for a decision: the likeliest reason
       if (Date.now() > deadline)
         throw new Error(
@@ -330,6 +400,7 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
       await sleep(100);
     }
     pending.splice(pending.indexOf(request), 1);
+    answeredWithoutAsking.length = 0;
     if (!accept) return request.settle({ error: rejection(request.method) });
     try {
       request.settle({ result: await accepted(request, argument) });
@@ -346,10 +417,15 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
         await connect(argument as ConnectOptions | undefined);
         return connected;
       case 'signature':
-        // The endpoint takes the message and the account; a dapp may add more, as MetaMask's test dapp does
-        return rpc(method, params.slice(0, 2));
-      case 'transaction':
-        return rpc('eth_sendTransaction', [await adjusted(params[0] as Record<string, unknown>, argument as TransactionOptions | undefined)]);
+        // The keys sign, whatever the chain. They take the message and the account; a dapp may add more, as MetaMask's test dapp does
+        return keys(method, params.slice(0, 2));
+      case 'transaction': {
+        const transaction = await adjusted(params[0] as Record<string, unknown>, argument as TransactionOptions | undefined);
+        if (!onAnotherChain()) return keys('eth_sendTransaction', [transaction]);
+        // Filled in from the chain, signed by the keys, sent to the chain: as a wallet does
+        const raw = await keys<string>('eth_signTransaction', [await filledIn(transaction)]);
+        return rpc('eth_sendRawTransaction', [raw]);
+      }
       default:
         return null;
     }
@@ -383,7 +459,7 @@ export function createMockWallet({ profile, rpcUrl, timeout, log }: MockWalletOp
     // which then sends for it. It cannot sign for it, and says so when asked
     importAccount: async (address) => {
       const account = String(address).toLowerCase();
-      await rpc('anvil_impersonateAccount', [account]).catch((error: Error) => {
+      await keys('anvil_impersonateAccount', [account]).catch((error: Error) => {
         throw new Error(`[dappress] The RPC endpoint cannot act for ${account}: ${error.message}. importAccount() on the mock needs Anvil`);
       });
       const all = await allAccounts();
@@ -447,6 +523,22 @@ export function installMockWallet(win: Window & { ethereum?: unknown }, mock: Mo
   // The wallet announces the chain it is on once the page has had a chance to listen
   if (options.profile.events.connect)
     setTimeout(() => mock.provider.request({ method: 'eth_chainId' }).then((chainId) => mock.emit('connect', { chainId })), 0);
+}
+
+/**
+ * A recorded error names the chain it was asked for, "Unrecognized chain ID
+ * "0x53a"": the chain asked for now takes its place.
+ */
+export function retarget(error: ProviderError, recordedParams: unknown, params: unknown[]): ProviderError {
+  const was = chainIn(recordedParams);
+  const now = chainIn(params);
+  if (!was || !now || was === now) return error;
+  return JSON.parse(JSON.stringify(error).split(was).join(now)) as ProviderError;
+}
+
+function chainIn(params: unknown): string | undefined {
+  const chain = (Array.isArray(params) ? (params[0] as { chainId?: unknown } | undefined) : undefined)?.chainId;
+  return typeof chain === 'string' ? chain : undefined;
 }
 
 // An amount as a user types it, "5" or "2.5", from a number or a string

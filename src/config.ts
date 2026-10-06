@@ -33,8 +33,10 @@ export const DEFAULTS = {
   cacheDir: path.join(os.homedir(), '.cache', 'dappress'),
   // None: the real MetaMask. A wallet's name or a profile's path: its mock, in place of the extension
   mock: null as string | null,
-  // The mock's RPC endpoint, whose accounts sign and send: Anvil's default
+  // The endpoint that holds the mock's keys, and stands for a chain it has no RPC for: Anvil's default
   rpcUrl: 'http://127.0.0.1:8545',
+  // The RPC of each chain, for the mock: none beyond what the dapp gives as it adds a chain
+  chains: {} as Record<string, string>,
 };
 
 /**
@@ -104,6 +106,6 @@ function loadWalletSetup(projectRoot = process.cwd()): WalletSetup {
 /** The subset of options that is safe to expose to the browser side (no secrets). */
 export function publicOptions(options: ResolvedOptions, mockProfile?: Profile): PublicOptions {
   const exposed: PublicOptions = { metamaskVersion: options.metamaskVersion, autoSetup: options.autoSetup, network: options.network };
-  if (mockProfile) exposed.mock = { profile: mockProfile, rpcUrl: options.rpcUrl, timeout: options.timeout };
+  if (mockProfile) exposed.mock = { profile: mockProfile, rpcUrl: options.rpcUrl, chains: options.chains, timeout: options.timeout };
   return exposed;
 }

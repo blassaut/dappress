@@ -6,7 +6,7 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Added
 
-- The mock wallet: `mock: 'rabby'`, or `DAPPRESS_MOCK=rabby`, runs the same tests without MetaMask, against a provider in the page that answers as the wallet's profile recorded: identity flags, EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks. What signs or sends goes to the RPC endpoint `rpcUrl` names, Anvil by default. A method or an option the profile does not cover fails with `4200` rather than succeed. Profiles of MetaMask, Rabby and Phantom ship with the package; the command log says what the mock answered from the profile.
+- The mock wallet: `mock: 'rabby'`, or `DAPPRESS_MOCK=rabby`, runs the same tests without MetaMask, against a provider in the page that answers as the wallet's profile recorded: identity flags, EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks. Anvil holds the keys and signs (`rpcUrl`); each chain holds its state: on a chain the dapp adds, or one named in `chains`, reads go to its RPC and transactions are signed by Anvil and sent there, testnet or fork. A method or an option the profile does not cover fails with `4200` rather than succeed. Profiles of MetaMask, Rabby and Phantom ship with the package; the command log says what the mock answered from the profile.
 
 ### Changed
 

@@ -5,23 +5,22 @@
 [![MetaMask conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/blassaut/dappress/conformance-reports/badge.json)](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md)
 [![Reproducible build](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml/badge.svg)](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml)
 
-Dappress is a Cypress plugin that drives MetaMask in your end-to-end tests. It runs the real MetaMask extension in the browser Cypress launches, with a test wallet. Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`; Dappress presses the button on MetaMask's screen and waits for the request to close. It also records what a dapp sees of other wallets, as [wallet profiles](#wallet-profiles), to compare them with MetaMask.
+Dappress is a Cypress plugin for the end-to-end tests of a dapp. It gives your tests a wallet to talk to, in two ways, with the same `cy.*` commands:
 
-## Why Dappress exists
+- **The real MetaMask**, loaded into the browser Cypress launches. Your test clicks "Send" in the dapp, then calls `cy.confirmTransaction()`; Dappress presses the button on MetaMask's screen.
+- **A mock of MetaMask, Rabby or Phantom**, that answers your dapp as the real wallet was recorded answering. No extension, a few seconds per run, and a way to find what breaks on the wallets your users have besides MetaMask.
 
-Cypress cannot reach into a browser extension, and MetaMask's screens change with every release. Dappress does that part, and keeps up with MetaMask so your tests don't have to.
+## What you get
 
-- **Plain Cypress commands.** `cy.connectToDapp()`, `cy.confirmSignature()`, `cy.confirmTransaction()`, typed for TypeScript, in the browser Cypress launches: no second browser, no proxy, nothing new to learn.
-- **The MetaMask version is yours.** The latest release by default, any other on request, so the wallet in your tests is the one in your users' browsers.
-- **Checked against each release.** Every command runs against each new MetaMask release the day it comes out, and the result goes on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md). When MetaMask moves a screen, Dappress adapts, not your tests.
-- **Set up once.** The network in a committed setup file, the seed phrase and the password in the environment. MetaMask imports the wallet on the first run, or from the wallet cache when you opt in.
-- **Errors name the screen.** When a command cannot go on, the error says which MetaMask screen it was on, quotes what it shows, and points to a screenshot.
+- **Plain Cypress commands.** `cy.connectToDapp()`, `cy.confirmSignature()`, `cy.confirmTransaction()`, typed for TypeScript. Nothing new to learn, and the same specs for the real wallet and the mocks.
+- **The MetaMask your users run.** The latest release by default, any other on request. Every command is checked against each new MetaMask release the day it comes out, on the [conformance matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md): when MetaMask moves a screen, Dappress adapts, not your tests.
+- **The other wallets too.** Rabby and Phantom both claim to be MetaMask, and do not answer as it does: Rabby refuses a switch to an unknown chain with `-32603` where MetaMask says `4902`, Phantom has no `wallet_revokePermissions`. Run your specs against their [mocks](#mock-wallets) and see what fails before your users do.
+- **Any chain, at any block.** A mock sends to the chain your dapp uses, or to a fork of it pinned to a block, where a test can move a price or the clock: a liquidation, an expiry, the same state on every run.
+- **Errors that name the cause.** A command that cannot go on says which MetaMask screen it was on, quotes it, and points to a screenshot; a mock says what the wallet answered, "as recorded".
 
 ## Cypress, and only Cypress
 
 A wallet driver is screen-by-screen code: selectors, retries for the clicks a screen loses while it settles, the waits between a button and the next screen. That code cannot be shared across test frameworks without serving each one worse, so Dappress serves one, natively: the commands run in the browser Cypress launches, through Cypress's own plugin and task APIs, with nothing else in the process.
-
-Dappress does not mock the provider: the dapp talks to the real MetaMask. Other wallets are recorded, not driven.
 
 ## Contents
 
@@ -29,8 +28,8 @@ Dappress does not mock the provider: the dapp talks to the real MetaMask. Other 
 - [Quick start](#quick-start)
 - [Commands](#commands)
 - [Configuration](#configuration)
-- [Wallet profiles](#wallet-profiles)
 - [Mock wallets](#mock-wallets)
+- [Wallet profiles](#wallet-profiles)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -288,33 +287,41 @@ When a setting appears in several places, the first one found wins: environment 
 | `backupAndSync`   |                             | `false`. Dappress turns off MetaMask's backup and sync, so accounts added by a test do not come back on the next run.                                                        |
 | `cacheDir`        |                             | `~/.cache/dappress`. Where MetaMask builds and the wallet cache are kept.                                                                                                     |
 | `mock`            | `DAPPRESS_MOCK`             | None. A wallet to mock in place of MetaMask, `metamask`, `rabby`, `phantom`, or the path of a profile: see [Mock wallets](#mock-wallets).                                        |
-| `rpcUrl`          | `DAPPRESS_RPC_URL`          | `http://127.0.0.1:8545`. The RPC endpoint of the mock, whose unlocked accounts sign and send.                                                                                   |
-
-## Wallet profiles
-
-A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of an event, a method one wallet has and another has not. A wallet profile records those answers on the real wallet, request by request and event by event. MetaMask's comes out of the conformance suite at each release; Rabby's and Phantom's were recorded by hand. They live in [`reports/profiles`](reports/profiles), and `npm run profile -- diff` lists where two wallets answer differently: `isMetaMask: true` on all three, a rejected transaction that says "User rejected the request." on two of them and "MetaMask Tx Signature: User denied transaction signature." on the third, a switch to an unknown chain that fails with `4902`, `-32603` or `4901`.
-
-Recording a wallet takes twenty minutes and a browser console: see [CONTRIBUTING.md](CONTRIBUTING.md#wallet-profiles).
+| `rpcUrl`          | `DAPPRESS_RPC_URL`          | `http://127.0.0.1:8545`. Where the mock's keys are: Anvil, whose unlocked accounts sign. Also the chain of a chain the mock has no RPC for.                                     |
+| `chains`          |                             | None. The RPC of each chain, by chain id, for the mock: `{ '0xa4b1': 'http://127.0.0.1:8545' }`. A chain the dapp adds brings its own.                                           |
 
 ## Mock wallets
 
-The same tests, without MetaMask, against a mock that answers as a recorded wallet does. One setting:
+**What it brings.** Your users do not all run MetaMask, and a dapp that works with MetaMask can break on Rabby or Phantom: an error code it does not expect, a method the wallet does not have, a chain switch the wallet refuses without asking. Testing each wallet by hand does not scale, and driving each wallet's screens is a project of its own. A mock answers your dapp as the real wallet was recorded answering, so the specs you wrote for MetaMask run against Rabby and Phantom as they are, in seconds, in CI.
 
-```ts
-setupNodeEvents(on, config) {
-  return configureDappress(on, config, { mock: 'rabby' }); // 'metamask', 'phantom', or the path of a profile
-}
-```
+### In three steps
 
-or `DAPPRESS_MOCK=rabby npx cypress run`, with nothing to change in the specs. No extension, no seed phrase, any browser Cypress runs. The mock lives in the page: the identity flags, the EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks come from the profile; what signs or sends goes to an RPC endpoint whose accounts are unlocked, [Anvil](https://getfoundry.sh) (`anvil`, or `anvil --fork-url <your RPC>` when the dapp reads the chain). A method or an option the profile does not cover fails, with `4200` and the wallet's name: the mock never succeeds at what the wallet was not seen doing.
+1. Start [Anvil](https://getfoundry.sh), the local node whose accounts the mock signs with:
 
-In CI, one job per wallet:
+   ```sh
+   anvil
+   ```
+
+2. Run your specs against a wallet's mock, with nothing to change in them:
+
+   ```sh
+   DAPPRESS_MOCK=rabby npx cypress run --browser chrome-for-testing
+   ```
+
+   or, in `cypress.config.ts`, `configureDappress(on, config, { mock: 'rabby' })`. The wallets: `metamask`, `rabby`, `phantom`, or the path of a [profile](#wallet-profiles) you recorded.
+
+3. Read what failed. A test that passes with MetaMask and fails with Rabby is a difference between the two wallets, and the command log says which: "Rabby 0.94.11 answers -32603 "Unrecognized chain ID …" to wallet_switchEthereumChain, as recorded". Fix the dapp, or write the test for what that wallet does.
+
+### In CI
+
+One job per wallet, side by side:
 
 ```yaml
 jobs:
   wallets:
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         wallet: [metamask, rabby, phantom]
     steps:
@@ -324,15 +331,66 @@ jobs:
           node-version: 22
       - uses: foundry-rs/foundry-toolchain@v1
       - run: npm ci
+      - run: npx @puppeteer/browsers install chrome@stable
       - run: anvil &
-      - run: npx cypress run
+      - run: npx cypress run --browser chrome-for-testing
         env:
           DAPPRESS_MOCK: ${{ matrix.wallet }}
 ```
 
-A test that passes with MetaMask and fails with Rabby is a difference between the wallets, and the command log says which: "Rabby 0.94.11 answers -32603 … to wallet_switchEthereumChain, as recorded". On Dappress's own suite, every command passes on the mock of MetaMask; on Rabby's and Phantom's, what fails is what those wallets do differently: see [the matrix](https://github.com/blassaut/dappress/blob/conformance-reports/MATRIX.md).
+No extension and no seed phrase are needed to connect and sign. To send transactions on a testnet, start Anvil with the seed phrase of a funded test wallet, `anvil --mnemonic "$DAPPRESS_SEED_PHRASE"`: see the next section.
 
-What the mock does not do: `cy.importAccount()` lets the endpoint act for the key's address (Anvil impersonates it) but cannot sign for it; `cy.confirmTransaction({ gas })` takes `'networkSuggested'` or custom values, the mock having no fee estimates; a switch to a chain the dapp is not allowed on asks, as MetaMask does, unless the profile recorded the wallet refusing it.
+### Your chain, at your block
+
+Anvil holds the keys; each chain holds its state. On a chain your dapp adds with `wallet_addEthereumChain`, the mock reads from the RPC the dapp gives, and sends a transaction there once Anvil signed it, nonce, gas and fees taken from that chain. With the seed phrase of a funded test wallet in Anvil, your tests send real transactions on your testnet, as with MetaMask.
+
+To freeze the state, fork the chain at a block and send the mock there:
+
+```sh
+anvil --fork-url "$ARBITRUM_RPC" --fork-block-number 245000000
+```
+
+```ts
+configureDappress(on, config, { mock: 'rabby', chains: { '0xa4b1': 'http://127.0.0.1:8545' } });
+```
+
+Every run starts from the same positions, balances and prices. The test changes what it needs through Anvil's own methods, then goes through the dapp as a user would:
+
+```ts
+it('liquidates a position under water', () => {
+  cy.visit('/trade/ETH-PERP');
+  cy.contains('button', 'Connect').click();
+  cy.connectToDapp();
+  // The oracle's price falls: written into the fork, then a block is mined
+  cy.request('POST', 'http://127.0.0.1:8545', { jsonrpc: '2.0', id: 1, method: 'anvil_setStorageAt', params: [oracle, slot, lowPrice] });
+  cy.request('POST', 'http://127.0.0.1:8545', { jsonrpc: '2.0', id: 2, method: 'evm_mine', params: [] });
+  cy.contains('button', 'Liquidate').click();
+  cy.confirmTransaction();
+  cy.contains('Position closed').should('be.visible');
+});
+```
+
+What the dapp reads through its own RPC, rather than through the wallet, still goes where the dapp sends it, and an API or an indexer it calls is not forked: point them at the fork with `cy.intercept`, or with the dapp's own settings.
+
+### How the mock answers
+
+| What | Where it comes from |
+| --- | --- |
+| Identity flags (`isMetaMask`, `isRabby`…), the EIP-6963 announcement | The wallet's profile |
+| A rejection: its code, message and data | The wallet's profile |
+| A method the wallet lacks, a chain switch it refuses, a constant answer | The wallet's profile |
+| Balances, blocks, calls, gas, nonces | The chain the dapp is on: its RPC, a fork, or Anvil |
+| Signatures, and the signature of a transaction | Anvil, with its accounts |
+
+A method or an option the profile does not cover fails with `4200` and the wallet's name: the mock never succeeds at what the wallet was not seen doing. It decides only what a user decides: a request waits for `cy.confirmTransaction()` or `cy.rejectTransaction()`, as on the real wallet.
+
+What it does not do: `cy.importAccount()` lets Anvil act for the key's address but not sign for it, so that account sends on Anvil's chain or a fork only; `cy.confirmTransaction({ gas })` takes `'networkSuggested'` or custom values, the mock having no fee estimates.
+
+## Wallet profiles
+
+A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Rabby and Phantom (recorded by hand) ship with Dappress, in [`reports/profiles`](reports/profiles).
+
+`npm run profile -- diff <a> <b>` lists where two wallets answer differently. A wallet that is not there yet takes twenty minutes and a browser console to record: see [CONTRIBUTING.md](CONTRIBUTING.md#wallet-profiles).
 
 ## Security
 
