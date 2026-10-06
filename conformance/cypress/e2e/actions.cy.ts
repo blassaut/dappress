@@ -1,9 +1,11 @@
 import { testDapp } from '../support/testDapp';
-import { provider } from '../support/provider';
+import { provider, walletOf } from '../support/provider';
 
 // One test per Dappress command, against MetaMask's test dapp and a local
 // Anvil node for the funded transaction. scripts/conformance.ts starts Anvil
-// and makes the wallet: run the suite through it.
+// and makes the wallet: run the suite through it. On the mock of another
+// wallet, the tests assert what that wallet does differently, as its profile
+// recorded it: `differences` below.
 // The wallet setup (cypress/wallet.setup.ts) moves the dapp onto the Hoodi
 // testnet at connection, so nothing is signed on Ethereum mainnet. A failing
 // test means the MetaMask build under test moved something the adapter relies on.
@@ -16,9 +18,27 @@ const { accounts, imported } = Cypress.expose('conformance') as {
 };
 const [account, secondAccount] = accounts;
 
+// The wallet under test: MetaMask, or the one whose profile the mock replays
+const wallet = (Cypress.expose('dappress') as { mock?: { profile: { wallet: { name: string } } } } | undefined)?.mock?.profile.wallet.name ?? 'MetaMask';
+
+/**
+ * What the other wallets do differently, as their profiles recorded it: the
+ * code they refuse a switch to a chain the dapp was not allowed on with,
+ * without asking; what wallet_watchAsset answers when accepted, or the code
+ * it is refused with, without asking; whether wallet_revokePermissions exists.
+ */
+const differences: { switchRefused?: number; watchAssetAnswers?: unknown; watchAssetRefused?: number; noRevokePermissions?: boolean } =
+  {
+    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined },
+    Phantom: { switchRefused: 4901, watchAssetRefused: -32000, noRevokePermissions: true },
+  }[wallet] ?? {};
+
+// Take the dapp's permission back: wallet_revokePermissions, or the wallet's own screen where it has none
+const revoke = () => (differences.noRevokePermissions ? cy.disconnectFromDapp() : provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]));
+
 // The dapp connects with the wallet's selected account: disconnect, then connect again
 const reconnect = () => {
-  provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+  revoke();
   testDapp.connect();
   cy.connectToDapp();
 };
@@ -124,13 +144,23 @@ describe('MetaMask actions', () => {
 
   it('rejectSwitchNetwork', () => {
     provider.request('wallet_switchEthereumChain', [{ chainId: sepolia }]);
-    cy.rejectSwitchNetwork();
-    provider.result().its('error.code').should('eq', USER_REJECTED);
+    if (differences.switchRefused) {
+      provider.result().its('error.code').should('eq', differences.switchRefused);
+    } else {
+      cy.rejectSwitchNetwork();
+      provider.result().its('error.code').should('eq', USER_REJECTED);
+    }
     testDapp.chainId().should('have.text', anvil.chainId);
   });
 
   it('approveSwitchNetwork', () => {
     provider.request('wallet_switchEthereumChain', [{ chainId: sepolia }]);
+    // A wallet that refuses the switch without asking leaves the dapp where it was
+    if (differences.switchRefused) {
+      provider.result().its('error.code').should('eq', differences.switchRefused);
+      testDapp.chainId().should('have.text', anvil.chainId);
+      return;
+    }
     cy.approveSwitchNetwork();
     provider.result().should('have.property', 'result');
     testDapp.chainId().should('have.text', sepolia);
@@ -156,14 +186,22 @@ describe('MetaMask actions', () => {
       .should('match', /^0x[0-9a-fA-F]{40}$/)
       .then((address) => {
         provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
+        if (differences.watchAssetRefused) {
+          provider.result().its('error.code').should('eq', differences.watchAssetRefused);
+          return;
+        }
         cy.approveAddToken();
-        provider.result().should('deep.equal', { result: true });
+        provider.result().should('deep.equal', { result: 'watchAssetAnswers' in differences ? differences.watchAssetAnswers : true });
       });
   });
 
   it('rejectAddToken', () => {
     testDapp.tokenAddress().then((address) => {
       provider.request('wallet_watchAsset', { type: 'ERC20', options: { address, symbol: 'TST', decimals: 4 } });
+      if (differences.watchAssetRefused) {
+        provider.result().its('error.code').should('eq', differences.watchAssetRefused);
+        return;
+      }
       cy.rejectAddToken();
       provider.result().its('error.code').should('eq', USER_REJECTED);
     });
@@ -247,13 +285,13 @@ describe('MetaMask actions', () => {
     const connected = () => provider.call('eth_accounts').then((addresses) => (addresses as string[]).map((address) => address.toLowerCase()).sort());
     const addresses = (...list: string[]) => list.map((address) => address.toLowerCase()).sort();
     // Two accounts where MetaMask suggests the selected one alone, and not the third the wallet has
-    provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+    revoke();
     testDapp.connect();
     cy.connectToDapp({ accounts: ['Account 1', 'Account 2'] });
     connected().should('deep.equal', addresses(account, secondAccount));
     connected().should('not.include', imported.address.toLowerCase());
     // One that isn't the selected account: the suggested one is left out
-    provider.call('wallet_revokePermissions', [{ eth_accounts: {} }]);
+    revoke();
     testDapp.connect();
     cy.connectToDapp({ accounts: ['Account 2'] });
     connected().should('deep.equal', addresses(secondAccount));
@@ -282,7 +320,7 @@ describe('MetaMask actions', () => {
   });
 
   it('disconnectFromDapp', () => {
-    cy.window().then((win) => win.ethereum.on('accountsChanged', cy.stub().as('accountsChanged')));
+    cy.window().then((win) => walletOf(win).on('accountsChanged', cy.stub().as('accountsChanged')));
     cy.disconnectFromDapp();
     cy.get('@accountsChanged').should('have.been.calledWith', []);
     provider.call('eth_accounts').should('deep.equal', []);
@@ -290,5 +328,24 @@ describe('MetaMask actions', () => {
     testDapp.connect();
     cy.connectToDapp();
     cy.getAccountAddress().should('eq', account);
+  });
+
+  it('chain commands: mine, increaseTime, setStorageAt, rpc', () => {
+    const block = (tag = 'latest') => cy.rpc<{ number: string; timestamp: string }>('eth_getBlockByNumber', [tag, false]);
+    // On the local node, where these commands act: connectToDapp() left the dapp on the wallet setup's network
+    cy.useNetwork(anvil);
+    cy.rpc<string>('eth_chainId').should('eq', anvil.chainId);
+    block().then(({ number, timestamp }) => {
+      cy.mine(2);
+      block()
+        .its('number')
+        .should('eq', `0x${(BigInt(number) + 2n).toString(16)}`);
+      cy.increaseTime(3600);
+      block()
+        .its('timestamp')
+        .then((later) => expect(Number(later) - Number(timestamp)).to.be.at.least(3600));
+    });
+    cy.setStorageAt(secondAccount, 7, 255);
+    cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
   });
 });

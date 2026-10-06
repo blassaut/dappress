@@ -4,6 +4,15 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- The mock wallet: `mock: 'rabby'`, or `DAPPRESS_MOCK=rabby`, runs the same tests without MetaMask, against a provider in the page that answers as the wallet's profile recorded: identity flags, EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks. Anvil holds the keys and signs (`rpcUrl`); each chain holds its state: on a chain the dapp adds, or one named in `chains`, reads go to its RPC and transactions are signed by Anvil and sent there, testnet or fork. A method or an option the profile does not cover fails with `4200` rather than succeed. Profiles of MetaMask, Rabby and Phantom ship with the package; the command log says what the mock answered from the profile.
+- `cy.setStorageAt()`, `cy.increaseTime()`, `cy.mine()` and `cy.rpc()` act on the chain the dapp is on: a price, the clock, a balance, on a development node, Anvil or Hardhat, and anything else through `cy.rpc()` on any node. A fork keeps its chain's id, and the mock sends the dapp's requests for that chain to it, with no option to set.
+
+### Changed
+
+- `cy.useNetwork()` that times out says what the dapp heard of its chain meanwhile, in place of the last chain alone.
+
 ## [0.7.1] - 2026-10-06
 
 ### Changed

@@ -55,7 +55,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && mkdir -p dist/profiles && cp reports/profiles/*.json dist/profiles/",
     "prepack": "npm run build",
     "conformance": "tsx scripts/conformance.ts",
     "matrix": "tsx scripts/matrix.ts",
@@ -71,6 +71,7 @@
     "cypress": ">=15.10.0"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "@scure/bip39": "^1.6.0",
     "extract-zip": "^2.0.1",
     "puppeteer-core": "^24.43.1"

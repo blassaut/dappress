@@ -35,6 +35,9 @@ src/metamask-confirmation.ts  the confirmation of a request: which button, press
 src/metamask-transaction.ts   what a transaction's confirmation lets the test set: spending cap, fee
 src/metamask-modal.ts         the modals MetaMask shows over any screen
 src/metamask.ts               the above, as the tasks drive it
+src/mock-wallet.ts            the mock wallet: a provider in the page that replays a profile
+src/wallet-profile.ts         the wallet profile format, and the profiles the package ships
+src/keys.ts                   the address of a private key, for the mock
 src/page-helpers.ts           wait, click and fill primitives with fallback selectors
 src/actions.ts                Cypress tasks behind the commands
 src/support.ts                cy.* commands
@@ -53,7 +56,10 @@ npm run conformance -- 13.51.0                 # a specific release
 DAPPRESS_MODE=headless npm run conformance     # without a browser window
 DAPPRESS_MODE=popup npm run conformance        # wallet from the wallet cache: requests in the popup
 DAPPRESS_BROWSER=/path/to/chrome npm run conformance   # a browser Cypress does not detect
+DAPPRESS_MODE=mock DAPPRESS_MOCK=rabby npm run conformance   # the mock wallet, on a profile: no MetaMask
 ```
+
+The mock mode writes `reports/mock-<wallet>-<version>.json`, and the matrix a table by wallet. The suite is written for MetaMask: on MetaMask's own profile every command has to pass, and the run fails otherwise; on another wallet's, what fails is what that wallet does differently, and the run passes with the report. MetaMask's test dapp replaces `window.ethereum` with a shim of its own when the provider announced through EIP-6963 is not MetaMask's, so the suite talks to the wallet through the provider it kept at page load (`cypress/support/provider.ts`).
 
 A mode is where MetaMask shows the dapp's requests: `sidepanel` (the default), `headless` or `popup`. Each run writes `reports/metamask-<version>-<mode>.json`. `npm run matrix -- reports .` turns the reports into `MATRIX.md` and `badge.json`, a [shields.io endpoint](https://shields.io/badges/endpoint-badge) for the latest version.
 

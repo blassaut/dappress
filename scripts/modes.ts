@@ -10,6 +10,14 @@ export const MODES: Record<string, { label: string; headed: boolean; cache: bool
   popup: { label: 'Popup', headed: true, cache: true },
 };
 
+/** No MetaMask at all: the mock wallet replays a profile, headless in Chrome for Testing. Not a column of the matrix. */
+export const MOCK_MODE = { label: 'Mock', headed: false, cache: false };
+
+/** The report file for one run of the mock of `wallet`, by the profile's version. */
+export function mockReportName(wallet: string, version: string): string {
+  return `mock-${wallet.toLowerCase()}-${version}.json`;
+}
+
 /** The report file for one MetaMask version in one mode. */
 export function reportName(metamaskVersion: string, mode: string): string {
   return `metamask-${metamaskVersion}-${mode}.json`;

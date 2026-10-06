@@ -1,6 +1,8 @@
 // The types of the public API, shared by the plugin (index.ts) and the
 // commands (support.ts), and the options as the plugin resolves them.
 
+import type { Profile } from './wallet-profile';
+
 /** A network, as passed to MetaMask's wallet_addEthereumChain. */
 export interface Network {
   chainId: string;
@@ -46,6 +48,27 @@ export interface DappressOptions extends WalletSetup {
   timeout?: number;
   /** Where MetaMask builds are cached. Default: ~/.cache/dappress. */
   cacheDir?: string;
+  /**
+   * Run the tests against a mock of a wallet, in place of the real MetaMask:
+   * the name of a wallet Dappress ships a profile of, `metamask`, `rabby` or
+   * `phantom`, or the path of a profile file. No extension, any browser.
+   * Default: none, the real MetaMask.
+   */
+  mock?: string;
+  /**
+   * The endpoint that holds the mock wallet's keys: its unlocked accounts sign,
+   * as Anvil's do, and it stands for a chain the mock has no RPC for.
+   * Default: http://127.0.0.1:8545.
+   */
+  rpcUrl?: string;
+  /**
+   * The RPC endpoint of each chain the dapp uses, by chain id:
+   * `{ '0xaa36a7': 'https://…' }`. The mock wallet reads there, and sends
+   * transactions there once the keys signed them; cy.rpc(), cy.mine(),
+   * cy.increaseTime() and cy.setStorageAt() act there. A chain the dapp adds
+   * with wallet_addEthereumChain, and a fork Anvil runs, need none here.
+   */
+  chains?: Record<string, string>;
 }
 
 /** The options once resolved: every one has a value, the seed phrase included. */
@@ -60,10 +83,20 @@ export interface ResolvedOptions {
   cache: boolean;
   timeout: number;
   cacheDir: string;
+  mock: string | null;
+  rpcUrl: string;
+  chains: Record<string, string>;
 }
 
-/** The subset of the options the browser side reads with Cypress.expose(). */
-export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'>;
+/**
+ * The subset of the options the browser side reads with Cypress.expose().
+ * With a mock, the profile it replays and what the mock needs to run.
+ */
+export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'> & {
+  mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number };
+  /** The RPC of each chain the options name, for the commands that act on the chain itself. */
+  chains?: Record<string, string>;
+};
 
 export type WalletState = 'onboarding' | 'locked' | 'unlocked';
 

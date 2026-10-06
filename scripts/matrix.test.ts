@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { readReports, renderMatrix, renderBadge, type Report, type ReportEntry } from './matrix';
+import { readReports, readMockReports, renderMatrix, renderMockMatrix, renderBadge, type Report, type ReportEntry } from './matrix';
 
 const report = (metamaskVersion: string, mode: string, failing: string[] = []): Report => ({
   dappressVersion: '0.3.1',
@@ -80,6 +80,26 @@ test('one row per action, one column per version, with the modes an action faile
     '| approveNewNetwork | ❌ Headless, Popup | ✅ |',
     '| confirmTransaction | ✅ | – |',
   ]);
+});
+
+test('the mock reports: one column per wallet, and what fails with the reason', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dappress-matrix-'));
+  const mock = (name: string, version: string, failing: string[] = []): Report => ({ ...report('13.50.0', 'mock', failing), wallet: { name, version } });
+  fs.writeFileSync(path.join(dir, 'mock-rabby-0.94.11.json'), JSON.stringify(mock('Rabby', '0.94.11', ['approveNewNetwork'])));
+  fs.writeFileSync(path.join(dir, 'mock-metamask-13.50.0.json'), JSON.stringify(mock('MetaMask', '13.50.0')));
+  fs.writeFileSync(path.join(dir, 'metamask-13.50.0-popup.json'), JSON.stringify(report('13.50.0', 'popup')));
+
+  const matrix = renderMockMatrix(readMockReports(dir));
+  const rows = matrix.split('\n').filter((line) => line.startsWith('|'));
+  assert.deepEqual(rows, [
+    '| Action | MetaMask 13.50.0 | Rabby 0.94.11 |',
+    '| --- | --- | --- |',
+    '| connectToDapp | ✅ | ✅ |',
+    '| approveNewNetwork | ✅ | ❌ |',
+    '| confirmTransaction | ✅ | ✅ |',
+  ]);
+  assert.match(matrix, /### What fails, and why\n\n- Rabby 0\.94\.11, approveNewNetwork: Timed out/);
+  assert.equal(renderMockMatrix([]), '');
 });
 
 test('the actions table keeps the latest eight versions', () => {
