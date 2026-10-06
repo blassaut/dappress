@@ -1,6 +1,6 @@
 {
   "name": "dappress",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Test your dapp against the wallets your users run, starting with MetaMask: the real extension in Cypress, a test wallet, cy.* commands to answer its requests, checked against each MetaMask release. Wallet profiles of MetaMask, Rabby and Phantom.",
   "license": "MIT",
   "author": "Benjamin Lassaut",
