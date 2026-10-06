@@ -55,6 +55,33 @@ A mode is where MetaMask shows the dapp's requests: `sidepanel` (the default), `
 
 A GitHub workflow runs the suite every day, in the three modes, against the latest MetaMask release that has no report yet. It publishes the reports, the matrix and the badge on the [`conformance-reports`](https://github.com/blassaut/dappress/tree/conformance-reports) branch.
 
+## Wallet profiles
+
+A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of `chainChanged`, a method one wallet has and another has not. A wallet profile is that, recorded on the real wallet: each request with its result or error, each event with its payload, and how the provider turned up, grouped by method and by event. Nothing is interpreted, and what was not observed is not in the profile.
+
+The profile of MetaMask comes out of the conformance suite, for each release, in `reports/profiles/` on the `conformance-reports` branch. Comparing it with the profile of another wallet gives the list of what to check in a dapp before its users switch wallets:
+
+```sh
+npm run profile -- diff reports/profiles/metamask-13.50.0-sidepanel.json reports/profiles/rabby-0.93.0.json
+```
+
+One row per method and per event, and `no` where the two wallets answer differently.
+
+### Recording a wallet
+
+Twenty minutes, in a browser where that wallet alone is active, with a wallet made for testing: the profile holds the addresses and the signatures of the wallet used, and it is published.
+
+1. Open [MetaMask's test dapp](https://metamask.github.io/test-dapp/), open the console, and paste the content of `conformance/recorder.js` in it before touching the page.
+2. Click through the dapp: connect, each signature, a transaction, a network to add and one to switch to, a token to watch. Accept each once, then do it again and reject it. `cypress/e2e/actions.cy.ts` is the list the MetaMask profile is recorded from.
+3. In the console, `copy(JSON.stringify(window.__dappressTrace))`, and paste it in a file, say `trace.json`.
+4. `npm run profile -- build trace.json --wallet Rabby --version 0.93.0 --out reports/profiles/rabby-0.93.0.json`.
+
+Then run the diff above against the MetaMask profile, and open a pull request with the profile: it is published with the others, and the next person with a dapp to check has it.
+
+### How the recorder works
+
+`conformance/recorder.js` has no dependency: it runs from Cypress and pasted in a console alike. It wraps `window.ethereum.request()` as soon as the provider is there, listens to the provider's events and to EIP-6963, and keeps everything in `window.__dappressTrace`. For MetaMask, `cypress/support/e2e.ts` puts it in the page before the dapp loads and sends what it caught after each test to `scripts/conformance.ts`, which writes `reports/profiles/metamask-<version>-<mode>.json` next to the report. The three modes must give the same profile apart from the values signed, sent or mined: a difference between them is a hole in the recorder, not in MetaMask. The profile format is in `scripts/profile.ts`, schema `dappress-wallet-profile/0`.
+
 ## Updating to a new MetaMask release
 
 1. Run the suite. Each failure points to a screenshot of the MetaMask screen at that moment.

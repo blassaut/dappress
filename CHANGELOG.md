@@ -7,6 +7,7 @@ What changes for the users of Dappress, version by version. The format follows [
 ### Added
 
 - The MetaMask archive is checked against its SHA-256 before it is unpacked, for the releases the conformance suite ran against: 13.49.0 and 13.50.0. An archive with another digest is refused and removed. `metamaskChecksum`, or `DAPPRESS_METAMASK_CHECKSUM`, pins the archive of another version; without one, it is loaded as downloaded, with a warning.
+- The conformance suite records what the dapp sees of MetaMask, request by request and event by event, as a wallet profile published next to the reports: the first of the profiles a dapp will be tested against. `conformance/recorder.js` records any wallet from a browser console, and `npm run profile` builds a profile from a trace and compares two.
 
 ### Changed
 
