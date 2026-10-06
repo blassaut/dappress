@@ -58,6 +58,8 @@ export interface MockWallet {
   provider: MockProvider;
   act(action: string, argument?: unknown): Promise<unknown>;
   emit(event: string, payload: unknown): void;
+  /** The RPC endpoint of the chain the dapp is on, for the commands that act on the chain itself. */
+  chainEndpoint(): Promise<string>;
 }
 
 /** An error as a wallet throws it to the dapp: a code, and data when there is some. */
@@ -124,16 +126,32 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   let locked = false;
   let rpcId = 0;
 
-  // The RPC endpoint of each chain: given in the options, or by the dapp as it adds the chain
-  const endpoints = new Map<string, string>(Object.entries(chains).map(([chain, url]) => [chain.toLowerCase(), url]));
+  // The RPC endpoint of each chain: named in the options, or given by the dapp as it adds the chain
+  const named = new Map<string, string>(Object.entries(chains).map(([chain, url]) => [chain.toLowerCase(), url]));
+  const added = new Map<string, string>();
   const same = (a: string, b: string) => a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
-  /** Where the chain the dapp is on keeps its state: its RPC, or the keys' endpoint when the mock knows none. */
-  const chainEndpoint = () => endpoints.get(chainId) ?? rpcUrl;
+  // The chain the keys' endpoint is on: a fork keeps the id of the chain it forks
+  let keysChain: Promise<string | undefined> | undefined;
+  const chainOfKeys = () =>
+    (keysChain ??= call<string>(rpcUrl, 'eth_chainId').then(
+      (chain) => chain.toLowerCase(),
+      () => undefined,
+    ));
+
+  /**
+   * Where the chain the dapp is on keeps its state: the RPC the options name;
+   * else Anvil when it is on that chain, a fork of it; else the RPC the dapp
+   * gave; else Anvil.
+   */
+  async function chainEndpoint(): Promise<string> {
+    const chain = chainId;
+    return named.get(chain) ?? ((await chainOfKeys()) === chain ? rpcUrl : (added.get(chain) ?? rpcUrl));
+  }
   /** Whether the chain the dapp is on is another than the keys' own: transactions are then signed here and sent there. */
-  const onAnotherChain = () => !same(chainEndpoint(), rpcUrl);
+  const onAnotherChain = async () => !same(await chainEndpoint(), rpcUrl);
 
   /** A request to the chain the dapp is on: reads, and what a transaction needs to be filled in. */
-  const rpc = <T = unknown>(method: string, params: unknown[] = []) => call<T>(chainEndpoint(), method, params);
+  const rpc = async <T = unknown>(method: string, params: unknown[] = []) => call<T>(await chainEndpoint(), method, params);
   /** A request to the keys' endpoint: the accounts, and what they sign. */
   const keys = <T = unknown>(method: string, params: unknown[] = []) => call<T>(rpcUrl, method, params);
 
@@ -251,7 +269,7 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         if (!known.has(chain)) await answered('network', method, list);
         // The chain's own RPC, unless the options name one
         const [given] = ((list[0] as { rpcUrls?: unknown }).rpcUrls ?? []) as string[];
-        if (typeof given === 'string' && !endpoints.has(chain)) endpoints.set(chain, given);
+        if (typeof given === 'string') added.set(chain, given);
         known.add(chain);
         permitted.add(chain);
         switchTo(chain);
@@ -421,7 +439,7 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         return keys(method, params.slice(0, 2));
       case 'transaction': {
         const transaction = await adjusted(params[0] as Record<string, unknown>, argument as TransactionOptions | undefined);
-        if (!onAnotherChain()) return keys('eth_sendTransaction', [transaction]);
+        if (!(await onAnotherChain())) return keys('eth_sendTransaction', [transaction]);
         // Filled in from the chain, signed by the keys, sent to the chain: as a wallet does
         const raw = await keys<string>('eth_signTransaction', [await filledIn(transaction)]);
         return rpc('eth_sendRawTransaction', [raw]);
@@ -502,6 +520,7 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   return {
     provider,
     emit,
+    chainEndpoint,
     act: (action, argument) =>
       own[action] ? own[action](argument) : DECIDES[action] ? decide(action, argument) : Promise.reject(new Error(`[dappress] Unknown action ${action}`)),
   };

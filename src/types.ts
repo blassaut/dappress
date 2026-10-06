@@ -62,10 +62,11 @@ export interface DappressOptions extends WalletSetup {
    */
   rpcUrl?: string;
   /**
-   * The RPC endpoint of each chain the dapp uses, by chain id, for the mock
-   * wallet: `{ '0xaa36a7': 'https://…' }`. Reads go there, and transactions
-   * are sent there once the keys signed them. A chain the dapp adds with
-   * wallet_addEthereumChain needs none here: the mock takes the RPC it gives.
+   * The RPC endpoint of each chain the dapp uses, by chain id:
+   * `{ '0xaa36a7': 'https://…' }`. The mock wallet reads there, and sends
+   * transactions there once the keys signed them; cy.rpc(), cy.mine(),
+   * cy.increaseTime() and cy.setStorageAt() act there. A chain the dapp adds
+   * with wallet_addEthereumChain, and a fork Anvil runs, need none here.
    */
   chains?: Record<string, string>;
 }
@@ -93,6 +94,8 @@ export interface ResolvedOptions {
  */
 export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'> & {
   mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number };
+  /** The RPC of each chain the options name, for the commands that act on the chain itself. */
+  chains?: Record<string, string>;
 };
 
 export type WalletState = 'onboarding' | 'locked' | 'unlocked';

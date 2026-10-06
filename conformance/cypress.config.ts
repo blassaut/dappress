@@ -36,7 +36,8 @@ export default defineConfig({
         recorder: fs.readFileSync(path.join(__dirname, 'recorder.js'), 'utf8'),
         conformance: JSON.parse(process.env.DAPPRESS_CONFORMANCE_WALLET || 'null'),
       };
-      return configureDappress(on, config, { cache: process.env.DAPPRESS_CONFORMANCE_CACHE === '1' });
+      // The local node the suite starts, for the chain commands: the dapp ends the suite on it
+      return configureDappress(on, config, { cache: process.env.DAPPRESS_CONFORMANCE_CACHE === '1', chains: { '0x7a69': 'http://127.0.0.1:8545' } });
     },
   },
 });

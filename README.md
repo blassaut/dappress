@@ -288,7 +288,7 @@ When a setting appears in several places, the first one found wins: environment 
 | `cacheDir`        |                             | `~/.cache/dappress`. Where MetaMask builds and the wallet cache are kept.                                                                                                     |
 | `mock`            | `DAPPRESS_MOCK`             | None. A wallet to mock in place of MetaMask, `metamask`, `rabby`, `phantom`, or the path of a profile: see [Mock wallets](#mock-wallets).                                        |
 | `rpcUrl`          | `DAPPRESS_RPC_URL`          | `http://127.0.0.1:8545`. Where the mock's keys are: Anvil, whose unlocked accounts sign. Also the chain of a chain the mock has no RPC for.                                     |
-| `chains`          |                             | None. The RPC of each chain, by chain id, for the mock: `{ '0xa4b1': 'http://127.0.0.1:8545' }`. A chain the dapp adds brings its own.                                           |
+| `chains`          |                             | None. The RPC of a chain, by chain id, `{ '0x…': 'https://…' }`, for the mock and the chain commands. A chain the dapp adds, and a fork Anvil runs, need none.                  |
 
 ## Mock wallets
 
@@ -342,33 +342,40 @@ No extension and no seed phrase are needed to connect and sign. To send transact
 
 ### Your chain, at your block
 
-Anvil holds the keys; each chain holds its state. On a chain your dapp adds with `wallet_addEthereumChain`, the mock reads from the RPC the dapp gives, and sends a transaction there once Anvil signed it, nonce, gas and fees taken from that chain. With the seed phrase of a funded test wallet in Anvil, your tests send real transactions on your testnet, as with MetaMask.
+Anvil holds the keys; each chain holds its state. When your dapp adds its chain with `wallet_addEthereumChain`, as most do on connection, the mock reads from the RPC the dapp gives, and sends a transaction there once Anvil signed it, nonce, gas and fees taken from that chain. Start Anvil with the seed phrase of a test wallet funded on your testnet, and your tests send real transactions there, as with MetaMask, with no option to set:
 
-To freeze the state, fork the chain at a block and send the mock there:
+```sh
+anvil --mnemonic "$DAPPRESS_SEED_PHRASE"
+```
+
+To freeze the state instead, run Anvil as a fork of the chain, pinned to a block. A fork keeps the chain's id, and the mock sends the dapp's requests for that chain to it:
 
 ```sh
 anvil --fork-url "$ARBITRUM_RPC" --fork-block-number 245000000
 ```
 
-```ts
-configureDappress(on, config, { mock: 'rabby', chains: { '0xa4b1': 'http://127.0.0.1:8545' } });
-```
-
-Every run starts from the same positions, balances and prices. The test changes what it needs through Anvil's own methods, then goes through the dapp as a user would:
+Every run starts from the same positions, balances and prices. The test changes what it needs on the chain, then goes through the dapp as a user would:
 
 ```ts
 it('liquidates a position under water', () => {
   cy.visit('/trade/ETH-PERP');
   cy.contains('button', 'Connect').click();
   cy.connectToDapp();
-  // The oracle's price falls: written into the fork, then a block is mined
-  cy.request('POST', 'http://127.0.0.1:8545', { jsonrpc: '2.0', id: 1, method: 'anvil_setStorageAt', params: [oracle, slot, lowPrice] });
-  cy.request('POST', 'http://127.0.0.1:8545', { jsonrpc: '2.0', id: 2, method: 'evm_mine', params: [] });
+  cy.setStorageAt(oracle, priceSlot, lowPrice); // the oracle's price falls
   cy.contains('button', 'Liquidate').click();
   cy.confirmTransaction();
   cy.contains('Position closed').should('be.visible');
 });
 ```
+
+| Command | What it does on the chain the dapp is on |
+| --- | --- |
+| `cy.setStorageAt(address, slot, value)` | Writes a contract's storage, then mines a block: an oracle's price, a balance, a flag. |
+| `cy.increaseTime(seconds)` | Moves the clock forward, then mines a block: funding, expiries, vesting. |
+| `cy.mine(blocks?)` | Mines blocks, one by default. |
+| `cy.rpc(method, params?)` | Sends any JSON-RPC request, and yields its result: `anvil_setBalance`, `eth_getBalance`, anything the node takes. |
+
+The first three need a development node, as a real chain refuses to rewrite storage or move its clock: Anvil, a fork it runs, or Hardhat Network. They send Hardhat's method names, which Anvil takes too. `cy.rpc()` works on any node, a testnet included. A chain the mock has no RPC for, or one the dapp only switches to, is named with the `chains` option: `{ '0x…': 'https://…' }`.
 
 What the dapp reads through its own RPC, rather than through the wallet, still goes where the dapp sends it, and an API or an indexer it calls is not forked: point them at the fork with `cy.intercept`, or with the dapp's own settings.
 

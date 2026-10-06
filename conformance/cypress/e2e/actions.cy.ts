@@ -329,4 +329,23 @@ describe('MetaMask actions', () => {
     cy.connectToDapp();
     cy.getAccountAddress().should('eq', account);
   });
+
+  it('chain commands: mine, increaseTime, setStorageAt, rpc', () => {
+    const block = (tag = 'latest') => cy.rpc<{ number: string; timestamp: string }>('eth_getBlockByNumber', [tag, false]);
+    // On the local node, where these commands act: connectToDapp() left the dapp on the wallet setup's network
+    cy.useNetwork(anvil);
+    cy.rpc<string>('eth_chainId').should('eq', anvil.chainId);
+    block().then(({ number, timestamp }) => {
+      cy.mine(2);
+      block()
+        .its('number')
+        .should('eq', `0x${(BigInt(number) + 2n).toString(16)}`);
+      cy.increaseTime(3600);
+      block()
+        .its('timestamp')
+        .then((later) => expect(Number(later) - Number(timestamp)).to.be.at.least(3600));
+    });
+    cy.setStorageAt(secondAccount, 7, 255);
+    cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
+  });
 });

@@ -132,5 +132,5 @@ test('the defaults are left as they were', (t) => {
 test('the options exposed to the browser hold no secret', (t) => {
   quiet(t);
   const options = resolveOptions({ seedPhrase: SEED_PHRASE, network, autoSetup: false }, { projectRoot: project() });
-  assert.deepEqual(publicOptions(options), { metamaskVersion: DEFAULTS.metamaskVersion, autoSetup: false, network });
+  assert.deepEqual(publicOptions(options), { metamaskVersion: DEFAULTS.metamaskVersion, autoSetup: false, network, chains: {} });
 });

@@ -53,6 +53,7 @@ function wallet(profile = metamask, timeout = 500, chains: Record<string, string
     eth_sendTransaction: () => '0xsent',
     personal_sign: () => '0xsignature',
     eth_blockNumber: () => '0x10',
+    eth_chainId: () => '0x7a69',
     eth_getTransactionCount: () => '0x7',
     eth_getBlockByNumber: () => ({ number: '0x10', baseFeePerGas: '0x64' }),
     eth_maxPriorityFeePerGas: () => '0x2',
@@ -288,6 +289,8 @@ test("on a chain the dapp added, reads go to the chain's RPC, and a transaction 
   assert.equal(await sending, '0xlive');
   const where = sent.map(({ url, method }) => `${method} ${url}`);
   assert.deepEqual(where, [
+    // Anvil is asked once which chain it is on: a fork of the dapp's would come first
+    'eth_chainId http://anvil',
     'eth_blockNumber http://hoodi',
     'eth_getTransactionCount http://hoodi',
     'eth_estimateGas http://hoodi',
@@ -300,6 +303,20 @@ test("on a chain the dapp added, reads go to the chain's RPC, and a transaction 
   assert.deepEqual(sent.find(({ method }) => method === 'eth_signTransaction')?.params, [
     { from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1', chainId: '0x88bb0', nonce: '0x7', gas: '0xd0c3', maxPriorityFeePerGas: '0x2', maxFeePerGas: '0xca' },
   ]);
+});
+
+test('Anvil on the chain the dapp adds, a fork of it, comes before the RPC the dapp gives', async () => {
+  const { mock, provider, sent } = wallet();
+  const adding = provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x7a69', rpcUrls: ['http://public'] }] });
+  await mock.act('approveNewNetwork');
+  await adding;
+  sent.length = 0;
+  await provider.request({ method: 'eth_blockNumber' });
+  assert.deepEqual(
+    sent.map(({ url, method }) => `${method} ${url}`),
+    ['eth_chainId http://anvil', 'eth_blockNumber http://anvil'],
+  );
+  assert.equal(await mock.chainEndpoint(), 'http://anvil');
 });
 
 test('a chain named in the options keeps its RPC, whatever the dapp gives; signatures stay with the keys', async () => {

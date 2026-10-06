@@ -53,6 +53,14 @@ declare global {
       useNetwork(network?: Network): Chainable<string>;
       /** The address the dapp is connected with. */
       getAccountAddress(): Chainable<string>;
+      /** Sends a JSON-RPC request to the chain the dapp is on, and yields its result: `cy.rpc('eth_blockNumber')`. */
+      rpc<T = unknown>(method: string, params?: unknown[]): Chainable<T>;
+      /** Mines `blocks` blocks, 1 by default, on the chain the dapp is on: a development node, Anvil or Hardhat. */
+      mine(blocks?: number): Chainable<void>;
+      /** Moves the chain's clock `seconds` forward, and mines a block at that time: funding, expiries, vesting. */
+      increaseTime(seconds: number): Chainable<void>;
+      /** Writes `value` at storage `slot` of the contract at `address`, and mines a block: an oracle's price, a balance. */
+      setStorageAt(address: string, slot: number | bigint | string, value: number | bigint | string): Chainable<void>;
     }
   }
 }
@@ -186,6 +194,53 @@ Cypress.Commands.add('getAccountAddress', () => {
   Cypress.log({ name: 'metamask', message: 'getAccountAddress' });
   return provider<string[]>('eth_accounts').then(([address]) => address);
 });
+
+// The chain itself, for what a test sets up beside the wallet: a block, the
+// time, a contract's storage. These need a development node: Anvil, or a fork
+// it runs, or Hardhat's. The methods are Hardhat's names, which Anvil takes too.
+const chains = Object.fromEntries(Object.entries(options.chains ?? {}).map(([chain, url]) => [chain.toLowerCase(), url]));
+
+/** The RPC endpoint of the chain the dapp is on: the mock's own, one the options name, or the wallet setup's network's. */
+function chainEndpoint(): Cypress.Chainable<string> {
+  if (mockWallet) return cy.wrap(null, { log: false }).then(() => mockWallet.chainEndpoint());
+  return provider<string>('eth_chainId').then((chain) => {
+    const id = chain.toLowerCase();
+    const url = chains[id] ?? (options.network?.chainId.toLowerCase() === id ? options.network.rpcUrls[0] : undefined);
+    if (!url) throw new Error(`[dappress] No RPC known for chain ${id}, which the dapp is on: name it in the chains option`);
+    return url;
+  });
+}
+
+Cypress.Commands.add('rpc', (method: string, params: unknown[] = []) => {
+  Cypress.log({ name: 'chain', message: `${method} ${params.length ? JSON.stringify(params) : ''}`.trim() });
+  return chainEndpoint().then((url) =>
+    cy.request({ method: 'POST', url, body: { jsonrpc: '2.0', id: 1, method, params }, log: false }).then(({ body }) => {
+      if (body.error) throw new Error(`[dappress] ${method} failed on ${url}: ${body.error.message}`);
+      return body.result;
+    }),
+  );
+});
+
+Cypress.Commands.add('mine', (blocks = 1) => {
+  cy.rpc('hardhat_mine', [`0x${blocks.toString(16)}`]);
+});
+
+Cypress.Commands.add('increaseTime', (seconds: number) => {
+  cy.rpc('evm_increaseTime', [seconds]);
+  cy.mine();
+});
+
+Cypress.Commands.add('setStorageAt', (address: string, slot: number | bigint | string, value: number | bigint | string) => {
+  cy.rpc('hardhat_setStorageAt', [address, word(slot), word(value)]);
+  cy.mine();
+});
+
+// A storage slot or value as the node takes it: 32 bytes in hex
+function word(value: number | bigint | string): string {
+  const hex = typeof value === 'string' ? value.replace(/^0x/, '') : BigInt(value).toString(16);
+  if (!/^[0-9a-fA-F]{0,64}$/.test(hex)) throw new Error(`[dappress] ${String(value)} is not a 32-byte word`);
+  return `0x${hex.padStart(64, '0')}`;
+}
 
 // MetaMask announces the new chain to the dapp shortly after the switch: the
 // dapp is on it already, or the provider's chainChanged says when it is
