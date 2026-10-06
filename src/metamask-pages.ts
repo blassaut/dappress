@@ -13,9 +13,11 @@ function extensionIdOf(url: string): string | null {
   return match ? match[1] : null;
 }
 
-// A popup on its home route shows no request: it has not routed to one yet, or it is closing
+// A popup or a side panel on its home route shows no request: it has not
+// routed to one yet, the popup is closing, or the request is shown in another
+// side panel (Chrome 155 on Linux keeps one on the wallet's home as well)
 function isHomeRoute(url: string): boolean {
-  return /notification\.html(#\/?)?$/.test(url);
+  return /(notification|sidepanel)\.html(#\/?)?$/.test(url);
 }
 
 function pagesOf(browser: Browser, extensionId: string, pathname: string): Target[] {

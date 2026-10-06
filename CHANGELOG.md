@@ -10,6 +10,7 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Fixed
 
+- Commands no longer time out on Chrome for Testing 155 under Linux, where a side panel stays on the wallet's home next to the one showing the request: a side panel on its home screen, as a popup on its home screen, is not taken for the confirmation. The conformance workflow runs the previous Chrome major too, so that a Chrome release fails a job the day it ships.
 - The mock no longer asks the user to switch to a chain the wallet does not know: it answers what the wallet was recorded answering, MetaMask's `4902` "Unrecognized chain ID", for the dapp to add the chain, as Privy and others then do. It asks only for the chains the profile saw the wallet ask about. MetaMask's profile records the `4902`, and the conformance suite checks it on every wallet.
 
 ## [0.8.0] - 2026-10-06
