@@ -56,7 +56,7 @@ npm run conformance -- 13.51.0                 # a specific release
 DAPPRESS_MODE=headless npm run conformance     # without a browser window
 DAPPRESS_MODE=popup npm run conformance        # wallet from the wallet cache: requests in the popup
 DAPPRESS_BROWSER=/path/to/chrome npm run conformance   # a browser Cypress does not detect
-DAPPRESS_MODE=mock DAPPRESS_MOCK=rabby npm run conformance   # the mock wallet, on a profile: no MetaMask, Electron
+DAPPRESS_MODE=mock DAPPRESS_MOCK=rabby npm run conformance   # the mock wallet, on a profile: no MetaMask
 ```
 
 The mock mode writes `reports/mock-<wallet>-<version>.json`, and the matrix a table by wallet. The suite is written for MetaMask: on MetaMask's own profile every command has to pass, and the run fails otherwise; on another wallet's, what fails is what that wallet does differently, and the run passes with the report. MetaMask's test dapp replaces `window.ethereum` with a shim of its own when the provider announced through EIP-6963 is not MetaMask's, so the suite talks to the wallet through the provider it kept at page load (`cypress/support/provider.ts`).

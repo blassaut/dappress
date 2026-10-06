@@ -10,7 +10,7 @@ export const MODES: Record<string, { label: string; headed: boolean; cache: bool
   popup: { label: 'Popup', headed: true, cache: true },
 };
 
-/** No MetaMask at all: the mock wallet replays a profile, in Cypress's own Electron. Not a column of the matrix. */
+/** No MetaMask at all: the mock wallet replays a profile, headless in Chrome for Testing. Not a column of the matrix. */
 export const MOCK_MODE = { label: 'Mock', headed: false, cache: false };
 
 /** The report file for one run of the mock of `wallet`, by the profile's version. */

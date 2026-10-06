@@ -52,8 +52,8 @@ async function main(): Promise<void> {
     results = await cypress.run({
       config: { expose: { conformance: { accounts: wallet.accounts, imported: wallet.imported } } },
       project: path.join(__dirname, '..', 'conformance'),
-      // A browser that loads extensions: Chrome for Testing, or a path to one. The mock needs none: Electron
-      browser: mockWallet ? 'electron' : process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
+      // Chrome for Testing, or a path to one: it loads MetaMask, and runs the mock as the other modes do
+      browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
       headed: mode.headed,
       env: { DAPPRESS_METAMASK_VERSION: metamaskVersion },
     });

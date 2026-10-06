@@ -306,7 +306,7 @@ setupNodeEvents(on, config) {
 }
 ```
 
-or `DAPPRESS_MOCK=rabby npx cypress run`, with nothing to change in the specs. No extension, no seed phrase, any browser, Electron included. The mock lives in the page: the identity flags, the EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks come from the profile; what signs or sends goes to an RPC endpoint whose accounts are unlocked, [Anvil](https://getfoundry.sh) (`anvil`, or `anvil --fork-url <your RPC>` when the dapp reads the chain). A method or an option the profile does not cover fails, with `4200` and the wallet's name: the mock never succeeds at what the wallet was not seen doing.
+or `DAPPRESS_MOCK=rabby npx cypress run`, with nothing to change in the specs. No extension, no seed phrase, any browser Cypress runs. The mock lives in the page: the identity flags, the EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks come from the profile; what signs or sends goes to an RPC endpoint whose accounts are unlocked, [Anvil](https://getfoundry.sh) (`anvil`, or `anvil --fork-url <your RPC>` when the dapp reads the chain). A method or an option the profile does not cover fails, with `4200` and the wallet's name: the mock never succeeds at what the wallet was not seen doing.
 
 In CI, one job per wallet:
 

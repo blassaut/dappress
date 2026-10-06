@@ -144,7 +144,7 @@ jobs:
 
   # The same suite on the mock wallet, replaying a profile: MetaMask's, where
   # every command has to pass, and the others', where what fails is what the
-  # wallet does differently. No browser to install: Cypress's own Electron, and Anvil.
+  # wallet does differently. Chrome for Testing, as the other modes, and Anvil.
   mock:
     needs: version
     if: needs.version.outputs.run == 'true'
@@ -162,6 +162,20 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install Chrome for Testing
+        id: chrome
+        run: |
+          set -o pipefail
+          path=''
+          for attempt in 1 2 3; do
+            path=$(npx --yes @puppeteer/browsers@3 install chrome@stable --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1) && [ -x "$path" ] && break
+            echo "Chrome for Testing did not install (attempt $attempt)"
+            path=''
+            sleep 15
+          done
+          [ -x "$path" ] || { echo "::error::Chrome for Testing could not be installed"; exit 1; }
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
       - uses: foundry-rs/foundry-toolchain@v1
 
       - run: npm ci
@@ -171,6 +185,7 @@ jobs:
         env:
           DAPPRESS_MODE: mock
           DAPPRESS_MOCK: ${{ matrix.wallet }}
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
 
       - uses: actions/upload-artifact@v7
         if: always()
