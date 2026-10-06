@@ -1,5 +1,9 @@
 /// <reference types="cypress" preserve="true" />
 
+// The plugin's entry point. configureDappress() resolves the options,
+// downloads MetaMask, loads it into the browser Cypress launches (from the
+// wallet cache when asked), and registers the tasks behind the cy.* commands.
+
 import { resolveOptions, publicOptions } from './config';
 import { captureDebuggerUrl } from './browser';
 import { prepareExtension } from './download';

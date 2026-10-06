@@ -1,3 +1,8 @@
+// The plugin's options, from their three sources: the environment (or the
+// Cypress env block) for secrets and the MetaMask version, the wallet setup
+// file for the network, the argument of configureDappress() for the rest.
+// publicOptions() is the subset the browser side may read: no secret in it.
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -1,7 +1,7 @@
 {
   "name": "dappress",
   "version": "0.7.0",
-  "description": "MetaMask automation for Cypress: load the real extension, import a test wallet, answer dapp requests with cy.* commands. Tracks the latest MetaMask release.",
+  "description": "Test your dapp against the wallets your users run, starting with MetaMask: the real extension in Cypress, a test wallet, cy.* commands to answer its requests, checked against each MetaMask release. Wallet profiles of MetaMask, Rabby and Phantom.",
   "license": "MIT",
   "author": "Benjamin Lassaut",
   "repository": {
@@ -14,12 +14,17 @@
   },
   "keywords": [
     "cypress",
+    "cypress-plugin",
     "metamask",
-    "web3",
-    "e2e",
-    "testing",
+    "rabby",
+    "phantom",
     "wallet",
-    "dapp"
+    "ethereum",
+    "eip-1193",
+    "web3",
+    "dapp",
+    "e2e",
+    "testing"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
