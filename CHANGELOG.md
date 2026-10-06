@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-06
+
 ### Added
 
 - The MetaMask archive is checked against its SHA-256 before it is unpacked, for the releases the conformance suite ran against: 13.49.0 and 13.50.0. An archive with another digest is refused and removed. `metamaskChecksum`, or `DAPPRESS_METAMASK_CHECKSUM`, pins the archive of another version; without one, it is loaded as downloaded, with a warning.
@@ -107,7 +109,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/blassaut/dappress/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/blassaut/dappress/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/blassaut/dappress/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/blassaut/dappress/compare/v0.5.0...v0.5.1
