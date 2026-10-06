@@ -7,3 +7,5 @@ conformance/cypress/downloads/
 conformance/cypress/debug/
 .claude/
 .gstack/
+reports/metamask-*.json
+reports/mock-*.json

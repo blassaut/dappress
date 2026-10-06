@@ -13,6 +13,8 @@ export type Report = {
   dappressVersion: string;
   metamaskVersion: string;
   mode: string;
+  /** In the mock mode, the wallet whose profile the mock replayed. */
+  wallet?: { name: string; version: string };
   browser?: string;
   date: string;
   passed: boolean;
@@ -133,6 +135,49 @@ export function renderMatrix(reports: ReportEntry[]): string {
   return `${lines.join('\n')}\n`;
 }
 
+// mock-<wallet>-<version>.json, as scripts/modes.ts names the reports of the mock mode
+const MOCK_REPORT_FILE = /^mock-([a-z]+)-(\d+(?:\.\d+)*)\.json$/;
+
+/** The reports of the mock mode in `dir`, one per wallet profile, in the order of the file names. */
+export function readMockReports(dir: string): Report[] {
+  return fs
+    .readdirSync(dir)
+    .filter((file) => MOCK_REPORT_FILE.test(file))
+    .sort()
+    .map((file) => JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as Report);
+}
+
+/**
+ * The table of actions by wallet, on the mock: what a dapp can rely on with
+ * each wallet, and what fails, with the reason the suite gave.
+ */
+export function renderMockMatrix(reports: Report[]): string {
+  if (!reports.length) return '';
+  const label = (report: Report) => `${report.wallet?.name ?? 'Mock'} ${report.wallet?.version ?? ''}`.trim();
+  const actions: string[] = [];
+  for (const report of reports) for (const { action } of report.actions) if (!actions.includes(action)) actions.push(action);
+  const cell = (report: Report, action: string) => {
+    const result = report.actions.find((candidate) => candidate.action === action);
+    return !result ? '–' : result.status === 'passed' ? '✅' : '❌';
+  };
+  const lines = [
+    '## Wallets, on the mock',
+    '',
+    "One run of the suite per wallet profile, on the mock wallet that replays it: the commands a dapp can rely on with that wallet. MetaMask's own profile has to pass; what fails on another wallet's is what that wallet does differently.",
+    '',
+    `| Action | ${reports.map(label).join(' | ')} |`,
+    `| --- | ${reports.map(() => '---').join(' | ')} |`,
+    ...actions.map((action) => `| ${action.replace(/\|/g, '\\|')} | ${reports.map((report) => cell(report, action)).join(' | ')} |`),
+  ];
+  const failed = reports.flatMap((report) =>
+    report.actions
+      .filter((action) => action.status !== 'passed')
+      .map((action) => `- ${label(report)}, ${action.action}${action.error ? `: ${action.error}` : ''}`),
+  );
+  if (failed.length) lines.push('', '### What fails, and why', '', ...failed);
+  return `${lines.join('\n')}\n`;
+}
+
 /** The shields.io endpoint for the latest version: green when every mode passed. */
 export function renderBadge(reports: ReportEntry[]): { schemaVersion: 1; label: string; message: string; color: string } {
   const [latest] = byVersion(reports);
@@ -151,8 +196,10 @@ if (require.main === module) {
     process.exit(1);
   }
   const reports = readReports(reportsDir);
+  const mockReports = readMockReports(reportsDir);
   fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(path.join(outDir, 'MATRIX.md'), renderMatrix(reports));
+  const mockMatrix = renderMockMatrix(mockReports);
+  fs.writeFileSync(path.join(outDir, 'MATRIX.md'), renderMatrix(reports) + (mockMatrix ? `\n${mockMatrix}` : ''));
   fs.writeFileSync(path.join(outDir, 'badge.json'), `${JSON.stringify(renderBadge(reports), null, 2)}\n`);
-  console.log(`[dappress] Matrix of ${reports.length} report(s) written to ${outDir}`);
+  console.log(`[dappress] Matrix of ${reports.length} report(s) and ${mockReports.length} mock report(s) written to ${outDir}`);
 }

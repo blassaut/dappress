@@ -15,17 +15,20 @@ import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import cypress from 'cypress';
 import { DEFAULTS } from '../src/config';
 import { version as dappressVersion } from '../package.json';
-import { MODES, reportName } from './modes';
+import { MODES, MOCK_MODE, mockReportName, reportName } from './modes';
 import type { Report } from './matrix';
 import { buildProfile, readTrace } from './profile';
+import { loadProfile } from '../src/wallet-profile';
 
 const metamaskVersion = process.argv[2] || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
 const modeName = process.env.DAPPRESS_MODE || (process.env.DAPPRESS_HEADLESS === '1' ? 'headless' : 'sidepanel');
-const mode = MODES[modeName];
+const mode = modeName === 'mock' ? MOCK_MODE : MODES[modeName];
 if (!mode) {
   console.error(`[dappress] Unknown DAPPRESS_MODE "${modeName}": ${Object.keys(MODES).join(', ')}`);
   process.exit(1);
 }
+// In the mock mode, the wallet whose profile the mock replays: DAPPRESS_MOCK, a name or a profile's path
+const mockWallet = modeName === 'mock' ? process.env.DAPPRESS_MOCK || 'metamask' : null;
 const reportsDir = path.join(__dirname, '..', 'reports');
 const ANVIL_URL = 'http://127.0.0.1:8545';
 
@@ -38,14 +41,19 @@ async function main(): Promise<void> {
   const traceFile = path.join(os.tmpdir(), `dappress-trace-${process.pid}.jsonl`);
   fs.rmSync(traceFile, { force: true });
   process.env.DAPPRESS_TRACE_FILE = traceFile;
+  if (mockWallet) {
+    // The mock's accounts are Anvil's, the wallet's own: it signs and sends for them
+    process.env.DAPPRESS_MOCK = mockWallet;
+    process.env.DAPPRESS_RPC_URL = ANVIL_URL;
+  }
   const anvil = await startAnvil(wallet.seedPhrase);
   let results;
   try {
     results = await cypress.run({
       config: { expose: { conformance: { accounts: wallet.accounts, imported: wallet.imported } } },
       project: path.join(__dirname, '..', 'conformance'),
-      // A browser that loads extensions: Chrome for Testing, or a path to one
-      browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
+      // A browser that loads extensions: Chrome for Testing, or a path to one. The mock needs none: Electron
+      browser: mockWallet ? 'electron' : process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
       headed: mode.headed,
       env: { DAPPRESS_METAMASK_VERSION: metamaskVersion },
     });
@@ -73,13 +81,20 @@ async function main(): Promise<void> {
   };
 
   fs.mkdirSync(reportsDir, { recursive: true });
-  const file = path.join(reportsDir, reportName(metamaskVersion, modeName));
+  let file = path.join(reportsDir, reportName(metamaskVersion, modeName));
+  if (mockWallet) {
+    const { name, version } = loadProfile(mockWallet).wallet;
+    report.wallet = { name, version };
+    file = path.join(reportsDir, mockReportName(name, version));
+  }
   fs.writeFileSync(file, `${JSON.stringify(report, null, 2)}\n`);
   console.log(`[dappress] Report written to ${file}`);
-  for (const action of actions) console.log(`  ${action.status === 'passed' ? '✓' : '✗'} ${action.action}`);
+  for (const action of actions) console.log(`  ${action.status === 'passed' ? '✓' : '✗'} ${action.action}${action.error ? `: ${action.error}` : ''}`);
 
-  writeProfile(traceFile, report, wallet);
-  process.exit(report.passed ? 0 : 1);
+  if (!mockWallet) writeProfile(traceFile, report, wallet);
+  // The suite is written for MetaMask: on the mock of another wallet, a failure is the wallet's difference, and the report is the point
+  const informative = Boolean(report.wallet && report.wallet.name !== 'MetaMask');
+  process.exit(report.passed || informative ? 0 : 1);
 }
 
 /**

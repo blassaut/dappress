@@ -1,5 +1,5 @@
 import { testDapp } from '../support/testDapp';
-import { provider } from '../support/provider';
+import { provider, walletOf } from '../support/provider';
 
 // One test per Dappress command, against MetaMask's test dapp and a local
 // Anvil node for the funded transaction. scripts/conformance.ts starts Anvil
@@ -282,7 +282,7 @@ describe('MetaMask actions', () => {
   });
 
   it('disconnectFromDapp', () => {
-    cy.window().then((win) => win.ethereum.on('accountsChanged', cy.stub().as('accountsChanged')));
+    cy.window().then((win) => walletOf(win).on('accountsChanged', cy.stub().as('accountsChanged')));
     cy.disconnectFromDapp();
     cy.get('@accountsChanged').should('have.been.calledWith', []);
     provider.call('eth_accounts').should('deep.equal', []);

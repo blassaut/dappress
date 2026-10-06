@@ -4,6 +4,14 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- The mock wallet: `mock: 'rabby'`, or `DAPPRESS_MOCK=rabby`, runs the same tests without MetaMask, against a provider in the page that answers as the wallet's profile recorded: identity flags, EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks. What signs or sends goes to the RPC endpoint `rpcUrl` names, Anvil by default. A method or an option the profile does not cover fails with `4200` rather than succeed. Profiles of MetaMask, Rabby and Phantom ship with the package; the command log says what the mock answered from the profile.
+
+### Changed
+
+- `cy.useNetwork()` that times out says what the dapp heard of its chain meanwhile, in place of the last chain alone.
+
 ## [0.7.1] - 2026-10-06
 
 ### Changed

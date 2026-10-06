@@ -7,6 +7,7 @@
 // Each command asks the Node side (src/actions.ts) to drive MetaMask through
 // a Cypress task, then yields back to the test.
 
+import { createMockWallet, installMockWallet } from './mock-wallet';
 import type { ConnectOptions, Network, PublicOptions, TransactionOptions, WalletState } from './types';
 
 export type { ConnectOptions, CustomGas, GasEstimate, TransactionOptions, WalletState } from './types';
@@ -60,13 +61,14 @@ type Settled = { result?: unknown; error?: { message: string } };
 
 // The dapp's window, with the provider MetaMask injects.
 // Kept off the global Window, which the project under test may describe its own way.
-type DappWindow = Cypress.AUTWindow & {
-  ethereum: {
-    request(args: { method: string; params?: unknown }): Promise<unknown>;
-    on(event: string, listener: (value: string) => void): void;
-    removeListener(event: string, listener: (value: string) => void): void;
-  };
+// What the commands use of a provider, MetaMask's or the mock's
+type WalletProvider = {
+  request(args: { method: string; params?: unknown }): Promise<unknown>;
+  on(event: string, listener: (value: unknown) => void): unknown;
+  removeListener(event: string, listener: (value: unknown) => void): unknown;
 };
+
+type DappWindow = Cypress.AUTWindow & { ethereum: WalletProvider };
 
 // A network change MetaMask makes without asking is answered well within this (ms)
 const SILENT_SWITCH = 1500;
@@ -74,17 +76,36 @@ const SILENT_SWITCH = 1500;
 const CHAIN_ANNOUNCED = 10000;
 
 const options: Partial<PublicOptions> = Cypress.expose('dappress') || {};
+const mock = options.mock;
 
 const dappWindow = () => cy.window({ log: false }) as unknown as Cypress.Chainable<DappWindow>;
 
-// `shown` is what the command log displays for the argument, if anything
+// The wallet's provider: the mock's own object, whatever the page made of
+// window.ethereum meanwhile (a dapp may wrap or replace it), or the one
+// MetaMask injected
+const providerOf = (win: DappWindow): WalletProvider => (mockWallet ? mockWallet.provider : win.ethereum);
+
+// With a mock, the wallet lives with the spec, as the extension would outlive
+// the pages: it is put into each page the dapp loads, before the dapp runs
+const mockWallet = mock && createMockWallet({ ...mock, log: (line) => Cypress.log({ name: 'mock', message: line }) });
+if (mock && mockWallet) {
+  Cypress.on('window:before:load', (win) => {
+    installMockWallet(win, mockWallet, mock);
+  });
+}
+
+// `shown` is what the command log displays for the argument, if anything.
+// The real wallet is driven from Node, through a task; the mock from here.
 function metamask<T = void>(action: string, argument: unknown = null, shown = ''): Cypress.Chainable<T> {
   Cypress.log({ name: 'metamask', message: `${action} ${shown}`.trim() });
+  if (mock && mockWallet) {
+    return cy.wrap(null, { log: false }).then({ timeout: mock.timeout + 5000 }, () => mockWallet.act(action, argument ?? undefined) as Promise<T>);
+  }
   return cy.task<T>(`dappress:${action}`, argument, { log: false });
 }
 
 function provider<T>(method: string, params?: unknown): Cypress.Chainable<T> {
-  return dappWindow().then((win) => win.ethereum.request({ method, params }) as Promise<T>);
+  return dappWindow().then((win) => providerOf(win).request({ method, params }) as Promise<T>);
 }
 
 Cypress.Commands.add('setupMetaMask', () => metamask<WalletState>('setupMetaMask'));
@@ -106,7 +127,11 @@ Cypress.Commands.add('rejectAddToken', () => metamask('rejectAddToken'));
 Cypress.Commands.add('addAccount', () => metamask<string>('addAccount'));
 Cypress.Commands.add('switchAccount', (name) => metamask('switchAccount', name, name));
 // The private key is kept out of the command log
-Cypress.Commands.add('importAccount', (privateKey) => metamask<string>('importAccount', privateKey));
+Cypress.Commands.add('importAccount', (privateKey) => {
+  // The mock keeps no key: Node gives it the key's address, and the RPC endpoint acts for it
+  if (mock) return cy.task<string>('dappress:addressOf', privateKey, { log: false }).then((address) => metamask<string>('importAccount', address));
+  return metamask<string>('importAccount', privateKey);
+});
 
 // A locked wallet keeps the dapp's requests behind its unlock screen
 Cypress.Commands.add('lockWallet', () => metamask('lockWallet'));
@@ -135,10 +160,12 @@ Cypress.Commands.add('useNetwork', (network = options.network ?? undefined) => {
   // Whether MetaMask asks: the request is still pending once a silent switch would have been answered
   dappWindow()
     .then((win) => {
-      request = win.ethereum.request({ method: 'wallet_addEthereumChain', params: [network] }).then(
-        (result): Settled => ({ result }),
-        (error): Settled => ({ error }),
-      );
+      request = providerOf(win)
+        .request({ method: 'wallet_addEthereumChain', params: [network] })
+        .then(
+          (result): Settled => ({ result }),
+          (error): Settled => ({ error }),
+        );
       const silent = new Promise<boolean>((resolve) => setTimeout(resolve, SILENT_SWITCH, false));
       return Promise.race([request.then(() => true), silent]);
     })
@@ -164,21 +191,31 @@ Cypress.Commands.add('getAccountAddress', () => {
 // dapp is on it already, or the provider's chainChanged says when it is
 function waitForChainId(chainId: string): Cypress.Chainable<string> {
   return dappWindow().then({ timeout: CHAIN_ANNOUNCED + 1000 }, (win) => {
+    const provider = providerOf(win);
     return new Promise<string>((resolve, reject) => {
-      let current: unknown;
+      // What the dapp was told of its chain meanwhile, for the error
+      const heard: string[] = [];
       const settle = (act: () => void) => {
         clearTimeout(timer);
-        win.ethereum.removeListener('chainChanged', onChainChanged);
+        provider.removeListener('chainChanged', onChainChanged);
         act();
       };
       const onChainChanged = (announced: unknown) => {
-        current = announced;
+        heard.push(String(announced));
         if (announced === chainId) settle(() => resolve(chainId));
       };
-      const timer = setTimeout(() => settle(() => reject(new Error(`[dappress] The dapp is on chain ${current}, not ${chainId}`))), CHAIN_ANNOUNCED);
+      const timer = setTimeout(
+        () =>
+          settle(() =>
+            reject(
+              new Error(`[dappress] The dapp is not on chain ${chainId} after ${CHAIN_ANNOUNCED}ms: it heard ${heard.length ? heard.join(', ') : 'nothing'}`),
+            ),
+          ),
+        CHAIN_ANNOUNCED,
+      );
       // Listening first: a change announced while the chain is asked for is not missed
-      win.ethereum.on('chainChanged', onChainChanged);
-      win.ethereum.request({ method: 'eth_chainId' }).then(onChainChanged, () => {});
+      provider.on('chainChanged', onChainChanged);
+      provider.request({ method: 'eth_chainId' }).then(onChainChanged, (error: Error) => heard.push(`eth_chainId failed: ${error.message}`));
     });
   });
 }

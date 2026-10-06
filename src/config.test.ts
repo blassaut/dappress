@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS, METAMASK_CHECKSUMS, resolveOptions, publicOptions } from './config';
 
-const ENV_KEYS = ['DAPPRESS_METAMASK_VERSION', 'DAPPRESS_METAMASK_CHECKSUM', 'DAPPRESS_SEED_PHRASE', 'DAPPRESS_PASSWORD'];
+const ENV_KEYS = ['DAPPRESS_METAMASK_VERSION', 'DAPPRESS_METAMASK_CHECKSUM', 'DAPPRESS_SEED_PHRASE', 'DAPPRESS_PASSWORD', 'DAPPRESS_MOCK', 'DAPPRESS_RPC_URL'];
 const SEED_PHRASE = 'one two three four five six seven eight nine ten eleven twelve';
 const network = { chainId: '0x7a69', chainName: 'Anvil', rpcUrls: ['http://127.0.0.1:8545'], nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 } };
 

@@ -142,8 +142,45 @@ jobs:
           path: /tmp/dappress
           if-no-files-found: ignore
 
+  # The same suite on the mock wallet, replaying a profile: MetaMask's, where
+  # every command has to pass, and the others', where what fails is what the
+  # wallet does differently. No browser to install: Cypress's own Electron, and Anvil.
+  mock:
+    needs: version
+    if: needs.version.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        wallet: [metamask, rabby, phantom]
+    name: mock (${{ matrix.wallet }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: npm ci
+
+      - name: Run the suite on the mock of ${{ matrix.wallet }}
+        run: npm run conformance
+        env:
+          DAPPRESS_MODE: mock
+          DAPPRESS_MOCK: ${{ matrix.wallet }}
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-mock-${{ matrix.wallet }}
+          path: reports/mock-*.json
+          if-no-files-found: ignore
+
   publish:
-    needs: [version, suite]
+    needs: [version, suite, mock]
     # A failing mode still has its report published
     if: always() && needs.version.outputs.run == 'true'
     runs-on: ubuntu-24.04
