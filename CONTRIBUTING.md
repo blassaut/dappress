@@ -69,7 +69,7 @@ One row per method and per event, and `no` where the two wallets answer differen
 
 ### Recording a wallet
 
-Twenty minutes, in a browser where that wallet alone is active, with a wallet made for testing: the profile holds the addresses and the signatures of the wallet used, and it is published.
+It takes about twenty minutes. Disable the other wallet extensions first: two wallets active inject two providers, and the profile would mix what each answers. And use a wallet made for testing, never your own: the profile holds everything the dapp saw, your accounts' addresses and the signatures you made included, and it is published.
 
 1. Open [MetaMask's test dapp](https://metamask.github.io/test-dapp/), open the console, and paste the content of `conformance/recorder.js` in it before touching the page.
 2. Click through the dapp: connect, each signature, a transaction, a network to add and one to switch to, a token to watch. Accept each once, then do it again and reject it. `cypress/e2e/actions.cy.ts` is the list the MetaMask profile is recorded from.
