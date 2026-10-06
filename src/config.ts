@@ -7,6 +7,8 @@ import type { DappressOptions, Network, PublicOptions, ResolvedOptions, WalletSe
 
 export const DEFAULTS = {
   metamaskVersion: '13.50.0',
+  // A SHA-256 to accept the MetaMask archive with. None: the one known for the version, if any
+  metamaskChecksum: null as string | null,
   // None: a new wallet is made for each run. A phrase known to others is not
   // blank, since MetaMask restores the accounts saved for it elsewhere.
   seedPhrase: null as string | null,
@@ -25,6 +27,16 @@ export const DEFAULTS = {
   cacheDir: path.join(os.homedir(), '.cache', 'dappress'),
 };
 
+/**
+ * The SHA-256 of the archive of each MetaMask release the conformance suite
+ * ran against, taken from the archive it downloaded. An archive of one of
+ * these versions with another digest is refused.
+ */
+export const METAMASK_CHECKSUMS: Record<string, string> = {
+  '13.50.0': 'b759caca275dec1a10edfebb9d1de1d26589a92104d8b0523ec442930e20e47c',
+  '13.49.0': '7ba00bfe4fe8b0ffb27be1e8fc06506248f1b888cb4f2e5e5e8b1c37f461f262',
+};
+
 // A .ts file loads when the Cypress config is itself in TypeScript
 const WALLET_SETUP_FILES = ['cypress/wallet.setup.ts', 'cypress/wallet.setup.js'];
 
@@ -41,6 +53,7 @@ export function resolveOptions(
   const env = cypressConfig.env || {};
   const fromEnv = {
     metamaskVersion: process.env.DAPPRESS_METAMASK_VERSION || env.DAPPRESS_METAMASK_VERSION,
+    metamaskChecksum: process.env.DAPPRESS_METAMASK_CHECKSUM || env.DAPPRESS_METAMASK_CHECKSUM,
     seedPhrase: process.env.DAPPRESS_SEED_PHRASE || env.DAPPRESS_SEED_PHRASE,
     password: process.env.DAPPRESS_PASSWORD || env.DAPPRESS_PASSWORD,
   };
@@ -50,7 +63,8 @@ export function resolveOptions(
     if (value) options[key] = value;
   }
   const seedPhrase = options.seedPhrase || newWallet(options);
-  return { ...options, seedPhrase };
+  const metamaskChecksum = options.metamaskChecksum || METAMASK_CHECKSUMS[options.metamaskVersion] || null;
+  return { ...options, seedPhrase, metamaskChecksum };
 }
 
 /** No seed phrase was given: make one for this run. It is never written anywhere. */

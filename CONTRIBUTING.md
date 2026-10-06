@@ -59,7 +59,7 @@ A GitHub workflow runs the suite every day, in the three modes, against the late
 
 1. Run the suite. Each failure points to a screenshot of the MetaMask screen at that moment.
 2. Find the new selector in MetaMask's page objects: `github.com/MetaMask/metamask-extension/tree/v<version>/test/e2e/page-objects/pages`.
-3. Update `src/metamask.ts`, run the suite against the new and the previous release, bump the default version in `src/config.ts` and in the README, and commit the report.
+3. Update `src/metamask.ts`, run the suite against the new and the previous release, bump the default version in `src/config.ts` and in the README, add the archive's SHA-256 to `METAMASK_CHECKSUMS` in `src/config.ts` (`shasum -a 256 ~/.cache/dappress/metamask/metamask-chrome-<version>.zip`), and commit the report.
 
 ## Releasing
 
