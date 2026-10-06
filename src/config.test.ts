@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { DEFAULTS, resolveOptions, publicOptions } from './config';
+import { DEFAULTS, METAMASK_CHECKSUMS, resolveOptions, publicOptions } from './config';
 
-const ENV_KEYS = ['DAPPRESS_METAMASK_VERSION', 'DAPPRESS_SEED_PHRASE', 'DAPPRESS_PASSWORD'];
+const ENV_KEYS = ['DAPPRESS_METAMASK_VERSION', 'DAPPRESS_METAMASK_CHECKSUM', 'DAPPRESS_SEED_PHRASE', 'DAPPRESS_PASSWORD'];
 const SEED_PHRASE = 'one two three four five six seven eight nine ten eleven twelve';
 const network = { chainId: '0x7a69', chainName: 'Anvil', rpcUrls: ['http://127.0.0.1:8545'], nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 } };
 
@@ -42,7 +42,18 @@ function quiet(t: TestContext): { logged: () => string } {
 test('the defaults, when nothing else is given', (t) => {
   quiet(t);
   const options = resolveOptions({ seedPhrase: SEED_PHRASE }, { projectRoot: project() });
-  assert.deepEqual(options, { ...DEFAULTS, seedPhrase: SEED_PHRASE });
+  assert.deepEqual(options, { ...DEFAULTS, seedPhrase: SEED_PHRASE, metamaskChecksum: METAMASK_CHECKSUMS[DEFAULTS.metamaskVersion] });
+});
+
+test('the checksum of the MetaMask archive: the one known for the version, none for another, or the one set', (t) => {
+  quiet(t);
+  const projectRoot = project();
+  assert.match(METAMASK_CHECKSUMS[DEFAULTS.metamaskVersion], /^[0-9a-f]{64}$/, 'the default version has a checksum');
+  assert.equal(resolveOptions({ seedPhrase: SEED_PHRASE, metamaskVersion: '13.49.0' }, { projectRoot }).metamaskChecksum, METAMASK_CHECKSUMS['13.49.0']);
+  assert.equal(resolveOptions({ seedPhrase: SEED_PHRASE, metamaskVersion: '13.48.0' }, { projectRoot }).metamaskChecksum, null);
+  assert.equal(resolveOptions({ seedPhrase: SEED_PHRASE, metamaskChecksum: 'abc' }, { projectRoot }).metamaskChecksum, 'abc');
+  const env = { DAPPRESS_METAMASK_CHECKSUM: 'def' };
+  assert.equal(resolveOptions({ seedPhrase: SEED_PHRASE, metamaskChecksum: 'abc' }, { projectRoot, env }).metamaskChecksum, 'def');
 });
 
 test('the options given to configureDappress() replace the defaults', (t) => {

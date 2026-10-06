@@ -246,6 +246,7 @@ When a setting appears in several places, the first one found wins: environment 
 | `seedPhrase`      | `DAPPRESS_SEED_PHRASE`      | None. A new wallet is created for each run. It is never written to disk.                                                                                                    |
 | `password`        | `DAPPRESS_PASSWORD`         | `Tester@1234`. It only protects the throwaway browser profile of the run.                                                                                                   |
 | `metamaskVersion` | `DAPPRESS_METAMASK_VERSION` | `13.50.0`. Downloaded from MetaMask's GitHub releases on first use, then cached.                                                                                             |
+| `metamaskChecksum` | `DAPPRESS_METAMASK_CHECKSUM` | The SHA-256 of the archive of the version, when Dappress knows it: `src/config.ts` lists them. Set it to pin the archive of another version, which is otherwise loaded as downloaded. |
 | `timeout`         |                             | `20000` ms. How long a command waits for MetaMask to show the request.                                                                                                       |
 | `autoSetup`       |                             | `true`. Set to `false` to call `cy.setupMetaMask()` yourself.                                                                                                                |
 | `cache`           |                             | `false`. Importing the wallet takes about fifteen seconds per run. With `true`, Dappress imports it once and reuses the browser profile. Needs your own seed phrase and a headed run. |
@@ -254,29 +255,13 @@ When a setting appears in several places, the first one found wins: environment 
 
 ## Security
 
-Dappress reads a seed phrase and presses buttons in a wallet, which is also what a wallet drainer does. This section says what it does with your secrets, what it talks to and what you install, and how to check each point yourself rather than take it on trust.
+Dappress reads a seed phrase and drives a wallet. In short, what it does with them; [SECURITY.md](https://github.com/blassaut/dappress/blob/main/SECURITY.md) has the details, a way to check each point, and how to report a flaw.
 
-### Your secrets
-
-- The seed phrase and the password are read in Node.js, from the environment or `cypress.env.json` (`src/config.ts`), and typed into MetaMask's own onboarding and unlock screens (`src/metamask.ts`). They go nowhere else.
-- They never reach the browser side. What the `cy.*` commands can read is the subset `src/config.ts` names as public: the MetaMask version, `autoSetup` and the network.
-- They are never logged. The one line about the seed phrase says that none is configured, and the private key given to `cy.importAccount()` is kept out of the Cypress command log.
-- Without a seed phrase, a new one is generated on your machine, with `@scure/bip39`.
-- Use a seed phrase made for testing, funded on test networks only, and avoid well-known phrases such as the Hardhat or Anvil development mnemonic: MetaMask restores the accounts other people saved for them, and your wallet will not be the one you expect.
-- With `cache: true`, `~/.cache/dappress/profiles` holds the wallet's encrypted vault. Treat it like the seed phrase: keep it on the machine, and keep it out of any CI cache that other people or workflows can restore.
-
-### What it talks to
-
-- One outbound request, in `src/download.ts`: the MetaMask build you asked for, from [MetaMask's GitHub releases](https://github.com/MetaMask/metamask-extension/releases), once per version. It is the only URL in the package: `grep -r "https://" node_modules/dappress/dist`.
-- Three requests to the wallet, from `src/support.ts`: `eth_accounts` for `cy.getAccountAddress()`, `eth_chainId` and `wallet_addEthereumChain` for `cy.useNetwork()`. Dappress never asks the wallet for a signature or a transaction. Those are your dapp's requests, and Dappress presses the button you name on the screen they open.
-- No telemetry, no analytics, nothing else on the network.
-
-### What you install
-
-- Three dependencies, `@scure/bip39`, `extract-zip` and `puppeteer-core`, and no install script.
-- Every version is built and published by [a GitHub Actions workflow](https://github.com/blassaut/dappress/blob/main/.github/workflows/release.yml) from the tagged commit, as an npm [trusted publisher](https://docs.npmjs.com/trusted-publishers): there is no npm token to steal. The version carries a provenance attestation naming this repository, the workflow, the commit and the run. See the Provenance panel on [npmjs.com](https://www.npmjs.com/package/dappress), or run `npm audit signatures`.
-- The build is reproducible. Clone the repository, `git checkout v<version>`, `npm ci`, `npm run build`: `dist` is byte for byte what `npm pack dappress@<version>` holds. [A workflow](https://github.com/blassaut/dappress/actions/workflows/reproducible.yml) does this after every release, verifies npm's signature and provenance of the version, and the "Reproducible build" badge above shows its last result.
-- Found a flaw? [SECURITY.md](https://github.com/blassaut/dappress/blob/main/SECURITY.md) says how to report it privately, and what counts as one.
+- **Secrets stay in Node.js.** The seed phrase and the password are typed into MetaMask's own screens and go nowhere else: not the browser side, not the logs. Without a seed phrase, one is generated on your machine.
+- **One download, checked.** The MetaMask build, from MetaMask's GitHub releases, once per version, against the SHA-256 Dappress knows for it. No other host, no telemetry.
+- **No request of its own to the wallet** beyond `eth_accounts`, `eth_chainId` and `wallet_addEthereumChain`. A signature or a transaction only comes from your dapp.
+- **A package you can check.** Three dependencies, no install script, published by GitHub Actions as a trusted publisher with a provenance attestation, and built again from its tag after every release: the "Reproducible build" badge above.
+- **Use a test wallet.** A seed phrase made for testing, funded on test networks only, and not a well-known one such as Hardhat's or Anvil's: MetaMask restores the accounts other people saved for it. With `cache: true`, treat `~/.cache/dappress/profiles` like the seed phrase.
 
 ## Troubleshooting
 

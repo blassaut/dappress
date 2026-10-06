@@ -28,6 +28,12 @@ export interface DappressOptions extends WalletSetup {
   /** MetaMask release to load, downloaded from GitHub on first run. */
   metamaskVersion?: string;
   /**
+   * The SHA-256 of the MetaMask archive, to refuse any other. Default: the one
+   * Dappress knows for the version, if any; otherwise the archive is loaded as
+   * downloaded, with a warning.
+   */
+  metamaskChecksum?: string;
+  /**
    * Keep MetaMask's backup and sync on. It saves the accounts and contacts of a
    * seed phrase and restores them on other installs. Default: false.
    */
@@ -45,6 +51,7 @@ export interface DappressOptions extends WalletSetup {
 /** The options once resolved: every one has a value, the seed phrase included. */
 export interface ResolvedOptions {
   metamaskVersion: string;
+  metamaskChecksum: string | null;
   seedPhrase: string;
   password: string;
   network: Network | null;

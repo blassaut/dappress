@@ -4,6 +4,14 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- The MetaMask archive is checked against its SHA-256 before it is unpacked, for the releases the conformance suite ran against: 13.49.0 and 13.50.0. An archive with another digest is refused and removed. `metamaskChecksum`, or `DAPPRESS_METAMASK_CHECKSUM`, pins the archive of another version; without one, it is loaded as downloaded, with a warning.
+
+### Changed
+
+- The README's Security section is down to five points. The details, and the way to check each, are in `SECURITY.md`.
+
 ## [0.6.1] - 2026-10-05
 
 ### Fixed
