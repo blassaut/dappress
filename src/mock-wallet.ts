@@ -123,6 +123,12 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   let chainId = '0x1';
   const known = new Set<string>([chainId]);
   const permitted = new Set<string>([chainId]);
+  // The chains the wallet knows of itself: those it asked the user to switch to, as the profile saw them rejected.
+  // A switch it answered without asking says nothing: the wallet may have been on that chain already
+  for (const observation of profile.methods.wallet_switchEthereumChain ?? []) {
+    const chain = chainIn(observation.params);
+    if (chain && observation.error?.code === USER_REJECTED) known.add(chain.toLowerCase());
+  }
   let locked = false;
   let rpcId = 0;
 
@@ -206,6 +212,15 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     return refused;
   }
 
+  /** EIP-3326's answer to a switch to a chain the wallet does not know, where the profile recorded none of its own. */
+  function unrecognized(chain: string): ProviderRpcError {
+    const error = new ProviderRpcError({ code: 4902, message: `Unrecognized chain ID "${chain}". Try adding the chain using wallet_addEthereumChain first.` });
+    lastRecorded = `${wallet} answers 4902 "${error.message}" to wallet_switchEthereumChain, as EIP-3326 says: the profile has no answer of its own`;
+    log?.(lastRecorded);
+    answeredWithoutAsking.push({ kind: 'switch', line: lastRecorded });
+    return error;
+  }
+
   /** A method the wallet refused whenever it was asked, other than by a user's rejection: refused without asking. */
   function alwaysRefused(kind: Kind, method: string, params: unknown[]): ProviderRpcError | undefined {
     const seen = observations(method);
@@ -278,8 +293,8 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
       case 'wallet_switchEthereumChain': {
         const chain = chainOf(list[0]);
         if (!permitted.has(chain)) {
-          const refused = refuseWithoutAsking('switch', method, list);
-          if (refused) throw refused;
+          // A chain the wallet does not know: the refusal it was recorded giving, or EIP-3326's 4902, for the dapp to add it
+          if (!known.has(chain)) throw refuseWithoutAsking('switch', method, list) ?? unrecognized(chain);
           await answered('switch', method, list);
           permitted.add(chain);
         }

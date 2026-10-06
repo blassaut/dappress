@@ -204,6 +204,7 @@ Cypress starts Xvfb itself for the headed run. Drop `--headed` to run headless; 
 | `cy.rejectConnection()`          | Rejects the connection request.                                                              |
 | `cy.disconnectFromDapp()`        | Disconnects the dapp in MetaMask. The dapp receives an empty `accountsChanged`.              |
 | `cy.getAccountAddress()`         | Yields the address the dapp is connected with.                                               |
+| `cy.getWallet()`                 | Yields the wallet under test as a wallet picker names it, `{ name: 'Rabby Wallet', version, mock }`. |
 
 ### Signatures and transactions
 
@@ -309,6 +310,12 @@ When a setting appears in several places, the first one found wins: environment 
    ```
 
    or, in `cypress.config.ts`, `configureDappress(on, config, { mock: 'rabby' })`. The wallets: `metamask`, `rabby`, `phantom`, or the path of a [profile](#wallet-profiles) you recorded.
+
+   Where the dapp asks the user to pick a wallet (Privy, RainbowKit, Web3Modal…), pick the one under test by the name it announces, rather than "MetaMask": a picker that does not find MetaMask offers a QR code instead.
+
+   ```ts
+   cy.getWallet().then(({ name }) => cy.contains('button', name).click());
+   ```
 
 3. Read what failed. A test that passes with MetaMask and fails with Rabby is a difference between the two wallets, and the command log says which: "Rabby 0.94.11 answers -32603 "Unrecognized chain ID …" to wallet_switchEthereumChain, as recorded". Fix the dapp, or write the test for what that wallet does.
 

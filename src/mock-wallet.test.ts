@@ -22,7 +22,10 @@ const metamask: Profile = {
       { result: '0xhash' },
     ],
     wallet_addEthereumChain: [{ error: REJECTED }, { result: null }],
-    wallet_switchEthereumChain: [{ error: REJECTED }, { result: null }],
+    wallet_switchEthereumChain: [
+      { params: [{ chainId: '0xaa36a7' }], error: REJECTED },
+      { params: [{ chainId: '0xaa36a7' }], result: null },
+    ],
     wallet_watchAsset: [{ error: REJECTED }, { result: true }],
     wallet_revokePermissions: [{ result: null }],
   },
@@ -196,6 +199,24 @@ test('a switch to a chain the dapp is not allowed on: the error the wallet recor
   // Allowed now: no prompt
   assert.equal(await prompting.provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] }), null);
   assert.equal(await prompting.provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] }), null);
+});
+
+test("a switch to a chain the wallet does not know: EIP-3326's 4902 where the profile has no answer, then the dapp adds it", async () => {
+  const lines: string[] = [];
+  wallet();
+  const mock = createMockWallet({ profile: metamask, rpcUrl: 'http://anvil', timeout: 5000, log: (line) => lines.push(line) });
+  await assert.rejects(
+    mock.provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1f915' }] }),
+    (error: ProviderRpcError) =>
+      error.code === 4902 && error.message === 'Unrecognized chain ID "0x1f915". Try adding the chain using wallet_addEthereumChain first.',
+  );
+  assert.match(lines.at(-1)!, /as EIP-3326 says/);
+  // A command waiting for the switch fails at once
+  await assert.rejects(mock.act('approveSwitchNetwork'), /Nothing for approveSwitchNetwork to decide on/);
+  const adding = mock.provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x1f915', rpcUrls: ['http://chain'] }] });
+  await mock.act('approveNewNetwork');
+  assert.equal(await adding, null);
+  assert.equal(await mock.provider.request({ method: 'eth_chainId' }), '0x1f915');
 });
 
 test('adding a chain prompts once, then switches without asking', async () => {
