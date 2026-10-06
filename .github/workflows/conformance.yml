@@ -128,7 +128,10 @@ jobs:
         if: always()
         with:
           name: report-${{ needs.version.outputs.version }}-${{ matrix.mode }}
-          path: reports/metamask-${{ needs.version.outputs.version }}-${{ matrix.mode }}.json
+          # The report, and the wallet profile recorded during the suite
+          path: |
+            reports/metamask-${{ needs.version.outputs.version }}-${{ matrix.mode }}.json
+            reports/profiles/metamask-${{ needs.version.outputs.version }}-${{ matrix.mode }}.json
           if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v7
@@ -190,8 +193,11 @@ jobs:
             git -C published rm -rfq .
             cp -r reports published/reports
           fi
-          mkdir -p published/reports
+          mkdir -p published/reports/profiles
           cp incoming/*.json published/reports/ 2>/dev/null || true
+          # The profiles recorded by hand live on main; the suite's own, fresher, come after
+          cp reports/profiles/*.json published/reports/profiles/ 2>/dev/null || true
+          cp incoming/profiles/*.json published/reports/profiles/ 2>/dev/null || true
           npm run matrix -- published/reports published
           cd published
           git add -A

@@ -54,6 +54,7 @@
     "prepack": "npm run build",
     "conformance": "tsx scripts/conformance.ts",
     "matrix": "tsx scripts/matrix.ts",
+    "profile": "tsx scripts/profile.ts",
     "test": "tsx --test scripts/*.test.ts src/*.test.ts",
     "check-types": "tsc -p tsconfig.json",
     "lint": "eslint .",

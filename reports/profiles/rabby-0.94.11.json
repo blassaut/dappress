@@ -1,0 +1,661 @@
+{
+  "schema": "dappress-wallet-profile/0",
+  "wallet": {
+    "name": "Rabby",
+    "version": "0.94.11"
+  },
+  "recorded": {
+    "by": "hand",
+    "date": "2026-10-06T13:36:41.888Z",
+    "recorder": "1"
+  },
+  "discovery": {
+    "injected": "before",
+    "flags": {
+      "isMetaMask": true,
+      "isRabby": true,
+      "isCoinbaseWallet": false,
+      "isBraveWallet": false,
+      "isTrust": false,
+      "isPhantom": false,
+      "isOkxWallet": false,
+      "isZerion": false
+    },
+    "eip6963": [
+      {
+        "rdns": "io.rabby",
+        "name": "Rabby Wallet",
+        "sameAsInjected": false
+      }
+    ]
+  },
+  "methods": {
+    "eth_accounts": [
+      {
+        "params": [],
+        "result": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "count": 7
+      },
+      {
+        "result": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ]
+      }
+    ],
+    "eth_blockNumber": [
+      {
+        "params": [],
+        "result": "0x396f15"
+      },
+      {
+        "params": [],
+        "result": "0x396f16",
+        "count": 7
+      },
+      {
+        "params": [],
+        "result": "0x396f17"
+      },
+      {
+        "params": [],
+        "result": "0x396f18"
+      },
+      {
+        "params": [],
+        "result": "0x396f1b"
+      },
+      {
+        "params": [],
+        "result": "0x396f1c",
+        "count": 2
+      },
+      {
+        "params": [],
+        "result": "0x396f1d"
+      }
+    ],
+    "eth_chainId": [
+      {
+        "params": [],
+        "result": "0x88bb0",
+        "count": 33
+      }
+    ],
+    "eth_decrypt": [
+      {
+        "params": [
+          "0x7b2276657273696f6e223a227832353531392d7873616c736132302d706f6c7931333035222c226e6f6e6365223a2268474e7775355741556f522f586a682b4e5334584a3748327866593667494236222c22657068656d5075626c69634b6579223a224167363973323358444336704b484e395a5a6d2b6a5563322b7338455148566537756f2f627651462b54513d222c2263697068657274657874223a224561446f51774d6f354d4f524d52476f673436535277557a394d6f3d227d",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "toto"
+      }
+    ],
+    "eth_estimateGas": [
+      {
+        "params": {
+          "$truncated": 26303,
+          "shape": "{data, from}[]"
+        },
+        "result": "0x21e96a",
+        "count": 2
+      },
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0xbf167278f50a7fe8d83553acf2159bd26aec5498",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "result": "0xb89b",
+        "count": 2
+      },
+      {
+        "params": {
+          "$truncated": 26303,
+          "shape": "{data, from}[]"
+        },
+        "result": "0x21e96a"
+      }
+    ],
+    "eth_getBlockByNumber": [
+      {
+        "params": [
+          "latest",
+          false
+        ],
+        "result": {
+          "$truncated": 6527,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      },
+      {
+        "params": [
+          "latest",
+          false
+        ],
+        "result": {
+          "$truncated": 5698,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      }
+    ],
+    "eth_getEncryptionPublicKey": [
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "oqbH0v29JTmTQ1qjX6nj7WJHRiChwTiMVuiaQwbeGDY=",
+        "count": 2
+      }
+    ],
+    "eth_getTransactionByHash": [
+      {
+        "params": [
+          "0x5a7d6caa6c80805a49c5a43e9c95cd252ba3bc4ee3d590c57803c51fc4d0a101"
+        ],
+        "result": {
+          "$truncated": 53007,
+          "shape": "{blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, nonce, r, s, transactionIndex, type, v, value}"
+        }
+      },
+      {
+        "params": [
+          "0x4d825d73a61eacc2b90f9744827653faaca72a358a07c295bb0fd6a166144378"
+        ],
+        "result": {
+          "to": "0xbF167278F50A7Fe8d83553acF2159Bd26aec5498",
+          "gas": "0x114e9",
+          "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "hash": "0x4d825d73a61eacc2b90f9744827653faaca72a358a07c295bb0fd6a166144378",
+          "nonce": "0x86",
+          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170",
+          "value": "0x0",
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "r": "0x6dc205db4a211eb5d39fb0ec1237f96921f57ebb6afc2a1aea1cffe86680f2b",
+          "s": "0x2975e9fd9841af3a8df3d551f3ec6ed597876a4d72291507bdc3c5bacb6c2072",
+          "v": "0x111784",
+          "gasPrice": "0x54efe7bf",
+          "type": "0x0",
+          "gasLimit": "0x114e9",
+          "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+        }
+      },
+      {
+        "params": [
+          "0x60ff220cc5eb4c075fc30f1fc5502c181394d76455557e04043a87be2589b24c"
+        ],
+        "result": {
+          "$truncated": 53007,
+          "shape": "{blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, nonce, r, s, transactionIndex, type, v, value}"
+        }
+      }
+    ],
+    "eth_getTransactionCount": [
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "latest"
+        ],
+        "result": "0x85"
+      },
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "latest"
+        ],
+        "result": "0x86"
+      },
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "latest"
+        ],
+        "result": "0x87",
+        "count": 2
+      }
+    ],
+    "eth_getTransactionReceipt": [
+      {
+        "params": [
+          "0x5a7d6caa6c80805a49c5a43e9c95cd252ba3bc4ee3d590c57803c51fc4d0a101"
+        ],
+        "result": null,
+        "count": 2
+      },
+      {
+        "params": [
+          "0x5a7d6caa6c80805a49c5a43e9c95cd252ba3bc4ee3d590c57803c51fc4d0a101"
+        ],
+        "result": {
+          "$truncated": 2195,
+          "shape": "{blockHash, blockNumber, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
+        },
+        "count": 2
+      },
+      {
+        "params": [
+          "0x60ff220cc5eb4c075fc30f1fc5502c181394d76455557e04043a87be2589b24c"
+        ],
+        "result": null,
+        "count": 2
+      },
+      {
+        "params": [
+          "0x60ff220cc5eb4c075fc30f1fc5502c181394d76455557e04043a87be2589b24c"
+        ],
+        "result": {
+          "$truncated": 2195,
+          "shape": "{blockHash, blockNumber, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
+        }
+      }
+    ],
+    "eth_requestAccounts": [
+      {
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "result": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "count": 2
+      }
+    ],
+    "eth_sendTransaction": [
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "maxFeePerGas": "0x2540be400",
+            "maxPriorityFeePerGas": "0x3b9aca00"
+          }
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "maxFeePerGas": "0x2540be400",
+            "maxPriorityFeePerGas": "0x3b9aca00"
+          }
+        ],
+        "result": "0x82576b02e57936da50c38663ca53903d00733a42d42bc7b721e99bd46561c15d"
+      },
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "gasPrice": "0x2540be400",
+            "type": "0x0"
+          }
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "gasPrice": "0x2540be400",
+            "type": "0x0"
+          }
+        ],
+        "result": "0x07d591cbd623ed859af4a951e022e6dd5590003c8636e239e0c8e7e9fe9c8570"
+      },
+      {
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0"
+          }
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": {
+          "$truncated": 26320,
+          "shape": "{data, from, gas}[]"
+        },
+        "result": "0x5a7d6caa6c80805a49c5a43e9c95cd252ba3bc4ee3d590c57803c51fc4d0a101"
+      },
+      {
+        "params": {
+          "$truncated": 26320,
+          "shape": "{data, from, gas}[]"
+        },
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          {
+            "gas": "0xb89b",
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0xbf167278f50a7fe8d83553acf2159bd26aec5498",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          {
+            "gas": "0xb89b",
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0xbf167278f50a7fe8d83553acf2159bd26aec5498",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "result": "0x4d825d73a61eacc2b90f9744827653faaca72a358a07c295bb0fd6a166144378"
+      },
+      {
+        "params": {
+          "$truncated": 26320,
+          "shape": "{data, from, gas}[]"
+        },
+        "result": "0x60ff220cc5eb4c075fc30f1fc5502c181394d76455557e04043a87be2589b24c"
+      }
+    ],
+    "eth_sign": [
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "0x879a053d4800c6354e76c7985a865d2922c82fb5b3f4577b2fe08b998954f2e0"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        },
+        "count": 3
+      }
+    ],
+    "eth_signTypedData": [
+      {
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "0xe1efe9a9b9f8e8acb375a569ad152c223438c6de8bf89fa2820c2a866cb0b18f0b839fd93b26225b7eb4755e46f09127771f8eee1c061df1938090f971495fb51c"
+      }
+    ],
+    "eth_signTypedData_v4": [
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "{\"primaryType\":\"Permit\",\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"version\",\"type\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\"}],\"Permit\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\"}]},\"domain\":{\"chainId\":560048,\"name\":\"MyToken\",\"verifyingContract\":\"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC\",\"version\":\"1\"},\"message\":{\"owner\":\"0x8cfe45475955606a9586d11360efe0172bbc51b6\",\"spender\":\"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4\",\"value\":3000,\"nonce\":0,\"deadline\":50000000000}}"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "{\"primaryType\":\"Permit\",\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"version\",\"type\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\"}],\"Permit\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\"}]},\"domain\":{\"chainId\":560048,\"name\":\"MyToken\",\"verifyingContract\":\"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC\",\"version\":\"1\"},\"message\":{\"owner\":\"0x8cfe45475955606a9586d11360efe0172bbc51b6\",\"spender\":\"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4\",\"value\":3000,\"nonce\":0,\"deadline\":50000000000}}"
+        ],
+        "result": "0xcf2dc51b09aa51301039d04222d9f4e7fc027921ad68bef75e971698100472f0502e66bcd0ed59b355d588725e62149f8adbcad04de12e956183024ac99424b71c"
+      }
+    ],
+    "personal_ecRecover": [
+      {
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x1a986e21c1dd6c81604c2a7d9951a3c447f341aa96205fbf3463842c6813436b49d780bd8547ac42936d578e9a532d8073eea3ba5869e4d9b4aa14dbd63ab2201c"
+        ],
+        "result": "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+      }
+    ],
+    "personal_sign": [
+      {
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "Example password"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "Example password"
+        ],
+        "result": "0x1a986e21c1dd6c81604c2a7d9951a3c447f341aa96205fbf3463842c6813436b49d780bd8547ac42936d578e9a532d8073eea3ba5869e4d9b4aa14dbd63ab2201c",
+        "count": 2
+      }
+    ],
+    "wallet_addEthereumChain": [
+      {
+        "params": [
+          {
+            "chainId": "0x53a",
+            "rpcUrls": [
+              "http://127.0.0.1:8546"
+            ],
+            "chainName": "Localhost 8546",
+            "nativeCurrency": {
+              "name": "TEST",
+              "decimals": 18,
+              "symbol": "TEST"
+            },
+            "blockExplorerUrls": null
+          }
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        },
+        "count": 3
+      },
+      {
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "result": null
+      }
+    ],
+    "wallet_revokePermissions": [
+      {
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "result": null
+      }
+    ],
+    "wallet_switchEthereumChain": [
+      {
+        "params": [
+          {
+            "chainId": "0x53a"
+          }
+        ],
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0x53a\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1672,
+            "shape": "{originalError}"
+          }
+        },
+        "count": 2
+      },
+      {
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0xaa36a7\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1678,
+            "shape": "{originalError}"
+          }
+        }
+      },
+      {
+        "params": [
+          {
+            "chainId": "0x1234"
+          }
+        ],
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0x1234\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1674,
+            "shape": "{originalError}"
+          }
+        }
+      }
+    ],
+    "wallet_watchAsset": [
+      {
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "Creation Failed",
+            "symbol": "TST",
+            "decimals": "4",
+            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
+          }
+        },
+        "error": {
+          "code": -32602,
+          "message": "Invalid address 'Creation Failed'."
+        },
+        "count": 3
+      },
+      {
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0xB9BAD6b593A95C120309455FB621eF7aE9CFA6E8",
+            "symbol": "TST",
+            "decimals": "4",
+            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
+          }
+        }
+      }
+    ]
+  },
+  "events": {
+    "accountsChanged": [
+      {
+        "payload": [],
+        "count": 2
+      },
+      {
+        "payload": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "count": 2
+      },
+      {
+        "payload": [],
+        "count": 2
+      },
+      {
+        "payload": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "count": 2
+      }
+    ]
+  }
+}
