@@ -117,6 +117,22 @@ test('a provider announced through EIP-6963 and injected behind a proxy is wrapp
   assert.equal(trace().discovery?.flags.isMetaMask, true);
 });
 
+test('a window.ethereum that forwards to the EIP-6963 provider records a request once, through the outer layer', async () => {
+  const inner = fakeProvider(() => '0x1');
+  const { win, trace } = page();
+  const dispatch = win.dispatchEvent as (event: unknown) => void;
+  dispatch({ type: 'eip6963:announceProvider', detail: { info: { rdns: 'app.phantom', name: 'Phantom' }, provider: inner } });
+  // What Phantom does: another object, whose request() calls the announced provider's
+  const outer = { isPhantom: true, request: (args: { method: string }) => inner.request(args), on: inner.on };
+  win.ethereum = outer;
+  assert.equal(await outer.request({ method: 'eth_chainId' }), '0x1');
+  const entries = trace().entries as { via?: string; method?: string }[];
+  assert.deepEqual(
+    entries.map((entry) => [entry.method, entry.via]),
+    [['eth_chainId', 'injected']],
+  );
+});
+
 test('the wrapper is transparent: a synchronous error and a plain value come back as they were', () => {
   const provider = fakeProvider(() => null) as unknown as { request: (args: { method: string }) => unknown };
   const thrown = new TypeError('method is required');

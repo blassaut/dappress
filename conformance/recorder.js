@@ -22,6 +22,9 @@
   const plain = (error) => (error && typeof error === 'object' ? { code: error.code, message: error.message, data: error.data } : { message: String(error) });
   // The request() functions this recorder installed: a provider wrapped once, through a proxy of it or not
   const recordings = new WeakSet();
+  // A wallet whose window.ethereum forwards to its EIP-6963 provider (Phantom) runs one
+  // request through two wrapped layers: the outer one records, the inner one passes
+  let depth = 0;
   // The providers announced through EIP-6963, to tell later whether window.ethereum is one of them:
   // MetaMask announces before it sets window.ethereum
   const announced = [];
@@ -47,15 +50,20 @@
     if (!provider || typeof provider.request !== 'function' || recordings.has(provider.request)) return;
     const request = provider.request;
     const recording = function (args) {
+      const self = this === recording ? provider : this;
+      if (depth > 0) return request.call(self, args);
       const started = now();
       const entry = { kind: 'request', via: via(provider), method: args && args.method, params: args && args.params };
       const settled = (outcome) => record({ ...entry, ...outcome, ms: now() - started });
       let returned;
+      depth++;
       try {
-        returned = request.call(this === recording ? provider : this, args);
+        returned = request.call(self, args);
       } catch (error) {
         settled({ error: plain(error) });
         throw error;
+      } finally {
+        depth--;
       }
       if (!returned || typeof returned.then !== 'function') {
         settled({ result: returned });
