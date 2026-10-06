@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-06
+
 ### Added
 
 - The mock wallet: `mock: 'rabby'`, or `DAPPRESS_MOCK=rabby`, runs the same tests without MetaMask, against a provider in the page that answers as the wallet's profile recorded: identity flags, EIP-6963 announcement, the code and message of each rejection, the constant answers and the errors of the methods the wallet lacks. Anvil holds the keys and signs (`rpcUrl`); each chain holds its state: on a chain the dapp adds, or one named in `chains`, reads go to its RPC and transactions are signed by Anvil and sent there, testnet or fork. A method or an option the profile does not cover fails with `4200` rather than succeed. Profiles of MetaMask, Rabby and Phantom ship with the package; the command log says what the mock answered from the profile.
@@ -124,7 +126,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/blassaut/dappress/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/blassaut/dappress/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/blassaut/dappress/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/blassaut/dappress/compare/v0.6.0...v0.6.1
