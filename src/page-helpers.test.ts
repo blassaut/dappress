@@ -8,7 +8,15 @@ const TEST_ID = '[data-testid="confirm-btn"]';
 const BUTTON = 'xpath/.//button[normalize-space(.)="Connect"]';
 
 /** An element of the fake page: it records what is done to it. */
-function fakeElement({ disabled = false, text = '', clickErrors = [] as string[], boxes = [] as (object | null)[], covered = false, tagName = 'DIV' } = {}) {
+function fakeElement({
+  disabled = false,
+  text = '',
+  clickErrors = [] as string[],
+  boxes = [] as (object | null)[],
+  covered = false,
+  tagName = 'DIV',
+  focusable = true,
+} = {}) {
   // Stands for the DOM element inside the page
   const dom = {
     tagName,
@@ -23,6 +31,8 @@ function fakeElement({ disabled = false, text = '', clickErrors = [] as string[]
   const element = {
     dom,
     disabled,
+    // Whether focusing the element gives it the focus; a modal keeps it otherwise
+    focusable,
     text,
     // Something over the middle of its box, which a click would hit instead
     covered,
@@ -39,7 +49,7 @@ function fakeElement({ disabled = false, text = '', clickErrors = [] as string[]
       element.done.push(options?.count ? `click x${options.count}` : 'click');
     },
     focus: async () => {
-      (globalThis as unknown as { document: { activeElement: unknown } }).document = { activeElement: dom };
+      (globalThis as unknown as { document: { activeElement: unknown } }).document = { activeElement: element.focusable ? dom : 'modal' };
       element.done.push('focus');
     },
     type: async (text: string) => void element.done.push(`type ${text}`),
@@ -194,6 +204,20 @@ test('click: a button is pressed from the keyboard, focused and given Enter', as
   const page = fakePage({ [TEST_ID]: button });
   await click(asPage(page), TEST_ID);
   assert.deepEqual(button.done, ['focus']);
+  assert.deepEqual(page.keys, ['Enter']);
+});
+
+test('click: a button a modal keeps the focus from hands it to uncover, and is pressed once it has the focus', async () => {
+  const button = fakeElement({ tagName: 'BUTTON', focusable: false });
+  const page = fakePage({ [TEST_ID]: button });
+  let uncovered = 0;
+  const uncover = async () => {
+    uncovered++;
+    button.focusable = true;
+  };
+  await click(asPage(page), TEST_ID, { uncover: uncover as never });
+  assert.equal(uncovered, 1);
+  assert.deepEqual(button.done, ['focus', 'focus']);
   assert.deepEqual(page.keys, ['Enter']);
 });
 

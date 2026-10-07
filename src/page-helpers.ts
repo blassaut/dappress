@@ -109,8 +109,9 @@ export async function until(condition: () => Promise<boolean>, timeout: number):
 }
 
 /**
- * What a click does with what covers its element, handed the element on top:
- * clear it away, as a user would, or leave it, for the wait to go on.
+ * What a click does with what stands in its way, handed the element on top
+ * of it, or the one that keeps the focus from it: clear it away, as a user
+ * would, or leave it, for the wait to go on.
  */
 export type ClickOptions = { uncover?: (covering: ElementHandle<Element>) => Promise<void> };
 
@@ -131,9 +132,11 @@ export async function click(page: Page, selector: Selector, { uncover }: ClickOp
       await waitForReady(page, element, fromKeyboard ? undefined : { uncover });
       if (!fromKeyboard) return await element.click();
       await element.focus();
-      // A modal that came up meanwhile keeps the focus to itself: the element is taken again
       if (await element.evaluate((el) => el === document.activeElement)) return await page.keyboard.press('Enter');
+      // A modal keeps the focus to itself: what holds it is handed to uncover, and the element taken again
       if (Date.now() > deadline) throw await failure(page, `"${describe(selector)}" did not take the focus`);
+      const focused = (await element.evaluateHandle(() => document.activeElement)) as ElementHandle<Element>;
+      await uncover?.(focused);
     } catch (error) {
       if (!/detached|not clickable/.test((error as Error).message) || Date.now() > deadline) throw error;
     }
