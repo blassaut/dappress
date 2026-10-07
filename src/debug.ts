@@ -77,11 +77,8 @@ export function observeBrowser(debuggerUrl: string): void {
 /**
  * Chrome's own log, from every one of its processes, the network service's
  * included: on its standard error, which Cypress logs under
- * DEBUG=cypress:launcher:browsers. And, in DAPPRESS_CRASH_DUMPS when set, the
- * dump of any process that crashes, and of a child process the browser kills.
+ * DEBUG=cypress:launcher:browsers.
  */
 export function browserLogArgs(): string[] {
-  if (!debugging) return [];
-  const dumps = process.env.DAPPRESS_CRASH_DUMPS;
-  return ['--enable-logging=stderr', '--v=0', ...(dumps ? [`--crash-dumps-dir=${dumps}`] : [])];
+  return debugging ? ['--enable-logging=stderr', '--v=0'] : [];
 }
