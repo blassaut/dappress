@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-07
+
 ### Added
 
 - `DAPPRESS_DEBUG=1` logs what Dappress does with the browser, for a run that fails now and then. It logs each command's task and its duration, and the browser's tabs and workers as they come and go. It also turns on Chrome's own log, crashes included, which Cypress shows with `DEBUG=cypress:launcher:browsers`. Off by default, it changes nothing.
@@ -158,7 +160,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/blassaut/dappress/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/blassaut/dappress/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/blassaut/dappress/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/blassaut/dappress/compare/v0.7.0...v0.7.1
