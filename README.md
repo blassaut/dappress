@@ -422,6 +422,7 @@ Dappress reads a seed phrase and drives a wallet. What it does with them, in sho
 - **"MetaMask showed no confirmation".** The dapp sent no request, or the network's RPC endpoint is unreachable.
 - **Adding or importing an account never finishes.** `chromeWebSecurity: false` is set in your Cypress config. MetaMask then cannot start the snaps its account screens wait for. Remove that setting.
 - **The wallet shows accounts you did not create.** The seed phrase is used elsewhere, and MetaMask restored what it saved for it. Use a phrase made for your tests, or none.
+- **On Chrome 155, a run fails now and then: MetaMask asks for its password again or shows a request late, or `cy.task()` is refused as not called from the spec.** Chrome 155 kills its own network service when a request reuses an ID under DevTools interception, which Cypress uses ([crbug.com/559770861](https://crbug.com/559770861)). MetaMask's background restarts, and so does Cypress's link to its tasks. Chrome 156 fixes it; until it is stable, use 154 or 156: `npx @puppeteer/browsers install chrome@154`. The browser's own log says `Network service crashed or was terminated`.
 - **"MetaMask extension not found in the browser".** The browser did not load the extension. Most often it is Google Chrome 137 or later, which no longer loads extensions. Use Chrome for Testing: see [step 2](#2-get-a-browser-that-loads-extensions).
 
 ## Contributing
