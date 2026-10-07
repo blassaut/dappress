@@ -57,13 +57,16 @@ export async function unlock(page: Page, { password }: Pick<ResolvedOptions, 'pa
   await reachHome(page, { password });
 }
 
+/** The route of the unlock form, on a wallet locked, or on one whose onboarding MetaMask takes as unfinished. */
+export const UNLOCK_ROUTE = /#\/(onboarding\/)?unlock(\?|$)/;
+
 /**
  * Whether `page` shows the unlock form: on its route, or with the form up. A
  * wallet MetaMask locked meanwhile, on its timer or when its background
  * restarted, keeps a dapp's request and its own screens behind the form.
  */
 export async function showsUnlockForm(page: Page): Promise<boolean> {
-  if (/#\/(onboarding\/)?unlock(\?|$)/.test(page.url())) return true;
+  if (UNLOCK_ROUTE.test(page.url())) return true;
   for (const candidate of selectors.unlock.password) {
     if (await page.$(candidate).catch(() => null)) return true;
   }

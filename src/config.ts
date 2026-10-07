@@ -105,7 +105,13 @@ function loadWalletSetup(projectRoot = process.cwd()): WalletSetup {
 
 /** The subset of options that is safe to expose to the browser side (no secrets). */
 export function publicOptions(options: ResolvedOptions, mockProfile?: Profile): PublicOptions {
-  const exposed: PublicOptions = { metamaskVersion: options.metamaskVersion, autoSetup: options.autoSetup, network: options.network, chains: options.chains };
+  const exposed: PublicOptions = {
+    metamaskVersion: options.metamaskVersion,
+    autoSetup: options.autoSetup,
+    network: options.network,
+    chains: options.chains,
+    timeout: options.timeout,
+  };
   if (mockProfile) exposed.mock = { profile: mockProfile, rpcUrl: options.rpcUrl, chains: options.chains, timeout: options.timeout };
   return exposed;
 }

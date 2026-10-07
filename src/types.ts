@@ -92,7 +92,7 @@ export interface ResolvedOptions {
  * The subset of the options the browser side reads with Cypress.expose().
  * With a mock, the profile it replays and what the mock needs to run.
  */
-export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'> & {
+export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network' | 'timeout'> & {
   mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number };
   /** The RPC of each chain the options name, for the commands that act on the chain itself. */
   chains?: Record<string, string>;

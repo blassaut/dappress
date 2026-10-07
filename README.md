@@ -238,7 +238,7 @@ Cypress starts Xvfb itself for the headed run. Drop `--headed` to run headless; 
 | `cy.unlockWallet()`            | Unlocks the wallet. Yields `locked` if it was locked, `unlocked` if there was nothing to do.           |
 | `cy.setupMetaMask()`           | Imports or unlocks the wallet. Runs by itself before each spec, unless `autoSetup` is `false`.         |
 
-A wallet MetaMask locked by itself meanwhile, on its auto-lock timer or when its background restarted, is unlocked by the command that finds the unlock form, on the request's page or on the wallet's home, with the password of the run.
+A wallet MetaMask locked by itself meanwhile, on its auto-lock timer or when its background restarted, is unlocked by the command that finds the unlock form, on the request's page or on the wallet's home, with the password of the run, as `cy.unlockWallet()` would.
 
 ### Transaction options
 

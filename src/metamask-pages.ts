@@ -91,6 +91,11 @@ async function pageOf(target: Target): Promise<Page> {
   return page;
 }
 
+/** The URLs of the full-screen MetaMask pages open, as the browser lists them. */
+export function homePageUrls(browser: Browser, extensionId: string): string[] {
+  return pagesOf(browser, extensionId, HOME_PATH).map((target) => target.url());
+}
+
 /** The full-screen MetaMask page, opened if it isn't already. */
 export async function getHomePage(browser: Browser, extensionId: string): Promise<Page> {
   const [target] = pagesOf(browser, extensionId, HOME_PATH);

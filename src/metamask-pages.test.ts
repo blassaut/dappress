@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Browser, Page } from 'puppeteer-core';
-import { getConfirmationPage, waitForDismissal } from './metamask-pages';
+import { getConfirmationPage, waitForDismissal, homePageUrls } from './metamask-pages';
 import { sleep } from './page-helpers';
 
 const EXTENSION = 'chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef';
@@ -93,4 +93,10 @@ test('waitForDismissal: the side panel stays, nothing to wait for', async () => 
   await waitForDismissal(panel as unknown as Page, panel.url(), 2000);
   await sleep(0);
   assert.ok(Date.now() - started < 100);
+});
+
+test('homePageUrls: the full-screen pages of the extension, as the browser lists them, and nothing else', () => {
+  const browser = fakeBrowser([fakePage(`${EXTENSION}/home.html#/onboarding/unlock`), fakePage(SWITCH), fakePage(`${EXTENSION}/home.html#/`)]);
+  assert.deepEqual(homePageUrls(browser, extensionId), [`${EXTENSION}/home.html#/onboarding/unlock`, `${EXTENSION}/home.html#/`]);
+  assert.deepEqual(homePageUrls(fakeBrowser([fakePage(SWITCH)]), extensionId), []);
 });

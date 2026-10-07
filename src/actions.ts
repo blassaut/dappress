@@ -5,7 +5,7 @@
 import type { Browser, Page } from 'puppeteer-core';
 import { withBrowser } from './browser';
 import * as metamask from './metamask';
-import { findExtensionId, getHomePage, getRequestPages, getConfirmationPage } from './metamask-pages';
+import { findExtensionId, getHomePage, getRequestPages, getConfirmationPage, homePageUrls } from './metamask-pages';
 import type { ResolvedOptions, WalletState } from './types';
 
 // The argument is what the command gave cy.task(): it is typed there, in support.ts
@@ -66,19 +66,25 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
 
   /**
    * Find the confirmation and act on it. A wallet MetaMask locked meanwhile
-   * keeps the request behind its unlock form: the password is given there,
-   * as a user would, and the request looked for again, since the page that
-   * had the form may go to the wallet's home while another shows it. One
-   * that closes before it is acted on was the popup of the request before,
-   * found as it closed: the request's own is looked for once more.
+   * keeps the request behind its unlock form, on the request's page, or on
+   * its home when it takes its onboarding as unfinished and opens that in
+   * place of the request: the wallet is then unlocked as cy.unlockWallet()
+   * does, from its home, through the screens that may follow, and the
+   * request is looked for again. One that closes before it is acted on was
+   * the popup of the request before, found as it closed: the request's own
+   * is looked for once more.
    */
   async function onConfirmation(browser: Browser, act: (page: Page) => Promise<void>): Promise<void> {
     let unlocked = 0;
     let closed = 0;
     for (;;) {
-      const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
-      if (unlocked < 2 && (await metamask.showsUnlockForm(page))) {
-        await metamask.leaveUnlockForm(page, options);
+      const extensionId = await metamaskId(browser);
+      const page = await getConfirmationPage(browser, extensionId, options.timeout).catch((error: Error) => {
+        if (unlocked < 2 && homePageUrls(browser, extensionId).some((url) => metamask.UNLOCK_ROUTE.test(url))) return null;
+        throw error;
+      });
+      if (!page || (unlocked < 2 && (await metamask.showsUnlockForm(page)))) {
+        await unlockWallet(browser);
         unlocked++;
         continue;
       }

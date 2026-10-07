@@ -8,6 +8,7 @@ export {
   walletState,
   onboard,
   unlock,
+  UNLOCK_ROUTE,
   showsUnlockForm,
   unlockIfLocked,
   leaveUnlockForm,

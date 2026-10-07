@@ -15,7 +15,7 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Fixed
 
-- Commands no longer time out when MetaMask locked the wallet by itself since the setup, on its auto-lock timer or when its background restarted: the command that finds the unlock form, on the request's page or on the wallet's home, gives the password first, as a user would. The conformance suite checks it on a request and on the wallet's own screens.
+- Commands no longer fail when MetaMask locked the wallet by itself since the setup, on its auto-lock timer or when its background restarted, even to the point of taking its onboarding as unfinished: the command that finds the unlock form, on the request's page or on the wallet's home, unlocks the wallet from its home first, as `cy.unlockWallet()` does, through the screens that may follow, then looks for the request again. A task is given the time of that recovery before Cypress gives up on it. The conformance suite checks a request and a wallet command on a locked wallet.
 
 ## [0.9.0] - 2026-10-06
 

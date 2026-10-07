@@ -96,6 +96,11 @@ const SILENT_SWITCH = 1500;
 const CHAIN_ANNOUNCED = 10000;
 
 const options: Partial<PublicOptions> = Cypress.expose('dappress') || {};
+
+// What a task may take before it fails on its own: a wallet MetaMask locked
+// meanwhile is unlocked between two waits for the confirmation, and the
+// unlock may go through the screens that follow MetaMask's onboarding
+const TASK_TIMEOUT = 2 * (options.timeout ?? 20000) + 90000;
 const mock = options.mock;
 
 const dappWindow = () => cy.window({ log: false }) as unknown as Cypress.Chainable<DappWindow>;
@@ -121,7 +126,7 @@ function metamask<T = void>(action: string, argument: unknown = null, shown = ''
   if (mock && mockWallet) {
     return cy.wrap(null, { log: false }).then({ timeout: mock.timeout + 5000 }, () => mockWallet.act(action, argument ?? undefined) as Promise<T>);
   }
-  return cy.task<T>(`dappress:${action}`, argument, { log: false });
+  return cy.task<T>(`dappress:${action}`, argument, { log: false, timeout: TASK_TIMEOUT });
 }
 
 function provider<T>(method: string, params?: unknown): Cypress.Chainable<T> {
