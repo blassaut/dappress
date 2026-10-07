@@ -57,6 +57,29 @@ export async function unlock(page: Page, { password }: Pick<ResolvedOptions, 'pa
   await reachHome(page, { password });
 }
 
+/**
+ * Whether `page` shows the unlock form: on its route, or with the form up. A
+ * wallet MetaMask locked meanwhile, on its timer or when its background
+ * restarted, keeps a dapp's request and its own screens behind the form.
+ */
+export async function showsUnlockForm(page: Page): Promise<boolean> {
+  if (/#\/(onboarding\/)?unlock(\?|$)/.test(page.url())) return true;
+  for (const candidate of selectors.unlock.password) {
+    if (await page.$(candidate).catch(() => null)) return true;
+  }
+  return false;
+}
+
+/**
+ * Unlock the wallet on its home page when MetaMask locked it meanwhile, as a
+ * user would before going on. The page is left to show the wallet or the
+ * form first: one just opened shows neither yet. Nothing to do on the wallet.
+ */
+export async function unlockIfLocked(page: Page, options: Pick<ResolvedOptions, 'password'>): Promise<void> {
+  await waitFor(page, [selectors.home.header, ...selectors.unlock.password], { timeout: 20000 }).catch(() => {});
+  if (await showsUnlockForm(page)) await unlock(page, options);
+}
+
 async function submitPassword(page: Page, password: string): Promise<void> {
   await fill(page, selectors.unlock.password, password);
   await click(page, selectors.unlock.submit);

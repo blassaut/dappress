@@ -13,6 +13,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 - Node.js 22.12 or later: `puppeteer-core` 25 is an ES module, which Node.js loads from CommonJS from that version on.
 
+### Fixed
+
+- Commands no longer time out when MetaMask locked the wallet by itself since the setup, on its auto-lock timer or when its background restarted: the command that finds the unlock form, on the request's page or on the wallet's home, gives the password first, as a user would. The conformance suite checks it on a request and on the wallet's own screens.
+
 ## [0.9.0] - 2026-10-06
 
 ### Added

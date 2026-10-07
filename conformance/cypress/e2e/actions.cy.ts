@@ -329,6 +329,19 @@ describe('MetaMask actions', () => {
     cy.getAccountAddress().should('eq', account);
   });
 
+  it('a wallet locked meanwhile is unlocked by the command that finds the form', () => {
+    // A request sent to a locked wallet: the command gives the password, then answers it
+    cy.lockWallet();
+    testDapp.personalSign();
+    cy.confirmSignature();
+    testDapp.personalSignResult().should('contain.text', '0x');
+    // The wallet's own screens too
+    cy.lockWallet();
+    cy.switchAccount('Account 1');
+    cy.unlockWallet().should('eq', 'unlocked');
+    cy.getAccountAddress().should('eq', account);
+  });
+
   it('disconnectFromDapp', () => {
     cy.window().then((win) => walletOf(win).on('accountsChanged', cy.stub().as('accountsChanged')));
     cy.disconnectFromDapp();

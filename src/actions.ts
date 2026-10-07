@@ -35,13 +35,17 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
     return state;
   }
 
-  /** A task that drives the wallet's own screens, from its full-screen page. */
+  /**
+   * A task that drives the wallet's own screens, from its full-screen page.
+   * A wallet MetaMask locked meanwhile is unlocked first, as a user would.
+   */
   const onHomePage =
     <A, R>(flow: (home: Page, argument: A) => Promise<R>) =>
     async (browser: Browser, argument: A): Promise<R> => {
       const home = await getHomePage(browser, await metamaskId(browser));
       try {
         await home.bringToFront();
+        await metamask.unlockIfLocked(home, options);
         return await flow(home, argument);
       } finally {
         await home.close();
@@ -61,17 +65,27 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   }
 
   /**
-   * Find the confirmation and act on it. One that closes before it is acted
-   * on was the popup of the request before, found as it closed: the request's
-   * own is looked for once more.
+   * Find the confirmation and act on it. A wallet MetaMask locked meanwhile
+   * keeps the request behind its unlock form: the password is given there,
+   * as a user would, and the request looked for again, since the page that
+   * had the form may go to the wallet's home while another shows it. One
+   * that closes before it is acted on was the popup of the request before,
+   * found as it closed: the request's own is looked for once more.
    */
   async function onConfirmation(browser: Browser, act: (page: Page) => Promise<void>): Promise<void> {
-    for (let attempt = 0; ; attempt++) {
+    let unlocked = 0;
+    let closed = 0;
+    for (;;) {
       const page = await getConfirmationPage(browser, await metamaskId(browser), options.timeout);
+      if (unlocked < 2 && (await metamask.showsUnlockForm(page))) {
+        await metamask.leaveUnlockForm(page, options);
+        unlocked++;
+        continue;
+      }
       try {
         return await act(page);
       } catch (error) {
-        if (attempt > 0 || !(error instanceof metamask.ConfirmationClosed)) throw error;
+        if (closed++ > 0 || !(error instanceof metamask.ConfirmationClosed)) throw error;
       }
     }
   }

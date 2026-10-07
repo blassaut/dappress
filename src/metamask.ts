@@ -4,5 +4,17 @@
 // all on the selectors of metamask-selectors.ts.
 
 export { decisions, type Decision } from './metamask-selectors';
-export { walletState, onboard, unlock, leaveUnlockForm, addAccount, switchAccount, importAccount, lock, disconnectSite } from './metamask-wallet';
+export {
+  walletState,
+  onboard,
+  unlock,
+  showsUnlockForm,
+  unlockIfLocked,
+  leaveUnlockForm,
+  addAccount,
+  switchAccount,
+  importAccount,
+  lock,
+  disconnectSite,
+} from './metamask-wallet';
 export { decide, ConfirmationClosed, approveNetworkChange } from './metamask-confirmation';
