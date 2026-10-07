@@ -65,6 +65,24 @@ A mode is where MetaMask shows the dapp's requests: `sidepanel` (the default), `
 
 A GitHub workflow runs the suite every day, in the three modes, against the latest MetaMask release that has no report yet. It publishes the reports, the matrix and the badge on the [`conformance-reports`](https://github.com/blassaut/dappress/tree/conformance-reports) branch.
 
+### When a run fails now and then
+
+A failure that a rerun clears is a cause not found yet. Measure it before changing anything, and do not answer it with a longer timeout or one more try.
+
+1. **Measure it.** Push the commit to a branch named `stress/<anything>`. The Stress workflow runs the suite 18 times at once there, by default 6 runs in each mode. Edit its matrix on that branch to compare Chrome versions (`stable`, `beta`, `154`) or modes. Count the failures: a fix is proven by a series of green runs as long as the failure rate makes luck unlikely, not by one.
+2. **Read what each job uploads.** The Stress workflow sets `DAPPRESS_DEBUG=1`, also usable locally.
+   - `suite.log` shows the run, step by step:
+     - each task, connection and disconnection, with its duration;
+     - every second the plugins' process stopped answering;
+     - every target of the browser as it comes, changes and goes: MetaMask's service worker, side panel, popup and home page, and the Cypress tab;
+     - Chrome's own log, from all its processes;
+     - where a task goes between the spec, Cypress's server and the plugins' process.
+   - `crashes/` holds the dump of a Chrome process that crashed or was killed. Its annotations name the reason: `strings <file>.dmp | grep -A1 mojo-message-error`.
+   - `/tmp/dappress` holds what MetaMask showed when a command failed.
+3. **Correlate before concluding.** Compare red runs with green runs of the same series: what every red run has and no green run has is the lead.
+
+Example: Chrome 155 kills its network service now and then under Cypress (crbug.com/559770861), and MetaMask's background restarts with it. Every red run had `Network service crashed or was terminated` in its log and a dump whose `mojo-message-error` said `DevTools: Duplicate request ID`, and no green run had them. The conformance workflow skips that Chrome version: see `CHROME_BROKEN` in `.github/workflows/conformance.yml`.
+
 ## Wallet profiles
 
 A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of `chainChanged`, a method one wallet has and another has not. A wallet profile records those answers on the real wallet: each request with its result or error, each event with its payload, and how the provider turned up, grouped by method and by event. Nothing is interpreted, and what was not observed is not in the profile. The format is in `scripts/profile.ts`, schema `dappress-wallet-profile/0`.

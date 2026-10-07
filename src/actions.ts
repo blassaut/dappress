@@ -4,6 +4,7 @@
 
 import type { Browser, Page } from 'puppeteer-core';
 import { withBrowser } from './browser';
+import { timed } from './debug';
 import * as metamask from './metamask';
 import { findExtensionId, getHomePage, getRequestPages, getConfirmationPage } from './metamask-pages';
 import type { ResolvedOptions, WalletState } from './types';
@@ -98,6 +99,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   for (const decision of Object.keys(metamask.decisions) as metamask.Decision[]) actions[decision] = decide(decision);
 
   // cy.task() needs a value back: null when the action has nothing to say
-  const asTask = (action: Action) => async (argument: unknown) => (await withBrowser((browser) => action(browser, argument))) ?? null;
-  return Object.fromEntries(Object.entries(actions).map(([name, action]) => [`dappress:${name}`, asTask(action)]));
+  const asTask = (name: string, action: Action) => async (argument: unknown) =>
+    (await timed(`task ${name}`, () => withBrowser((browser) => action(browser, argument)))) ?? null;
+  return Object.fromEntries(Object.entries(actions).map(([name, action]) => [`dappress:${name}`, asTask(name, action)]));
 }

@@ -418,6 +418,8 @@ Dappress reads a seed phrase and drives a wallet. What it does with them, in sho
 
 ## Troubleshooting
 
+A run that fails now and then: run it with `DAPPRESS_DEBUG=1`. Dappress logs each command and its duration, and the browser's tabs and workers as they come and go. Add `DEBUG=cypress:launcher:browsers` for Chrome's own log, its crashes included.
+
 - **Cypress exits immediately with `MODULE_NOT_FOUND`.** Your terminal sets `ELECTRON_RUN_AS_NODE=1`, as some IDEs do. Run `env -u ELECTRON_RUN_AS_NODE npx cypress run …`.
 - **"MetaMask showed no confirmation".** The dapp sent no request, or the network's RPC endpoint is unreachable.
 - **Adding or importing an account never finishes.** `chromeWebSecurity: false` is set in your Cypress config. MetaMask then cannot start the snaps its account screens wait for. Remove that setting.
