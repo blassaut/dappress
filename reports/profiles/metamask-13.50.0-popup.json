@@ -6,8 +6,8 @@
   },
   "recorded": {
     "by": "dappress 0.9.0",
-    "date": "2026-10-07T14:43:55.717Z",
-    "mode": "headless",
+    "date": "2026-10-07T14:47:52.970Z",
+    "mode": "popup",
     "browser": "chrome-for-testing 154.0.8037.92",
     "recorder": "2"
   },
@@ -43,7 +43,7 @@
         "test": "connectToDapp, onto the network from the wallet setup",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
@@ -51,7 +51,7 @@
         "params": [],
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
@@ -59,7 +59,7 @@
         "params": [],
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "count": 2
       },
@@ -68,7 +68,7 @@
         "params": [],
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "count": 2
       },
@@ -76,29 +76,29 @@
         "test": "addAccount",
         "via": "injected",
         "result": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ]
       },
       {
         "test": "importAccount",
         "via": "injected",
         "result": [
-          "0xcb6c3f16f579cb975559e9cb893f04a452641abd"
+          "0xc2dc8ca5812796321f3bd003c7cc1e8e9f73da53"
         ]
       },
       {
         "test": "switchAccount",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ],
         "count": 2
       },
@@ -106,21 +106,21 @@
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ]
       },
       {
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
         "test": "unlockWallet",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
@@ -132,7 +132,7 @@
         "test": "disconnectFromDapp",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       }
     ],
@@ -155,8 +155,8 @@
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
           {
-            "to": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
-            "data": "0xdd62ed3e000000000000000000000000bfe448f98956692d93d67fd9d9fa454192eedff40000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+            "to": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
+            "data": "0xdd62ed3e0000000000000000000000007703515d858e19078a82f069b56d4ad545c975dd0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
           },
           "latest"
         ],
@@ -168,8 +168,8 @@
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
           {
-            "to": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
-            "data": "0xdd62ed3e000000000000000000000000bfe448f98956692d93d67fd9d9fa454192eedff40000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+            "to": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
+            "data": "0xdd62ed3e0000000000000000000000007703515d858e19078a82f069b56d4ad545c975dd0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
           },
           "latest"
         ],
@@ -180,8 +180,8 @@
         "test": "confirmTransaction ({ spendingCap })",
         "params": [
           {
-            "to": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
-            "data": "0xdd62ed3e000000000000000000000000bfe448f98956692d93d67fd9d9fa454192eedff40000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+            "to": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
+            "data": "0xdd62ed3e0000000000000000000000007703515d858e19078a82f069b56d4ad545c975dd0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
           },
           "latest"
         ],
@@ -193,8 +193,8 @@
         "test": "confirmTransaction ({ spendingCap })",
         "params": [
           {
-            "to": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
-            "data": "0xdd62ed3e000000000000000000000000bfe448f98956692d93d67fd9d9fa454192eedff40000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+            "to": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
+            "data": "0xdd62ed3e0000000000000000000000007703515d858e19078a82f069b56d4ad545c975dd0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
           },
           "latest"
         ],
@@ -207,8 +207,13 @@
         "test": "injects the provider into the dapp",
         "params": [],
         "via": "injected",
-        "result": "0x1",
-        "count": 2
+        "result": "0x1"
+      },
+      {
+        "test": "rejectConnection",
+        "params": [],
+        "via": "injected",
+        "result": "0x1"
       },
       {
         "test": "rejectConnection",
@@ -299,8 +304,8 @@
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
             "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
           }
         ],
@@ -311,8 +316,8 @@
         "test": "confirmTransaction ({ spendingCap })",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
             "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
           }
         ],
@@ -336,7 +341,7 @@
         ],
         "via": "injected",
         "result": {
-          "$truncated": 22938,
+          "$truncated": 24975,
           "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         },
         "count": 3
@@ -349,7 +354,7 @@
         ],
         "via": "injected",
         "result": {
-          "$truncated": 5613,
+          "$truncated": 7035,
           "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         }
       },
@@ -366,14 +371,14 @@
         }
       },
       {
-        "test": "useNetwork, back to a network the dapp is allowed on",
+        "test": "approveSwitchNetwork",
         "params": [
           "latest",
           false
         ],
         "via": "injected",
         "result": {
-          "$truncated": 14628,
+          "$truncated": 12429,
           "shape": "{baseFeePerGas, blobGasUsed, blockAccessListHash, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, slotNumber, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         }
       },
@@ -410,7 +415,7 @@
         ],
         "via": "injected",
         "result": {
-          "$truncated": 5670,
+          "$truncated": 5325,
           "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         }
       },
@@ -435,7 +440,7 @@
         ],
         "via": "injected",
         "result": {
-          "$truncated": 5670,
+          "$truncated": 5325,
           "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         }
       },
@@ -473,7 +478,7 @@
         ],
         "via": "injected",
         "result": {
-          "$truncated": 5670,
+          "$truncated": 5325,
           "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
         }
       },
@@ -495,28 +500,28 @@
       {
         "test": "approveAddToken",
         "params": [
-          "0x81690485147d634881b878d25afcdd128370e4d017eab70ee31e27d038bf1575"
+          "0x4bf8df2e3d2a6a56c8046c82c50ddf28da0ab379687e30e9f67129b2f0fc234c"
         ],
         "via": "injected",
         "result": {
-          "$truncated": 53086,
+          "$truncated": 53085,
           "shape": "{accessList, blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, maxFeePerGas, maxPriorityFeePerGas, nonce, r, s, transactionIndex, type, v, value}"
         }
       },
       {
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
-          "0x4f211644d32c0a12882c5e1d6cdaefe7b8c99ae7e6101ece99001a470c1e8276"
+          "0xed281e0ca48a1fc8a6102d91c3a9444dd832e9eb8b6500a9eec6c3af8cb2d711"
         ],
         "via": "injected",
         "result": {
-          "v": "0x0",
-          "r": "0xed819586bfa2877c06186db3daa3dd410f673e5724a2339cd86d48859e9210d0",
-          "s": "0x757772b349a89c272ceb1b001fb1fed780ffad8edb51c3ef7066f62d5007632f",
-          "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+          "v": "0x1",
+          "r": "0x5b693bbec3a90c953e9d0048296df4e368f1fe9b25261bd0aaa185690ee111ac",
+          "s": "0x61b08daa82c8c8c8b199c1f63d383904c3d02270cf33d65998513d9960e50188",
+          "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
           "gas": "0xb71b",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "hash": "0x4f211644d32c0a12882c5e1d6cdaefe7b8c99ae7e6101ece99001a470c1e8276",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "hash": "0xed281e0ca48a1fc8a6102d91c3a9444dd832e9eb8b6500a9eec6c3af8cb2d711",
           "nonce": "0x2",
           "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170",
           "value": "0x0",
@@ -535,17 +540,17 @@
       {
         "test": "confirmTransaction ({ spendingCap })",
         "params": [
-          "0x55a07c8507b0863071cf68b96111a2ddacc7cc62970b92efc4a74667f3340ebc"
+          "0x6724f19c3819d86b39669811c4e75b51ce201a96877957dbfec5604e64f2f5ee"
         ],
         "via": "injected",
         "result": {
           "v": "0x0",
-          "r": "0xf22a3b9080b9d7841218795d07ccb6c9876c748028654c7af8e2ca3ff7432c5d",
-          "s": "0x76829fce1fb652dd05270c2a73ec566babef71461ecac2b6d78c4c11895dc9c1",
-          "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+          "r": "0xfb70e2242244a94118e83c3a6a54715b5142f21525ad3d9eb78a450c2a4ab590",
+          "s": "0x7530c0356739634b23bf7e16083a7e7b56f54bc7338d8e2e11d793de5b880c77",
+          "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
           "gas": "0x29763",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "hash": "0x55a07c8507b0863071cf68b96111a2ddacc7cc62970b92efc4a74667f3340ebc",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "hash": "0x6724f19c3819d86b39669811c4e75b51ce201a96877957dbfec5604e64f2f5ee",
           "nonce": "0x3",
           "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef400000000000000000000000000000000000000000000000000000000000061a8",
           "value": "0x0",
@@ -564,17 +569,17 @@
       {
         "test": "confirmTransaction ({ gas })",
         "params": [
-          "0x30447373e362f3a926b5b253fcfb4ec37a0cf4ca28a46ea0a5ea22ed1b737c21"
+          "0xfa6f7388938ea79c873d183c2235075c76656febe0b8d1b129f60ed380cf7562"
         ],
         "via": "injected",
         "result": {
-          "v": "0x1",
-          "r": "0xd680c6d5da58535e193bb2f725c7e70a11362f0e7ab88b1c676ad64ae44cffa4",
-          "s": "0x260d970fa16a79533ff3d15d40f3ed887b526170be62afd21b795e318044c053",
-          "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+          "v": "0x0",
+          "r": "0x38abf2461249dfa372c9c4060cc50a07db8b7481148792d6ac0535d01a03f56e",
+          "s": "0x1c08097c717fc556d393b3e0e741165cdc6340c8eca14fd04f0b6c7f95babb08",
+          "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
           "gas": "0xc350",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "hash": "0x30447373e362f3a926b5b253fcfb4ec37a0cf4ca28a46ea0a5ea22ed1b737c21",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "hash": "0xfa6f7388938ea79c873d183c2235075c76656febe0b8d1b129f60ed380cf7562",
           "nonce": "0x4",
           "input": "0x",
           "value": "0x1",
@@ -592,7 +597,7 @@
       {
         "test": "confirmTransaction ({ gas })",
         "params": [
-          "0x30447373e362f3a926b5b253fcfb4ec37a0cf4ca28a46ea0a5ea22ed1b737c21"
+          "0xfa6f7388938ea79c873d183c2235075c76656febe0b8d1b129f60ed380cf7562"
         ],
         "via": "injected",
         "result": {
@@ -602,37 +607,37 @@
           "gas": "0xc350",
           "maxFeePerGas": "0x6fc23ac00",
           "maxPriorityFeePerGas": "0x9502f900",
-          "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+          "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
           "value": "0x1",
           "accessList": [],
           "input": "0x",
-          "r": "0xd680c6d5da58535e193bb2f725c7e70a11362f0e7ab88b1c676ad64ae44cffa4",
-          "s": "0x260d970fa16a79533ff3d15d40f3ed887b526170be62afd21b795e318044c053",
-          "yParity": "0x1",
-          "v": "0x1",
-          "hash": "0x30447373e362f3a926b5b253fcfb4ec37a0cf4ca28a46ea0a5ea22ed1b737c21",
-          "blockHash": "0x2158e4ca9663a4f21db655d8d4c7ec3d0357b2bad665848af3a9200e85a4512d",
+          "r": "0x38abf2461249dfa372c9c4060cc50a07db8b7481148792d6ac0535d01a03f56e",
+          "s": "0x1c08097c717fc556d393b3e0e741165cdc6340c8eca14fd04f0b6c7f95babb08",
+          "yParity": "0x0",
+          "v": "0x0",
+          "hash": "0xfa6f7388938ea79c873d183c2235075c76656febe0b8d1b129f60ed380cf7562",
+          "blockHash": "0xea8e594c13a8254353945d07aa5831e27411d0fa4c812bada8c17667a6cf7a8e",
           "blockNumber": "0x5",
           "transactionIndex": "0x0",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "gasPrice": "0xb8b79e49",
-          "blockTimestamp": "0x6ac65a86"
+          "blockTimestamp": "0x6ac65b6b"
         }
       },
       {
         "test": "confirmTransaction ({ spendingCap, gas })",
         "params": [
-          "0xfd55574cbff881d0f88ecb59a6a32ac874c69d08cda80624f1ec9852b1c06a6d"
+          "0xd08e9cde97f4ef25d03578e9f453f9e92bec2905ac7317415337a8fc5bb0297e"
         ],
         "via": "injected",
         "result": {
           "v": "0x0",
-          "r": "0xa9ff98e31735dff9be4b7d7ff0f85de7dbd49250326d236e2b290c8000f53ace",
-          "s": "0x12d69f26faa9ed5e3a7133f60aa2d96ce3adaceeb1f7e93f748ba25ac60ccb23",
-          "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+          "r": "0xb38215d8b2d60e5acd6d99e524dfd810538fe3bac40bf9dbb282de2d4514ec9b",
+          "s": "0x679a007b9970b730d43b61d8231a68930ad6dfdf85195ae78ebd4b46d326d941",
+          "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
           "gas": "0x186a0",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "hash": "0xfd55574cbff881d0f88ecb59a6a32ac874c69d08cda80624f1ec9852b1c06a6d",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "hash": "0xd08e9cde97f4ef25d03578e9f453f9e92bec2905ac7317415337a8fc5bb0297e",
           "nonce": "0x5",
           "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4000000000000000000000000000000000000000000000000000000000000c350",
           "value": "0x0",
@@ -650,7 +655,7 @@
       {
         "test": "confirmTransaction ({ spendingCap, gas })",
         "params": [
-          "0xfd55574cbff881d0f88ecb59a6a32ac874c69d08cda80624f1ec9852b1c06a6d"
+          "0xd08e9cde97f4ef25d03578e9f453f9e92bec2905ac7317415337a8fc5bb0297e"
         ],
         "via": "injected",
         "result": {
@@ -660,37 +665,37 @@
           "gas": "0x186a0",
           "maxFeePerGas": "0x6fc23ac00",
           "maxPriorityFeePerGas": "0x9502f900",
-          "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+          "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
           "value": "0x0",
           "accessList": [],
           "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4000000000000000000000000000000000000000000000000000000000000c350",
-          "r": "0xa9ff98e31735dff9be4b7d7ff0f85de7dbd49250326d236e2b290c8000f53ace",
-          "s": "0x12d69f26faa9ed5e3a7133f60aa2d96ce3adaceeb1f7e93f748ba25ac60ccb23",
+          "r": "0xb38215d8b2d60e5acd6d99e524dfd810538fe3bac40bf9dbb282de2d4514ec9b",
+          "s": "0x679a007b9970b730d43b61d8231a68930ad6dfdf85195ae78ebd4b46d326d941",
           "yParity": "0x0",
           "v": "0x0",
-          "hash": "0xfd55574cbff881d0f88ecb59a6a32ac874c69d08cda80624f1ec9852b1c06a6d",
-          "blockHash": "0x4bd9fb3672f553d3a369f4ad86c83ce459102c56e44b9fb5e2621df54ed54b45",
+          "hash": "0xd08e9cde97f4ef25d03578e9f453f9e92bec2905ac7317415337a8fc5bb0297e",
+          "blockHash": "0x4e9b9ce65ea83a8f6dc3b87318eda93dc6bc38522e32f6d696e1169fcc631de7",
           "blockNumber": "0x6",
           "transactionIndex": "0x0",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "gasPrice": "0xb442a321",
-          "blockTimestamp": "0x6ac65a8d"
+          "blockTimestamp": "0x6ac65b73"
         }
       },
       {
         "test": "confirmTransaction ({ gas: 'networkSuggested' })",
         "params": [
-          "0x606660bc5f0690f9bfdfecc2dd3e8d486325824c9521b1919fe364e0e10c285e"
+          "0xe1ef7fa3f1f502a08620ece463cec4514ee9b5bfb4b37a96ac44f914cedd45cc"
         ],
         "via": "injected",
         "result": {
           "v": "0x1",
-          "r": "0x1d62977cdd86a0a5c66d176611e31ca7392cbbd8e34133038a77173649fdb8e1",
-          "s": "0x24e2030f21b7ba87f81c4a90c8ac729dcd0f7fb798cb3390a5493761acdb054b",
-          "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+          "r": "0x4048abb80af494607555d4d8a1c3a6db5d5ba52fd305d91af4b482d5d0239a6",
+          "s": "0x4b6474f30308a55767736eaf47991223a66efa8a2a4089adef6830ea502c56b",
+          "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
           "gas": "0x5208",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "hash": "0x606660bc5f0690f9bfdfecc2dd3e8d486325824c9521b1919fe364e0e10c285e",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "hash": "0xe1ef7fa3f1f502a08620ece463cec4514ee9b5bfb4b37a96ac44f914cedd45cc",
           "nonce": "0x6",
           "input": "0x",
           "value": "0x1",
@@ -708,7 +713,7 @@
       {
         "test": "confirmTransaction ({ gas: 'networkSuggested' })",
         "params": [
-          "0x606660bc5f0690f9bfdfecc2dd3e8d486325824c9521b1919fe364e0e10c285e"
+          "0xe1ef7fa3f1f502a08620ece463cec4514ee9b5bfb4b37a96ac44f914cedd45cc"
         ],
         "via": "injected",
         "result": {
@@ -718,21 +723,21 @@
           "gas": "0x5208",
           "maxFeePerGas": "0xb05ca9cc",
           "maxPriorityFeePerGas": "0xb05ca9cc",
-          "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+          "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
           "value": "0x1",
           "accessList": [],
           "input": "0x",
-          "r": "0x1d62977cdd86a0a5c66d176611e31ca7392cbbd8e34133038a77173649fdb8e1",
-          "s": "0x24e2030f21b7ba87f81c4a90c8ac729dcd0f7fb798cb3390a5493761acdb054b",
+          "r": "0x4048abb80af494607555d4d8a1c3a6db5d5ba52fd305d91af4b482d5d0239a6",
+          "s": "0x4b6474f30308a55767736eaf47991223a66efa8a2a4089adef6830ea502c56b",
           "yParity": "0x1",
           "v": "0x1",
-          "hash": "0x606660bc5f0690f9bfdfecc2dd3e8d486325824c9521b1919fe364e0e10c285e",
-          "blockHash": "0x1d1fafb4d7caf1b7cb316f4eccef287a67820a8c06400cad51d15d8df79c2c1b",
+          "hash": "0xe1ef7fa3f1f502a08620ece463cec4514ee9b5bfb4b37a96ac44f914cedd45cc",
+          "blockHash": "0x2ca8aeebad34a36480a21601ea97bb03c3cf367b92a908b33754edd7cf9c85c4",
           "blockNumber": "0x7",
           "transactionIndex": "0x0",
-          "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "gasPrice": "0xb05ca9cc",
-          "blockTimestamp": "0x6ac65a92"
+          "blockTimestamp": "0x6ac65b79"
         }
       }
     ],
@@ -740,7 +745,7 @@
       {
         "test": "confirmTransaction",
         "params": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "latest"
         ],
         "via": "injected",
@@ -750,7 +755,7 @@
       {
         "test": "confirmTransaction",
         "params": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "latest"
         ],
         "via": "injected",
@@ -761,7 +766,7 @@
       {
         "test": "approveAddToken",
         "params": [
-          "0x81690485147d634881b878d25afcdd128370e4d017eab70ee31e27d038bf1575"
+          "0x4bf8df2e3d2a6a56c8046c82c50ddf28da0ab379687e30e9f67129b2f0fc234c"
         ],
         "via": "injected",
         "result": {
@@ -772,7 +777,7 @@
       {
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
-          "0x81690485147d634881b878d25afcdd128370e4d017eab70ee31e27d038bf1575"
+          "0x4bf8df2e3d2a6a56c8046c82c50ddf28da0ab379687e30e9f67129b2f0fc234c"
         ],
         "via": "injected",
         "result": {
@@ -794,57 +799,57 @@
         "test": "connectToDapp, onto the network from the wallet setup",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
         "test": "addAccount",
         "via": "injected",
         "result": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ]
       },
       {
         "test": "importAccount",
         "via": "injected",
         "result": [
-          "0xcb6c3f16f579cb975559e9cb893f04a452641abd"
+          "0xc2dc8ca5812796321f3bd003c7cc1e8e9f73da53"
         ]
       },
       {
         "test": "switchAccount",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ]
       },
       {
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ]
       },
       {
         "test": "connectToDapp ({ accounts })",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       },
       {
         "test": "disconnectFromDapp",
         "via": "injected",
         "result": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ]
       }
     ],
@@ -853,7 +858,7 @@
         "test": "rejectTransaction",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
             "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
             "value": "0x0",
             "gasLimit": "0x5208",
@@ -875,7 +880,7 @@
         "test": "confirmTransaction",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
             "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
             "value": "0x0",
             "gasLimit": "0x5208",
@@ -884,7 +889,7 @@
           }
         ],
         "via": "injected",
-        "result": "0xf300668777dadea508fa81c58c42a124a1fb1ee1ef49ee2e4434f85d038e4b88"
+        "result": "0x041cb49cfac936b0b89c93d8a7a6e4bc0b635cbe0cb053d640196aad14c2f7be"
       },
       {
         "test": "approveAddToken",
@@ -893,69 +898,69 @@
           "shape": "{data, from, gas}[]"
         },
         "via": "injected",
-        "result": "0x81690485147d634881b878d25afcdd128370e4d017eab70ee31e27d038bf1575"
+        "result": "0x4bf8df2e3d2a6a56c8046c82c50ddf28da0ab379687e30e9f67129b2f0fc234c"
       },
       {
         "test": "confirmTransaction (ERC-20 approval)",
         "params": [
           {
             "gas": "0xb71b",
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
             "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
           }
         ],
         "via": "injected",
-        "result": "0x4f211644d32c0a12882c5e1d6cdaefe7b8c99ae7e6101ece99001a470c1e8276"
+        "result": "0xed281e0ca48a1fc8a6102d91c3a9444dd832e9eb8b6500a9eec6c3af8cb2d711"
       },
       {
         "test": "confirmTransaction ({ spendingCap })",
         "params": [
           {
             "gas": "0x695f",
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x75fa9e241d575bc3d3e3ca430721bab81b0436d6",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0xae984684fa9f984f90d0a417ce34f2f348518a79",
             "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
           }
         ],
         "via": "injected",
-        "result": "0x55a07c8507b0863071cf68b96111a2ddacc7cc62970b92efc4a74667f3340ebc"
+        "result": "0x6724f19c3819d86b39669811c4e75b51ce201a96877957dbfec5604e64f2f5ee"
       },
       {
         "test": "confirmTransaction ({ gas })",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
             "value": "0x1"
           }
         ],
         "via": "injected",
-        "result": "0x30447373e362f3a926b5b253fcfb4ec37a0cf4ca28a46ea0a5ea22ed1b737c21"
+        "result": "0xfa6f7388938ea79c873d183c2235075c76656febe0b8d1b129f60ed380cf7562"
       },
       {
         "test": "confirmTransaction ({ spendingCap, gas })",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
             "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
           }
         ],
         "via": "injected",
-        "result": "0xfd55574cbff881d0f88ecb59a6a32ac874c69d08cda80624f1ec9852b1c06a6d"
+        "result": "0xd08e9cde97f4ef25d03578e9f453f9e92bec2905ac7317415337a8fc5bb0297e"
       },
       {
         "test": "confirmTransaction ({ gas: 'networkSuggested' })",
         "params": [
           {
-            "from": "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-            "to": "0x65c82a066761b2b497505699bd7b86616c1a1840",
+            "from": "0x7703515d858e19078a82f069b56d4ad545c975dd",
+            "to": "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca",
             "value": "0x1"
           }
         ],
         "via": "injected",
-        "result": "0x606660bc5f0690f9bfdfecc2dd3e8d486325824c9521b1919fe364e0e10c285e"
+        "result": "0xe1ef7fa3f1f502a08620ece463cec4514ee9b5bfb4b37a96ac44f914cedd45cc"
       }
     ],
     "eth_signTypedData_v4": [
@@ -982,7 +987,7 @@
           "shape": "[address, string(981)]"
         },
         "via": "injected",
-        "result": "0x0d6b477115d72f179c470e6f02090b5ff348901154f639f5e5f7a1f759170bf840d2c22286e58c4c17b25056cbcf52c56a59e1915c6255f1573fcca5fd2581261b"
+        "result": "0x3f6ff85a379e5dd9dd25ac15c75581da4655aeb9e19578f22b23cd5caf629481234b3c2b95e21c8757d4ea5865d70fa9de64e388ab0842a4551c5ae95b81dd521b"
       }
     ],
     "net_version": [
@@ -997,17 +1002,17 @@
         "test": "confirmSignature (personal_sign)",
         "params": [
           "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "Example password"
         ],
         "via": "injected",
-        "result": "0xde28d3432e54364c6e7c7c5b23e825e076b9251469ebdab124c206748657b771281c6f046b749157b2b4b1930fe4ef17a023f68c20910d19f5abe78d0141986a1b"
+        "result": "0xa6b62481aaed2f726ce7615ca3583a66d74c0ac5cd82d7cab82f74120f051ece39db156461d5228cce8216a4b242405efbc8c1ea341ccd4dcecaaae924c7c1be1c"
       },
       {
         "test": "rejectSignature (personal_sign)",
         "params": [
           "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
           "Example password"
         ],
         "via": "injected",
@@ -1024,10 +1029,10 @@
         "test": "unlockWallet",
         "params": [
           "0x6c6f636b6564",
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "via": "injected",
-        "result": "0xea53565b42df8ea5ebb2e2d6610e20e5eee2ecce986e1e0357e3bf40e4dca4055f5030594b795d145f41d0aa36a5e789c3ecdc84ec04f566bfa2c571c22b52fe1c"
+        "result": "0xaeb91fdb2273b2800988a890a5fe5a3a1f475373cb37ae9e0032c4e743a1a6ee6213709b2c99be5ad3419c7e484a4d66ee417de4335003c3d656ca66e40e23481c"
       }
     ],
     "wallet_addEthereumChain": [
@@ -1348,7 +1353,7 @@
         "params": {
           "type": "ERC20",
           "options": {
-            "address": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
+            "address": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
             "symbol": "TST",
             "decimals": 4
           }
@@ -1361,7 +1366,7 @@
         "params": {
           "type": "ERC20",
           "options": {
-            "address": "0x75Fa9e241D575bC3D3e3Ca430721BAb81B0436D6",
+            "address": "0xaE984684fA9f984F90d0A417ce34f2f348518A79",
             "symbol": "TST",
             "decimals": 4
           }
@@ -1379,7 +1384,7 @@
       {
         "test": "connectToDapp, onto the network from the wallet setup",
         "payload": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "via": "injected"
       },
@@ -1391,7 +1396,7 @@
       {
         "test": "addAccount",
         "payload": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ],
         "via": "injected"
       },
@@ -1403,7 +1408,7 @@
       {
         "test": "importAccount",
         "payload": [
-          "0xcb6c3f16f579cb975559e9cb893f04a452641abd"
+          "0xc2dc8ca5812796321f3bd003c7cc1e8e9f73da53"
         ],
         "via": "injected"
       },
@@ -1415,7 +1420,7 @@
       {
         "test": "switchAccount",
         "payload": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "via": "injected"
       },
@@ -1427,8 +1432,8 @@
       {
         "test": "connectToDapp ({ accounts })",
         "payload": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4",
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd",
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ],
         "via": "injected"
       },
@@ -1440,7 +1445,7 @@
       {
         "test": "connectToDapp ({ accounts })",
         "payload": [
-          "0x65c82a066761b2b497505699bd7b86616c1a1840"
+          "0x8aa5aa6340ea92bbde20ccc7e0b4ab48fa785cca"
         ],
         "via": "injected"
       },
@@ -1452,7 +1457,7 @@
       {
         "test": "connectToDapp ({ accounts })",
         "payload": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "via": "injected"
       },
@@ -1464,7 +1469,7 @@
       {
         "test": "disconnectFromDapp",
         "payload": [
-          "0xbfe448f98956692d93d67fd9d9fa454192eedff4"
+          "0x7703515d858e19078a82f069b56d4ad545c975dd"
         ],
         "via": "injected"
       }

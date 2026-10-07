@@ -18,7 +18,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   let extensionId: string | undefined;
 
   async function metamaskId(browser: Browser): Promise<string> {
-    extensionId = extensionId || (await findExtensionId(browser));
+    extensionId = extensionId || (await findExtensionId(browser, options.timeout));
     return extensionId;
   }
 
@@ -26,7 +26,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   const setupMetaMask = (browser: Browser) => openWallet(browser, { onboard: true });
 
   async function openWallet(browser: Browser, { onboard }: { onboard: boolean }): Promise<WalletState> {
-    const home = await getHomePage(browser, await metamaskId(browser));
+    const home = await getHomePage(browser, await metamaskId(browser), options.timeout);
     const state = await metamask.walletState(home);
     console.log(`[dappress] MetaMask is ${state}`);
     if (state === 'onboarding' && onboard) await metamask.onboard(home, options);
@@ -40,7 +40,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   const onHomePage =
     <A, R>(flow: (home: Page, argument: A) => Promise<R>) =>
     async (browser: Browser, argument: A): Promise<R> => {
-      const home = await getHomePage(browser, await metamaskId(browser));
+      const home = await getHomePage(browser, await metamaskId(browser), options.timeout);
       try {
         await home.bringToFront();
         return await flow(home, argument);
@@ -57,7 +57,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
     const state = await openWallet(browser, { onboard: false });
     if (state === 'onboarding') throw new Error('[dappress] No wallet to unlock: MetaMask is at its onboarding');
     // The side panel, or a popup opened by a request, keeps its unlock form after an unlock made elsewhere
-    for (const page of await getRequestPages(browser, await metamaskId(browser))) await metamask.leaveUnlockForm(page, options);
+    for (const page of await getRequestPages(browser, await metamaskId(browser), options.timeout)) await metamask.leaveUnlockForm(page, options);
     return state;
   }
 
@@ -78,13 +78,13 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
   }
 
   /** Approve the prompt a network change raised: "Add network" or the permission to switch. */
-  const approveNetworkChange = (browser: Browser) => onConfirmation(browser, (page) => metamask.approveNetworkChange(page, options.timeout));
+  const approveNetworkChange = (browser: Browser) => onConfirmation(browser, (page) => metamask.approveNetworkChange(page));
 
   /** The task for a decision: find the confirmation, press its button. */
   const decide =
     (decision: metamask.Decision): Action =>
     (browser, argument) =>
-      onConfirmation(browser, (page) => metamask.decide(decision, page, options.timeout, argument));
+      onConfirmation(browser, (page) => metamask.decide(decision, page, argument));
 
   const actions: Record<string, Action> = {
     setupMetaMask,

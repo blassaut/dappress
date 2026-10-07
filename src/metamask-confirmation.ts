@@ -4,10 +4,10 @@
 // the button is pressed until the confirmation goes away.
 
 import type { ConsoleMessage, Page } from 'puppeteer-core';
-import { describe, waitFor, isVisible, isGone, click, clickWhenEnabled, dispatchClick, failure, sleep, type Selector } from './page-helpers';
+import { describe, waitFor, waitForGone, waitUntil, isShown, failure, type Selector } from './page-helpers';
 import { waitForDismissal } from './metamask-pages';
 import { selectors, decisions, type Decision } from './metamask-selectors';
-import { dismissModal } from './metamask-modal';
+import { dismissModal, press, pressWhenEnabled } from './metamask-overlays';
 import { accountNames } from './metamask-wallet';
 import { adjustTransaction } from './metamask-transaction';
 import type { ConnectOptions, TransactionOptions } from './types';
@@ -16,8 +16,8 @@ import type { ConnectOptions, TransactionOptions } from './types';
 type CommandOptions = ConnectOptions & TransactionOptions;
 
 // What a command sets on its confirmation before pressing the button, when the
-// test passed it options: adjustments[command](page, options, timeout)
-const adjustments: Partial<Record<Decision, (page: Page, options: CommandOptions, timeout: number) => Promise<void>>> = {
+// test passed it options: adjustments[command](page, options)
+const adjustments: Partial<Record<Decision, (page: Page, options: CommandOptions) => Promise<void>>> = {
   connectToDapp: chooseAccounts,
   confirmTransaction: adjustTransaction,
 };
@@ -42,59 +42,43 @@ async function chooseAccounts(page: Page, { accounts }: ConnectOptions): Promise
   await saveConnectAccounts(page, wanted);
 }
 
-// As elsewhere, a click that lands while the request settles is lost: pressed again until the list shows
 async function openConnectAccounts(page: Page): Promise<void> {
-  const s = selectors.connectAccounts;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (!(await isVisible(page, s.save, 500))) await click(page, s.edit);
-    if (await isVisible(page, s.save, 5000)) return;
-  }
-  throw await failure(page, 'MetaMask did not open the accounts of the connection');
+  await press(page, selectors.connectAccounts.edit);
+  await waitFor(page, selectors.connectAccounts.save);
 }
 
-// A click on an account's row ticks or unticks its box. The box is read
-// before each click: a second click on a row that took the first undoes it.
+// A click on an account's row ticks or unticks its box: read first, so that
+// a row already as wanted is left as it is
 async function tickAccount(page: Page, name: string, ticked: boolean): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (await isTicked(page, name, ticked, 500)) return;
-    await click(page, selectors.accounts.cell(name));
-    if (await isTicked(page, name, ticked, 3000)) return;
-  }
-  throw await failure(page, `MetaMask did not ${ticked ? 'tick' : 'untick'} "${name}"`);
+  if ((await isTicked(page, name)) === ticked) return;
+  await press(page, selectors.accounts.cell(name));
+  await waitUntil(page, `"${name}" to be ${ticked ? 'ticked' : 'unticked'}`, async () => (await isTicked(page, name)) === ticked);
 }
 
-async function isTicked(page: Page, name: string, ticked: boolean, timeout: number): Promise<boolean> {
-  const deadline = Date.now() + timeout;
-  do {
-    const checkbox = await page.$(selectors.connectAccounts.checkbox(name));
-    const state = checkbox ? await checkbox.evaluate((el) => (el as HTMLInputElement).checked).catch(() => null) : null;
-    if (state === ticked) return true;
-    await sleep(250);
-  } while (Date.now() < deadline);
-  return false;
+async function isTicked(page: Page, name: string): Promise<boolean | null> {
+  const checkbox = await page.$(selectors.connectAccounts.checkbox(name));
+  return checkbox ? checkbox.evaluate((el) => (el as HTMLInputElement).checked).catch(() => null) : null;
 }
 
 // Saving goes back to the request, which then shows what was chosen
 async function saveConnectAccounts(page: Page, names: string[]): Promise<void> {
   const s = selectors.connectAccounts;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (await isVisible(page, s.save, 500)) await clickWhenEnabled(page, s.save);
-    if (!(await isGone(page, s.save, 5000))) continue;
-    if (await isVisible(page, s.chosen(names), 5000)) return;
-    break;
-  }
-  throw await failure(page, `MetaMask did not keep ${names.map((name) => `"${name}"`).join(', ')} as the accounts to connect`);
+  await pressWhenEnabled(page, s.save);
+  await waitForGone(page, s.save);
+  await waitFor(page, s.chosen(names)).catch(async () => {
+    throw await failure(page, `MetaMask did not keep ${names.map((name) => `"${name}"`).join(', ')} as the accounts to connect`);
+  });
 }
 
 /** Press the button of `decision` on the confirmation shown on `page`, once it is set as `options` ask. */
-export async function decide(decision: Decision, page: Page, timeout: number, options?: CommandOptions): Promise<void> {
+export async function decide(decision: Decision, page: Page, options?: CommandOptions): Promise<void> {
   if (options) {
     const adjust = adjustments[decision];
     if (!adjust) throw new Error(`[dappress] ${decision} takes no options`);
-    await waitForButton(page, decisions[decision], timeout);
-    await adjust(page, options, timeout);
+    await waitForButton(page, decisions[decision]);
+    await adjust(page, options);
   }
-  return pressAndWaitForDismissal(page, decisions[decision], timeout);
+  return pressAndWaitForDismissal(page, decisions[decision]);
 }
 
 /**
@@ -105,9 +89,9 @@ export async function decide(decision: Decision, page: Page, timeout: number, op
 export class ConfirmationClosed extends Error {}
 
 // The button of a confirmation, or ConfirmationClosed if the page went meanwhile
-async function waitForButton(page: Page, button: Selector, timeout: number): Promise<void> {
+async function waitForButton(page: Page, button: Selector): Promise<void> {
   try {
-    await waitFor(page, button, { timeout });
+    await waitFor(page, button);
   } catch (error) {
     if (page.isClosed()) throw new ConfirmationClosed(`[dappress] The confirmation closed before "${describe(button)}" was pressed`);
     throw error;
@@ -115,35 +99,37 @@ async function waitForButton(page: Page, button: Selector, timeout: number): Pro
 }
 
 /** wallet_addEthereumChain on a network MetaMask knows behaves like a switch: either prompt may show. */
-export function approveNetworkChange(page: Page, timeout: number): Promise<void> {
-  return pressAndWaitForDismissal(page, [...selectors.confirmation.confirm, ...selectors.pageContainer.confirm], timeout);
+export function approveNetworkChange(page: Page): Promise<void> {
+  return pressAndWaitForDismissal(page, [...selectors.confirmation.confirm, ...selectors.pageContainer.confirm]);
 }
 
 /**
  * Press a footer button, then wait for the confirmation to go away: the
- * popup closes, the side panel goes back to the home screen. A click that
- * lands while the confirmation is still settling is lost, so the click is
- * repeated while the button stays. If it stays anyway, the error says
+ * popup closes, the side panel goes back to the home screen. MetaMask may
+ * raise a warning on the way ("Switching network will cancel N pending
+ * transactions"), which is acknowledged. If the button stays, the error says
  * whether it is the same request or a new one the dapp sent meanwhile, and
  * what MetaMask logged.
  */
-async function pressAndWaitForDismissal(page: Page, button: Selector, timeout: number): Promise<void> {
-  await waitForButton(page, button, timeout);
+async function pressAndWaitForDismissal(page: Page, button: Selector): Promise<void> {
+  await waitForButton(page, button);
   await dismissModal(page);
   const logged = recordErrors(page);
   const request = page.url();
   try {
-    await clickWhenEnabled(page, button, { whileDisabled: () => scrollContentToEnd(page) });
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (await isVisible(page, selectors.alert.acknowledge, 500)) await click(page, selectors.alert.acknowledge);
-      if (await isGone(page, button, 3000)) return waitForDismissal(page, request, 3000);
-      await dismissModal(page);
-      await dispatchClick(page, button, { timeout: 3000 }).catch(() => {});
-    }
-    const what = page.url() === request ? 'MetaMask kept the same request open' : 'MetaMask shows a new request: the dapp asked again';
-    const distinct = [...new Set(logged.errors)].slice(-3);
-    const errors = distinct.length ? `MetaMask logged: ${distinct.join(' | ')}` : 'MetaMask logged no error';
-    throw await failure(page, `"${describe(button)}" is still showing after being clicked. ${what}. ${errors}`);
+    await pressWhenEnabled(page, button, { whileDisabled: () => scrollContentToEnd(page) });
+    const gone = async () => {
+      if (page.isClosed()) return true;
+      if (await isShown(page, selectors.alert.acknowledge)) await press(page, selectors.alert.acknowledge);
+      return !(await isShown(page, button));
+    };
+    await waitUntil(page, `"${describe(button)}" to go once pressed`, gone).catch(async (error: Error) => {
+      const what = page.url() === request ? 'MetaMask kept the same request open' : 'MetaMask shows a new request: the dapp asked again';
+      const distinct = [...new Set(logged.errors)].slice(-3);
+      const errors = distinct.length ? `MetaMask logged: ${distinct.join(' | ')}` : 'MetaMask logged no error';
+      throw new Error(`${error.message.split(' on ')[0]}. ${what}. ${errors}`);
+    });
+    await waitForDismissal(page, request);
   } finally {
     logged.stop();
   }
@@ -173,6 +159,8 @@ function recordErrors(page: Page): { errors: string[]; stop(): void } {
  * screens offer a button for that, most don't, so the content is scrolled
  * with the wheel, as a reader would. The popup, being small, needs it often.
  */
+// A nudge, run while the button stays disabled: the wait around it checks
+// whether it worked, so a part of it that finds nothing to scroll is no error
 async function scrollContentToEnd(page: Page): Promise<void> {
   const scrollButton = await page.$(selectors.confirmation.scrollToBottom);
   if (scrollButton) {

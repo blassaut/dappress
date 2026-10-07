@@ -35,10 +35,14 @@ export const selectors = {
     manageDefaultSettings: testId('manage-default-settings'),
     // The first category, "General": its testid carries the translated label
     generalSettings: 'xpath/(.//*[starts-with(@data-testid, "category-item-")])[1]',
+    // Read on the toggle, pressed on its switch: a label the toggle lies under
     backupAndSyncToggle: testId('backup-and-sync-toggle-button'),
+    backupAndSyncSwitch: `${testId('backup-and-sync-toggle-container')} label`,
     categoryBack: testId('category-back-button'),
     settingsBack: testId('privacy-settings-back-button'),
   },
+  // The unlock form, known by its button: any password field would match
+  // the onboarding's too while its screens change
   unlock: {
     password: [testId('unlock-password'), passwordInput(1)],
     submit: [testId('unlock-submit'), buttonText('Unlock')],
@@ -127,7 +131,8 @@ export const selectors = {
     gasForm: testId('gas-fee-advanced-eip1559-modal'),
     gasField: (id: string) => [`#${id}`, `${testId(id)} input`],
     gasSave: [testId('gas-fee-modal-save-button'), buttonText('Save')],
-    // The "Network fee" row: its amount and the name of its estimate
+    gasCancel: [testId('gas-fee-modal-cancel-button'), buttonText('Cancel')],
+    // The "Network fee" section: the fee MetaMask estimates, and its speed
     feeSection: testId('gas-fee-section'),
   },
   // The older footer, still used by the permission update a network switch
@@ -143,6 +148,11 @@ export const selectors = {
   },
   // "We've noticed multiple requests": shown over the confirmation when a dapp
   // sends many requests in a row, and it swallows the clicks
+  // The toasts at the bottom of the screen ("Transaction confirmed"), a link
+  // across each, over the footer's buttons until closed
+  toast: {
+    close: testId('toast-close-button'),
+  },
   modal: {
     content: '.mm-modal-content',
     // The cross of the modal's header, when it has one. Its label is translated:
