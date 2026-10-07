@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- `DAPPRESS_DEBUG=1` logs what Dappress does with the browser, for a run that fails now and then. It logs each command's task and its duration, and the browser's tabs and workers as they come and go. It also turns on Chrome's own log, crashes included, which Cypress shows with `DEBUG=cypress:launcher:browsers`. Off by default, it changes nothing.
+
 ### Security
 
 - The MetaMask archive is no longer unpacked by `extract-zip`, which lets an archive write outside its folder through a planted symlink (CVE-2026-19693, GHSA-7pqw-9j4j-h8q3 and GHSA-jmr9-qjv8-65gv, with no fixed version). Dappress now unpacks it itself, over `fflate`: an entry that leads outside the folder refuses the whole archive, and no entry becomes a link.

@@ -11,6 +11,7 @@ import { prepareCachedWallet, installCachedWallet } from './wallet-cache';
 import { createTasks } from './actions';
 import { loadProfile } from './wallet-profile';
 import { addressOf } from './keys';
+import { browserLogArgs, watchEventLoop } from './debug';
 import type { DappressOptions } from './types';
 
 export type { DappressOptions, Network, WalletSetup } from './types';
@@ -32,6 +33,7 @@ export function configureDappress(
   userOptions: DappressOptions = {},
 ): Cypress.PluginConfigOptions {
   const options = resolveOptions(userOptions, config);
+  watchEventLoop();
 
   // A mock wallet lives in the page: no extension, no browser hooks, no task.
   // The profile it replays goes to the browser side with the options
@@ -65,6 +67,7 @@ export function configureDappress(
     }
     const extensionDir = await prepareExtension(options);
     launchOptions.extensions.push(extensionDir);
+    launchOptions.args.push(...browserLogArgs());
     if (browser.isHeadless) {
       // Cypress leaves extensions out of a headless launch, so ask Chrome directly
       launchOptions.args.push(`--load-extension=${extensionDir}`);

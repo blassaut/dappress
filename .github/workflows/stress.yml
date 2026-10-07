@@ -1,0 +1,67 @@
+# Runs the conformance suite many times at once on the same commit, with
+# Dappress's diagnostics on: one green run proves nothing about a failure that
+# shows one run in four. Push a branch named stress/<anything> to start it,
+# after editing the matrix there to the modes and the Chrome versions to
+# compare: stable, beta, or a major such as 154. CONTRIBUTING.md says how to
+# read what each job uploads.
+name: Stress
+
+on:
+  push:
+    branches: ['stress/**']
+
+jobs:
+  suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [sidepanel, headless, popup]
+        chrome: [stable]
+        run: [1, 2, 3, 4, 5, 6]
+    name: ${{ matrix.mode }} ${{ matrix.chrome }} ${{ matrix.run }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Chrome for Testing ${{ matrix.chrome }}
+        id: chrome
+        env:
+          CHROME: ${{ matrix.chrome }}
+        run: |
+          path=$(npx --yes @puppeteer/browsers@3 install "chrome@$CHROME" --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1)
+          "$path" --version
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: npm ci
+
+      - name: Run the suite, ${{ matrix.mode }}
+        shell: bash
+        run: |
+          mkdir -p crashes
+          xvfb-run --auto-servernum npm run conformance 2>&1 | tee suite.log
+          exit "${PIPESTATUS[0]}"
+        env:
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
+          DAPPRESS_MODE: ${{ matrix.mode }}
+          DAPPRESS_DEBUG: '1'
+          DAPPRESS_CRASH_DUMPS: ${{ github.workspace }}/crashes
+          # Chrome's own log, and where a task goes between the spec, Cypress's server and the plugins' process
+          DEBUG: cypress:launcher:browsers,cypress:server:task,cypress:server:socket-base,cypress:lifecycle:child:*
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: stress-${{ matrix.mode }}-${{ matrix.chrome }}-${{ matrix.run }}
+          path: |
+            suite.log
+            crashes
+            /tmp/dappress
+            conformance/cypress/screenshots
+          if-no-files-found: ignore
