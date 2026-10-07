@@ -156,7 +156,7 @@ async function waitForStill(element: ElementHandle<Element>, timeout = 2000): Pr
 /** Replace the content of a field with `text`. */
 export async function fill(page: Page, selector: Selector, text: string, options?: WaitOptions): Promise<void> {
   const element = await waitFor(page, selector, options);
-  await element.click({ clickCount: 3 });
+  await element.click({ count: 3 });
   await element.type(text);
 }
 

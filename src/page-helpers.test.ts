@@ -17,10 +17,10 @@ function fakeElement({ disabled = false, text = '', clickErrors = [] as string[]
     evaluate: async (inPage: (el: unknown) => unknown) =>
       inPage({ disabled: element.disabled, textContent: element.text, click: () => element.done.push('dispatched click') }),
     boundingBox: async () => ({ x: 0, y: 0, width: 80, height: 30 }),
-    click: async (options?: { clickCount?: number }) => {
+    click: async (options?: { count?: number }) => {
       const error = clickErrors.shift();
       if (error) throw new Error(error);
-      element.done.push(options?.clickCount ? `click x${options.clickCount}` : 'click');
+      element.done.push(options?.count ? `click x${options.count}` : 'click');
     },
     type: async (text: string) => void element.done.push(`type ${text}`),
   };
