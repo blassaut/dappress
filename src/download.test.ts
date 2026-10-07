@@ -163,3 +163,28 @@ test('an archive without a manifest is not taken for a MetaMask build', async (t
 
   await assert.rejects(prepareExtension(options(cacheDir())), /does not look like a MetaMask build: no manifest\.json/);
 });
+
+test('an entry that leads outside the folder refuses the archive, and nothing lands outside', async (t) => {
+  mockFetch(t, () => new Response(zip({ 'manifest.json': '{}', '../outside.txt': 'planted' })));
+  const dir = cacheDir();
+
+  await assert.rejects(prepareExtension(options(dir)), /holds an entry that leads outside its folder, "\.\.\/outside\.txt": the archive is not unpacked/);
+  assert.ok(!fs.existsSync(path.join(dir, 'metamask', 'outside.txt')));
+});
+
+test('an entry with an absolute path refuses the archive too', async (t) => {
+  const outside = path.join(os.tmpdir(), `dappress-planted-${process.pid}.txt`);
+  mockFetch(t, () => new Response(zip({ 'manifest.json': '{}', [outside]: 'planted' })));
+
+  await assert.rejects(prepareExtension(options(cacheDir())), /leads outside its folder/);
+  assert.ok(!fs.existsSync(outside));
+});
+
+test('folders in the archive are made, with their files under them', async (t) => {
+  mockFetch(t, () => new Response(zip({ 'manifest.json': '{}', 'images/': '', 'images/icon.svg': '<svg/>', '_locales/en/messages.json': '{}' })));
+
+  const unpacked = await prepareExtension(options(cacheDir()));
+  assert.ok(fs.statSync(path.join(unpacked, 'images')).isDirectory());
+  assert.equal(fs.readFileSync(path.join(unpacked, 'images', 'icon.svg'), 'utf8'), '<svg/>');
+  assert.equal(fs.readFileSync(path.join(unpacked, '_locales', 'en', 'messages.json'), 'utf8'), '{}');
+});

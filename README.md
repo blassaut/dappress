@@ -39,7 +39,7 @@ A wallet driver is screen-by-screen code: selectors, retries for the clicks a sc
 | Dependency | Version                                                                       |
 | ---------- | ----------------------------------------------------------------------------- |
 | Cypress    | 15.10 or later                                                                |
-| Node.js    | 20 or later                                                                   |
+| Node.js    | 22.12 or later                                                                |
 | Browser    | Chrome for Testing, Chromium or Electron. Not Google Chrome: since version 137 it no longer loads extensions. |
 
 Tested on macOS and on GitHub's Linux runners.

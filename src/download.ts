@@ -8,7 +8,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
-import extractZip from 'extract-zip';
+import { unzipSync } from 'fflate';
 import type { ResolvedOptions } from './types';
 
 function releaseUrl(version: string): string {
@@ -53,12 +53,36 @@ export async function prepareExtension({
 
   console.log(`[dappress] Unpacking MetaMask ${metamaskVersion}…`);
   await fs.promises.rm(dir, { recursive: true, force: true });
-  await extractZip(zipPath, { dir });
+  await unpack(zipPath, dir);
 
   if (!fs.existsSync(manifest)) {
     throw new Error(`[dappress] ${zipPath} does not look like a MetaMask build: no manifest.json after extraction`);
   }
   return dir;
+}
+
+/**
+ * Unpack the archive under `dir`: its folders and its files, written by
+ * Dappress itself. An entry whose path leads outside `dir` makes the whole
+ * archive refused, and no entry becomes a link, whatever the archive says of
+ * it: there is nothing for a later entry to write through.
+ */
+async function unpack(zipPath: string, dir: string): Promise<void> {
+  const entries = unzipSync(await fs.promises.readFile(zipPath));
+  const root = path.resolve(dir);
+  await fs.promises.mkdir(root, { recursive: true });
+  for (const [name, content] of Object.entries(entries)) {
+    const target = path.resolve(root, name);
+    if (target !== root && !target.startsWith(root + path.sep)) {
+      throw new Error(`[dappress] ${path.basename(zipPath)} holds an entry that leads outside its folder, "${name}": the archive is not unpacked`);
+    }
+    if (name.endsWith('/')) {
+      await fs.promises.mkdir(target, { recursive: true });
+      continue;
+    }
+    await fs.promises.mkdir(path.dirname(target), { recursive: true });
+    await fs.promises.writeFile(target, content);
+  }
 }
 
 /**

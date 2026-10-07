@@ -4,6 +4,15 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Security
+
+- The MetaMask archive is no longer unpacked by `extract-zip`, which lets an archive write outside its folder through a planted symlink (CVE-2026-19693, GHSA-7pqw-9j4j-h8q3 and GHSA-jmr9-qjv8-65gv, with no fixed version). Dappress now unpacks it itself, over `fflate`: an entry that leads outside the folder refuses the whole archive, and no entry becomes a link.
+- `puppeteer-core` 25 no longer carries the proxy chain that brought `basic-ftp`, whose directory-listing parser can be made to spin (CVE-2026-102990, GHSA-c475-qrg2-pj4r), nor `extract-zip`. The package's tree goes from 86 packages to 33.
+
+### Changed
+
+- Node.js 22.12 or later: `puppeteer-core` 25 is an ES module, which Node.js loads from CommonJS from that version on.
+
 ## [0.9.0] - 2026-10-06
 
 ### Added

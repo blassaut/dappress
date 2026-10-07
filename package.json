@@ -52,7 +52,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && mkdir -p dist/profiles && cp reports/profiles/*.json dist/profiles/",
@@ -73,8 +73,8 @@
   "dependencies": {
     "@noble/hashes": "^1.8.0",
     "@scure/bip39": "^1.6.0",
-    "extract-zip": "^2.0.1",
-    "puppeteer-core": "^24.43.1"
+    "fflate": "^0.8.3",
+    "puppeteer-core": "^25.12.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
