@@ -536,8 +536,16 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     provider,
     emit,
     chainEndpoint,
-    act: (action, argument) =>
-      own[action] ? own[action](argument) : DECIDES[action] ? decide(action, argument) : Promise.reject(new Error(`[dappress] Unknown action ${action}`)),
+    // A command other than the lock, or the unlock that says how it found the wallet, unlocks a locked wallet
+    // first, as on MetaMask, where it finds the unlock form
+    act: (action, argument) => {
+      if (action !== 'lockWallet' && action !== 'unlockWallet') locked = false;
+      return own[action]
+        ? own[action](argument)
+        : DECIDES[action]
+          ? decide(action, argument)
+          : Promise.reject(new Error(`[dappress] Unknown action ${action}`));
+    },
   };
 }
 

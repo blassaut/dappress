@@ -260,6 +260,19 @@ test('the accounts: added, switched, disconnected, as the wallet names them', as
   await assert.rejects(mock.act('switchAccount', 'Account 9'), /no account named "Account 9"/);
 });
 
+test('a locked wallet: unlocked by unlockWallet, which says so, or by any other command, as on MetaMask', async () => {
+  const { mock } = wallet();
+  assert.equal(await mock.act('unlockWallet'), 'unlocked');
+  await mock.act('lockWallet');
+  assert.equal(await mock.act('unlockWallet'), 'locked');
+  await mock.act('lockWallet');
+  await mock.act('switchAccount', 'Account 1');
+  assert.equal(await mock.act('unlockWallet'), 'unlocked');
+  await mock.act('lockWallet');
+  await mock.act('lockWallet');
+  assert.equal(await mock.act('unlockWallet'), 'locked');
+});
+
 test("a recorded refusal names the chain asked for now, not the recording's", async () => {
   const { provider } = wallet({
     ...rabby,
