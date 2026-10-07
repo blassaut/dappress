@@ -8,7 +8,7 @@ const TEST_ID = '[data-testid="confirm-btn"]';
 const BUTTON = 'xpath/.//button[normalize-space(.)="Connect"]';
 
 /** An element of the fake page: it records what is done to it. */
-function fakeElement({ disabled = false, text = '', clickErrors = [] as string[] } = {}) {
+function fakeElement({ disabled = false, text = '', clickErrors = [] as string[], boxes = [] as (object | null)[] } = {}) {
   const element = {
     disabled,
     text,
@@ -16,7 +16,8 @@ function fakeElement({ disabled = false, text = '', clickErrors = [] as string[]
     // Stands for the DOM element inside the page
     evaluate: async (inPage: (el: unknown) => unknown) =>
       inPage({ disabled: element.disabled, textContent: element.text, click: () => element.done.push('dispatched click') }),
-    boundingBox: async () => ({ x: 0, y: 0, width: 80, height: 30 }),
+    // The boxes to report in turn, then a steady one
+    boundingBox: async () => (boxes.length ? boxes.shift() : { x: 0, y: 0, width: 80, height: 30 }),
     click: async (options?: { count?: number }) => {
       const error = clickErrors.shift();
       if (error) throw new Error(error);
@@ -127,10 +128,28 @@ test('click: once more when a re-render detached the element, and no more than t
   await assert.rejects(click(asPage(fakePage({ [TEST_ID]: gone })), TEST_ID), /detached/);
 });
 
+test('click: once more when a redraw took the box of the element away, and no more than that', async () => {
+  const button = fakeElement({ clickErrors: ['Node is either not clickable or not an Element'] });
+  await click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID);
+  assert.deepEqual(button.done, ['click']);
+
+  const hidden = fakeElement({ clickErrors: ['Node is either not clickable or not an Element', 'Node is either not clickable or not an Element'] });
+  await assert.rejects(click(asPage(fakePage({ [TEST_ID]: hidden })), TEST_ID), /not clickable/);
+});
+
 test('click: another error is not retried', async () => {
-  const button = fakeElement({ clickErrors: ['Node is not clickable'] });
-  await assert.rejects(click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID), /not clickable/);
+  const button = fakeElement({ clickErrors: ['Execution context was destroyed'] });
+  await assert.rejects(click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID), /context was destroyed/);
   assert.deepEqual(button.done, []);
+});
+
+test('click: waits for the element to have a box, and to keep it still', async () => {
+  const moving = { x: 0, y: 10, width: 80, height: 30 };
+  const button = fakeElement({ boxes: [null, null, moving, moving] });
+  const started = Date.now();
+  await click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID);
+  assert.deepEqual(button.done, ['click']);
+  assert.ok(Date.now() - started >= 300, 'three looks at the box before the click');
 });
 
 test('clickWhenEnabled: waits for the button to be enabled, doing what the page wants meanwhile', async () => {

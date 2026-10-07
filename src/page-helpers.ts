@@ -122,7 +122,11 @@ async function windowBounds(page: Page): Promise<string> {
   }
 }
 
-/** Find the element and click it; once more if a re-render replaced it between the two. */
+/**
+ * Find the element and click it; once more if a re-render replaced it between
+ * the two, or took its box away: MetaMask's home redraws itself a moment
+ * after an unlock, and an element found visible has no box to click meanwhile.
+ */
 export async function click(page: Page, selector: Selector, options?: WaitOptions): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     const element = await waitFor(page, selector, options);
@@ -130,7 +134,7 @@ export async function click(page: Page, selector: Selector, options?: WaitOption
     try {
       return await element.click();
     } catch (error) {
-      if (attempt > 0 || !/detached/.test((error as Error).message)) throw error;
+      if (attempt > 0 || !/detached|not clickable/.test((error as Error).message)) throw error;
     }
   }
 }
@@ -141,14 +145,18 @@ export async function dispatchClick(page: Page, selector: Selector, options?: Wa
   await element.evaluate((el) => (el as HTMLElement).click());
 }
 
-/** MetaMask animates its menus and confirmations in; a click during the animation lands elsewhere. */
+/**
+ * MetaMask animates its menus and confirmations in; a click during the
+ * animation lands elsewhere. An element without a box is still being laid
+ * out, or hidden by a redraw: not still, however long it stays so.
+ */
 async function waitForStill(element: ElementHandle<Element>, timeout = 2000): Promise<void> {
   const deadline = Date.now() + timeout;
   let previous = JSON.stringify(await element.boundingBox());
   while (Date.now() < deadline) {
     await sleep(100);
     const current = JSON.stringify(await element.boundingBox());
-    if (current === previous) return;
+    if (current === previous && current !== 'null') return;
     previous = current;
   }
 }
