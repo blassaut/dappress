@@ -31,7 +31,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
     if (state === 'onboarding' && onboard) await metamask.onboard(home, options);
     if (state === 'locked') await metamask.unlock(home, options);
     if (state === 'unknown') throw new Error(`[dappress] Unexpected MetaMask screen at ${home.url()}`);
-    await home.close();
+    await closeHome(home);
     return state;
   }
 
@@ -48,9 +48,12 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
         await metamask.unlockIfLocked(home, options);
         return await flow(home, argument);
       } finally {
-        await home.close();
+        await closeHome(home);
       }
     };
+
+  // MetaMask closes its home page by itself at the end of an onboarding it took up again after an unlock: one already gone is left
+  const closeHome = (home: Page) => home.close().catch(() => {});
 
   /**
    * Unlock a locked wallet with the configured password, and say how it was
