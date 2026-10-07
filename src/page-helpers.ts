@@ -108,21 +108,32 @@ export async function until(condition: () => Promise<boolean>, timeout: number):
   return true;
 }
 
-/** What a click does when something covers the element: clear it away, as a user would. */
-export type ClickOptions = { uncover?: () => Promise<void> };
+/**
+ * What a click does with what covers its element, handed the element on top:
+ * clear it away, as a user would, or leave it, for the wait to go on.
+ */
+export type ClickOptions = { uncover?: (covering: ElementHandle<Element>) => Promise<void> };
 
 /**
- * Click the element once it is ready for it: visible, still and uncovered
- * (waitForReady). An element a re-render replaced before the click is taken
- * again: the click never reached it.
+ * Click the element once it is ready for it (waitForReady). A button or a
+ * link is pressed as from the keyboard, focused and given Enter: the mouse
+ * goes to whatever lies over the button, and MetaMask leaves the link of a
+ * toast over its screens after a transaction, invisible once the toast has
+ * faded. Anything else is clicked, once nothing covers it. An element a
+ * re-render replaced before the click is taken again: the click never reached it.
  */
 export async function click(page: Page, selector: Selector, { uncover }: ClickOptions = {}): Promise<void> {
   const deadline = Date.now() + budget(page);
   for (;;) {
     const element = await waitFor(page, selector);
     try {
-      await waitForReady(page, element, uncover);
-      return await element.click();
+      const fromKeyboard = await element.evaluate((el) => el.tagName === 'BUTTON' || (el.tagName === 'A' && el.hasAttribute('href')));
+      await waitForReady(page, element, fromKeyboard ? undefined : { uncover });
+      if (!fromKeyboard) return await element.click();
+      await element.focus();
+      // A modal that came up meanwhile keeps the focus to itself: the element is taken again
+      if (await element.evaluate((el) => el === document.activeElement)) return await page.keyboard.press('Enter');
+      if (Date.now() > deadline) throw await failure(page, `"${describe(selector)}" did not take the focus`);
     } catch (error) {
       if (!/detached|not clickable/.test((error as Error).message) || Date.now() > deadline) throw error;
     }
@@ -190,58 +201,64 @@ async function windowBounds(page: Page): Promise<string> {
   }
 }
 
-/** Click by dispatching the event on the element itself, for a button something may cover. */
-export async function dispatchClick(page: Page, selector: Selector): Promise<void> {
-  const element = await waitFor(page, selector);
-  await element.evaluate((el) => (el as HTMLElement).click());
-}
-
 /**
  * Wait for the element to take a click: its box the same twice in a row,
- * POLL ms apart, and nothing over its middle, where the click lands.
- * MetaMask animates its menus and confirmations in, and lays a toast over the
- * bottom of its screens for a few seconds after some actions, a link across
- * its whole surface: a click meanwhile goes to the toast. An element without
- * a box is still being laid out, or hidden by a redraw. An element below the
- * fold is scrolled to, as a click would; one something covers is uncovered,
- * when the caller knows how.
+ * POLL ms apart, as MetaMask animates its menus and confirmations in. An
+ * element without a box is still being laid out, or hidden by a redraw. For
+ * the `pointer`, nothing must lie over its middle either, where the click
+ * lands: an element below the fold is scrolled to, as a click would, and one
+ * something covers is uncovered, when the caller knows how.
  */
-async function waitForReady(page: Page, element: ElementHandle<Element>, uncover?: () => Promise<void>): Promise<void> {
+async function waitForReady(page: Page, element: ElementHandle<Element>, pointer?: ClickOptions): Promise<void> {
   // No box read yet: the first one is compared with the next
   let previous = '';
-  await waitUntil(page, 'the element to be still and uncovered', async () => {
-    const box = await element.boundingBox();
-    const current = JSON.stringify(box);
-    const still = current === previous && box !== null;
-    previous = current;
-    if (!still) return false;
-    const hit = await hitTest(element, box);
-    if (hit === 'outside') await element.scrollIntoView();
-    if (hit === 'covered') await uncover?.();
-    return hit === 'element';
-  });
+  let covering = '';
+  try {
+    await waitUntil(page, 'the element to be still and uncovered', async () => {
+      const box = await element.boundingBox();
+      const current = JSON.stringify(box);
+      const still = current === previous && box !== null;
+      previous = current;
+      if (!still) return false;
+      // Pressed from the keyboard, the element needs no free path to the pointer
+      if (!pointer) return true;
+      const hit = await hitTest(element, box);
+      if (hit === 'outside') await element.scrollIntoView();
+      if (hit !== 'outside' && hit !== 'element') {
+        covering = await hit.evaluate((el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 80)}`).catch(() => '');
+        await pointer.uncover?.(hit);
+      }
+      return hit === 'element';
+    });
+  } catch (error) {
+    throw covering ? new Error(`${(error as Error).message} Covered by: ${covering}.`, { cause: error }) : error;
+  }
 }
 
 /**
  * What a click in the middle of the element's box hits: the element or
- * something inside it, something over it, or nothing, the middle being out
- * of the viewport.
+ * something inside it, the element on top of it, or nothing, the middle
+ * being out of the viewport.
  */
 async function hitTest(
   element: ElementHandle<Element>,
   box: { x: number; y: number; width: number; height: number },
-): Promise<'element' | 'covered' | 'outside'> {
-  return element
+): Promise<'element' | 'outside' | ElementHandle<Element>> {
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  const hit = await element
     .evaluate(
-      (el, x, y) => {
-        if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return 'outside';
-        const hit = document.elementFromPoint(x, y);
-        return hit !== null && (hit === el || el.contains(hit)) ? 'element' : 'covered';
+      (el, px, py) => {
+        if (px < 0 || py < 0 || px >= window.innerWidth || py >= window.innerHeight) return 'outside';
+        const top = document.elementFromPoint(px, py);
+        return top !== null && (top === el || el.contains(top)) ? 'element' : 'covered';
       },
-      box.x + box.width / 2,
-      box.y + box.height / 2,
+      x,
+      y,
     )
-    .catch(() => 'covered' as const);
+    .catch(() => 'detached' as const);
+  if (hit === 'element' || hit === 'outside') return hit;
+  if (hit === 'detached') throw new Error('Node is detached from document');
+  return (await element.evaluateHandle((_el, px, py) => document.elementFromPoint(px, py), x, y)) as ElementHandle<Element>;
 }
 
 /** Replace the content of a field with `text`. */

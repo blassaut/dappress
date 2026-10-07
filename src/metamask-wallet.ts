@@ -6,7 +6,7 @@
 import type { Page, Target } from 'puppeteer-core';
 import { waitFor, waitForGone, waitUntil, isShown, firstOf, fill, failure, type Selector } from './page-helpers';
 import { selectors } from './metamask-selectors';
-import { openPastModals, press, pressWhenEnabled } from './metamask-overlays';
+import { press, pressWhenEnabled } from './metamask-overlays';
 import type { ResolvedOptions, WalletState } from './types';
 
 /** Which screen the extension home page shows, once MetaMask has started. */
@@ -171,7 +171,8 @@ export async function switchAccount(page: Page, name: string): Promise<void> {
 
 async function openAccountList(page: Page): Promise<void> {
   await page.bringToFront();
-  await openPastModals(page, selectors.home.accountMenu, selectors.accounts.name);
+  await press(page, selectors.home.accountMenu);
+  await waitFor(page, selectors.accounts.name);
 }
 
 // Picking an account closes the list and shows it in the home header
@@ -220,7 +221,8 @@ export async function lock(page: Page): Promise<void> {
 
 async function openMenu(page: Page): Promise<void> {
   await page.bringToFront();
-  await openPastModals(page, selectors.menu.open, selectors.menu.lock);
+  await press(page, selectors.menu.open);
+  await waitFor(page, selectors.menu.lock);
 }
 
 /**

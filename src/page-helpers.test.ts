@@ -1,48 +1,46 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Page } from 'puppeteer-core';
-import {
-  describe,
-  waitFor,
-  waitForGone,
-  isShown,
-  firstOf,
-  waitUntil,
-  click,
-  clickWhenEnabled,
-  dispatchClick,
-  fill,
-  failure,
-  textOf,
-  sleep,
-} from './page-helpers';
+import { describe, waitFor, waitForGone, isShown, firstOf, waitUntil, click, clickWhenEnabled, fill, failure, textOf, sleep } from './page-helpers';
 
 const URL = 'chrome-extension://abc/home.html';
 const TEST_ID = '[data-testid="confirm-btn"]';
 const BUTTON = 'xpath/.//button[normalize-space(.)="Connect"]';
 
 /** An element of the fake page: it records what is done to it. */
-function fakeElement({ disabled = false, text = '', clickErrors = [] as string[], boxes = [] as (object | null)[], covered = false } = {}) {
+function fakeElement({ disabled = false, text = '', clickErrors = [] as string[], boxes = [] as (object | null)[], covered = false, tagName = 'DIV' } = {}) {
+  // Stands for the DOM element inside the page
+  const dom = {
+    tagName,
+    get disabled() {
+      return element.disabled;
+    },
+    get textContent() {
+      return element.text;
+    },
+    hasAttribute: () => false,
+  };
   const element = {
+    dom,
     disabled,
     text,
     // Something over the middle of its box, which a click would hit instead
     covered,
     done: [] as string[],
-    // Stands for the DOM element inside the page
     // The hit test is the evaluation given the point to test: it has no page to run in
-    evaluate: async (inPage: (el: unknown) => unknown, ...point: unknown[]) =>
-      point.length === 2
-        ? element.covered
-          ? 'covered'
-          : 'element'
-        : inPage({ disabled: element.disabled, textContent: element.text, click: () => element.done.push('dispatched click') }),
+    evaluate: async (inPage: (el: unknown) => unknown, ...point: unknown[]) => (point.length === 2 ? (element.covered ? 'covered' : 'element') : inPage(dom)),
+    // What lies over the element, for the caller to clear away
+    evaluateHandle: async () => ({ overlay: 'toast', evaluate: async () => 'div.toast' }),
     // The boxes to report in turn, then a steady one
     boundingBox: async () => (boxes.length ? boxes.shift() : { x: 0, y: 0, width: 80, height: 30 }),
     click: async (options?: { count?: number }) => {
       const error = clickErrors.shift();
       if (error) throw new Error(error);
       element.done.push(options?.count ? `click x${options.count}` : 'click');
+    },
+    focus: async () => {
+      (globalThis as unknown as { document: { activeElement: unknown } }).document = { activeElement: dom };
+      element.done.push('focus');
     },
     type: async (text: string) => void element.done.push(`type ${text}`),
     isVisible: async () => true,
@@ -56,6 +54,8 @@ function fakePage(elements: Record<string, ReturnType<typeof fakeElement>> = {},
     elements,
     // The budget of every wait on the page
     getDefaultTimeout: () => timeout,
+    keys: [] as string[],
+    keyboard: { press: async (key: string) => void page.keys.push(key) },
     screenshots: [] as string[],
     url: () => URL,
     isClosed: () => closed,
@@ -189,6 +189,29 @@ test('click: waits for what covers the element to go', async () => {
   await assert.rejects(click(asPage(pageWithin(300, { [TEST_ID]: fakeElement({ covered: true }) })), TEST_ID), /still and uncovered/);
 });
 
+test('click: a button is pressed from the keyboard, focused and given Enter', async () => {
+  const button = fakeElement({ tagName: 'BUTTON' });
+  const page = fakePage({ [TEST_ID]: button });
+  await click(asPage(page), TEST_ID);
+  assert.deepEqual(button.done, ['focus']);
+  assert.deepEqual(page.keys, ['Enter']);
+});
+
+test('click: hands what covers the element to uncover, and clicks once it is gone', async () => {
+  const button = fakeElement({ covered: true });
+  const handed: unknown[] = [];
+  const uncover = async (covering: unknown) => {
+    handed.push(covering);
+    button.covered = false;
+  };
+  await click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID, { uncover: uncover as never });
+  assert.deepEqual(
+    handed.map((covering) => (covering as { overlay: string }).overlay),
+    ['toast'],
+  );
+  assert.deepEqual(button.done, ['click']);
+});
+
 test('click: another error is not retried', async () => {
   const button = fakeElement({ clickErrors: ['Execution context was destroyed'] });
   await assert.rejects(click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID), /context was destroyed/);
@@ -214,12 +237,6 @@ test('clickWhenEnabled: a button that stays disabled is not clicked', async () =
     /Timed out after 50ms waiting for "confirm-btn" to be enabled/,
   );
   assert.deepEqual(button.done, []);
-});
-
-test('dispatchClick: clicks from inside the page', async () => {
-  const button = fakeElement();
-  await dispatchClick(asPage(fakePage({ [TEST_ID]: button })), TEST_ID);
-  assert.deepEqual(button.done, ['dispatched click']);
 });
 
 test('fill: selects what the field holds, then types over it', async () => {
