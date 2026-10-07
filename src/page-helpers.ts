@@ -141,14 +141,18 @@ export async function dispatchClick(page: Page, selector: Selector, options?: Wa
   await element.evaluate((el) => (el as HTMLElement).click());
 }
 
-/** MetaMask animates its menus and confirmations in; a click during the animation lands elsewhere. */
+/**
+ * MetaMask animates its menus and confirmations in; a click during the
+ * animation lands elsewhere. An element without a box is still being laid
+ * out: not still, however long it stays so.
+ */
 async function waitForStill(element: ElementHandle<Element>, timeout = 2000): Promise<void> {
   const deadline = Date.now() + timeout;
   let previous = JSON.stringify(await element.boundingBox());
   while (Date.now() < deadline) {
     await sleep(100);
     const current = JSON.stringify(await element.boundingBox());
-    if (current === previous) return;
+    if (current === previous && current !== 'null') return;
     previous = current;
   }
 }

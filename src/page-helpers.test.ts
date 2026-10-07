@@ -8,7 +8,7 @@ const TEST_ID = '[data-testid="confirm-btn"]';
 const BUTTON = 'xpath/.//button[normalize-space(.)="Connect"]';
 
 /** An element of the fake page: it records what is done to it. */
-function fakeElement({ disabled = false, text = '', clickErrors = [] as string[] } = {}) {
+function fakeElement({ disabled = false, text = '', clickErrors = [] as string[], boxes = [] as (object | null)[] } = {}) {
   const element = {
     disabled,
     text,
@@ -16,7 +16,8 @@ function fakeElement({ disabled = false, text = '', clickErrors = [] as string[]
     // Stands for the DOM element inside the page
     evaluate: async (inPage: (el: unknown) => unknown) =>
       inPage({ disabled: element.disabled, textContent: element.text, click: () => element.done.push('dispatched click') }),
-    boundingBox: async () => ({ x: 0, y: 0, width: 80, height: 30 }),
+    // The boxes to report in turn, then a steady one
+    boundingBox: async () => (boxes.length ? boxes.shift() : { x: 0, y: 0, width: 80, height: 30 }),
     click: async (options?: { count?: number }) => {
       const error = clickErrors.shift();
       if (error) throw new Error(error);
@@ -125,6 +126,15 @@ test('click: once more when a re-render detached the element, and no more than t
 
   const gone = fakeElement({ clickErrors: ['Node is detached from document', 'Node is detached from document'] });
   await assert.rejects(click(asPage(fakePage({ [TEST_ID]: gone })), TEST_ID), /detached/);
+});
+
+test('click: waits for the element to have a box, and to keep it still', async () => {
+  const moving = { x: 0, y: 10, width: 80, height: 30 };
+  const button = fakeElement({ boxes: [null, null, moving, moving] });
+  const started = Date.now();
+  await click(asPage(fakePage({ [TEST_ID]: button })), TEST_ID);
+  assert.deepEqual(button.done, ['click']);
+  assert.ok(Date.now() - started >= 300, 'three looks at the box before the click');
 });
 
 test('click: another error is not retried', async () => {

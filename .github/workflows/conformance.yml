@@ -27,6 +27,12 @@ on:
 
 env:
   REPORTS_BRANCH: conformance-reports
+  # Chrome majors whose own bug fails the suite whatever Dappress does, skipped
+  # by scripts/install-chrome.sh until Chrome stable moves past them.
+  # 155: kills its network service when a request ID is reused under DevTools
+  # request interception, which Cypress uses; MetaMask's background restarts
+  # and Cypress's tasks fail. crbug.com/559770861, fixed in 156.
+  CHROME_BROKEN: '155'
 
 jobs:
   version:
@@ -104,25 +110,10 @@ jobs:
       # "stable" channel installs Google Chrome, which can't load MetaMask
       - name: Install Chrome for Testing
         id: chrome
-        # The download fails now and then (ECONNRESET): three tries, and the
-        # step fails rather than handing Cypress an empty browser path
         env:
           CHROME: ${{ matrix.chrome }}
         run: |
-          set -o pipefail
-          release=stable
-          if [ "$CHROME" = previous ]; then
-            major=$(curl -fsS https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json | jq -r .channels.Stable.version | cut -d. -f1)
-            release=$((major - 1))
-          fi
-          path=''
-          for attempt in 1 2 3; do
-            path=$(npx --yes @puppeteer/browsers@3 install "chrome@$release" --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1) && [ -x "$path" ] && break
-            echo "Chrome for Testing did not install (attempt $attempt)"
-            path=''
-            sleep 15
-          done
-          [ -x "$path" ] || { echo "::error::Chrome for Testing could not be installed"; exit 1; }
+          path=$(scripts/install-chrome.sh "$CHROME")
           echo "path=$path" >> "$GITHUB_OUTPUT"
 
       - uses: foundry-rs/foundry-toolchain@v1
@@ -179,15 +170,7 @@ jobs:
       - name: Install Chrome for Testing
         id: chrome
         run: |
-          set -o pipefail
-          path=''
-          for attempt in 1 2 3; do
-            path=$(npx --yes @puppeteer/browsers@3 install chrome@stable --path "$RUNNER_TEMP/browsers" --format '{{path}}' | tail -n 1) && [ -x "$path" ] && break
-            echo "Chrome for Testing did not install (attempt $attempt)"
-            path=''
-            sleep 15
-          done
-          [ -x "$path" ] || { echo "::error::Chrome for Testing could not be installed"; exit 1; }
+          path=$(scripts/install-chrome.sh stable)
           echo "path=$path" >> "$GITHUB_OUTPUT"
 
       - uses: foundry-rs/foundry-toolchain@v1
