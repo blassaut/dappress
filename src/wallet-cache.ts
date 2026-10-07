@@ -8,10 +8,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import puppeteer, { type Browser, type Page } from 'puppeteer-core';
+import puppeteer, { type Browser, type Page, type Target } from 'puppeteer-core';
 import * as metamask from './metamask';
 import { findExtensionId, getHomePage } from './metamask-pages';
-import { sleep } from './page-helpers';
+import { until } from './page-helpers';
 import type { ResolvedOptions } from './types';
 
 type CacheBuild = { browserPath: string; extensionDir: string; options: ResolvedOptions };
@@ -45,9 +45,12 @@ async function buildCache(dir: string, { browserPath, extensionDir, options }: C
       executablePath: browserPath,
       headless: false,
       userDataDir: dir,
+      // Through a pipe, which Chrome's Extensions domain needs, to read MetaMask's storage
+      pipe: true,
       args: [
         `--load-extension=${extensionDir}`,
         `--disable-extensions-except=${extensionDir}`,
+        '--enable-unsafe-extension-debugging',
         '--no-first-run',
         // No sandbox on Linux: Ubuntu 23.10+ (GitHub's ubuntu-latest) blocks the
         // user namespaces it needs, and this browser only imports a test wallet
@@ -55,9 +58,12 @@ async function buildCache(dir: string, { browserPath, extensionDir, options }: C
       ],
     });
 
-  await withMetaMask(launch, (home) => metamask.onboard(home, options));
+  await withMetaMask(launch, options.timeout, async (home, extensionId) => {
+    await metamask.onboard(home, options);
+    await waitForPersisted(home, extensionId, options.timeout);
+  });
   // Reopen the profile: the wallet must now be there, locked, with no onboarding left
-  await withMetaMask(launch, async (home) => {
+  await withMetaMask(launch, options.timeout, async (home) => {
     const state = await metamask.walletState(home);
     if (state !== 'locked') throw new Error(`[dappress] The wallet cache did not keep the wallet: MetaMask is ${state} at ${home.url()}`);
     await metamask.unlock(home, options);
@@ -66,31 +72,53 @@ async function buildCache(dir: string, { browserPath, extensionDir, options }: C
   return dir;
 }
 
-// MetaMask persists its state a moment after the last screen; leave it that moment before closing
-async function withMetaMask(launch: () => Promise<Browser>, action: (home: Page) => Promise<void>): Promise<void> {
+type MetaMaskAction = (home: Page, extensionId: string) => Promise<void>;
+
+async function withMetaMask(launch: () => Promise<Browser>, timeout: number, action: MetaMaskAction): Promise<void> {
   const browser = await launch();
   try {
-    const home = await getHomePage(browser, await findExtensionId(browser));
+    const extensionId = await findExtensionId(browser, timeout);
+    const home = await getHomePage(browser, extensionId, timeout);
     await keepInFront(browser, home);
-    await action(home);
-    await sleep(3000);
+    await action(home, extensionId);
   } finally {
     await browser.close();
   }
 }
 
+/**
+ * Wait for MetaMask to have written the end of its onboarding to its storage,
+ * which it does a moment after the last screen: the profile holds the wallet
+ * from then on, and the browser can close. Read through Chrome's Extensions
+ * domain, from a page of the profile: MetaMask's sandbox (LavaMoat) hides its
+ * storage from its own pages' scripts.
+ */
+async function waitForPersisted(home: Page, extensionId: string, timeout: number): Promise<void> {
+  const session = await home.createCDPSession();
+  try {
+    const recorded = async () => {
+      const { data } = await session.send('Extensions.getStorageItems', { id: extensionId, storageArea: 'local' });
+      // The state may be stored as an object or as JSON text, whose quotes come escaped
+      return /completedOnboarding\\*"\s*:\s*true/.test(JSON.stringify(data));
+    };
+    if (!(await until(recorded, timeout)))
+      throw new Error(`[dappress] MetaMask did not save the end of its onboarding within ${timeout}ms: the wallet cache is not built`);
+  } finally {
+    await session.detach().catch(() => {});
+  }
+}
+
 // Chrome stops rendering a tab that isn't the active one, and Puppeteer waits
 // on rendering to find an element or to click it: a hidden tab never answers.
-// So the home page is made the active tab, and again whenever MetaMask opens
-// a tab of its own, as it does for its onboarding right after the install.
+// So the home page is made the active tab, and again whenever another tab
+// comes or loads, as MetaMask's own onboarding tab does right after the install.
 async function keepInFront(browser: Browser, home: Page): Promise<void> {
-  const toFront = () => home.bringToFront().catch(() => {});
-  await toFront();
-  browser.on('targetcreated', (target) => {
-    if (target.type() !== 'page') return;
-    toFront();
-    setTimeout(toFront, 500);
-  });
+  const toFront = (target: Target) => {
+    if (target.type() === 'page' && target !== home.target()) home.bringToFront().catch(() => {});
+  };
+  await home.bringToFront();
+  browser.on('targetcreated', toFront);
+  browser.on('targetchanged', toFront);
 }
 
 // Where Cypress is about to create the browser profile:

@@ -44,7 +44,7 @@ export interface DappressOptions extends WalletSetup {
   autoSetup?: boolean;
   /** Import the wallet once and reuse the profile across runs. Keeps the vault under cacheDir. Headed runs only. Default: false. */
   cache?: boolean;
-  /** Time allowed for MetaMask to display a request, in ms. Default: 20000. */
+  /** Time allowed for MetaMask to show each of its screens, a dapp's request among them, in ms. Default: 20000. */
   timeout?: number;
   /** Where MetaMask builds are cached. Default: ~/.cache/dappress. */
   cacheDir?: string;

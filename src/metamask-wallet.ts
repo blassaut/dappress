@@ -1,23 +1,18 @@
 // The wallet's own screens, from its full-screen home page: the onboarding
 // and the unlock form, the account list, the menu with its lock and its
-// permissions. Each flow presses again a click MetaMask lost while a screen
-// settled, and fails with the screen in hand.
+// permissions. Each flow goes from screen to screen as MetaMask shows them,
+// and fails with the screen in hand.
 
-import type { Page } from 'puppeteer-core';
-import { waitFor, isVisible, isGone, click, clickWhenEnabled, fill, failure, sleep } from './page-helpers';
+import type { Page, Target } from 'puppeteer-core';
+import { waitFor, waitForGone, waitUntil, isShown, firstOf, fill, failure, type Selector } from './page-helpers';
 import { selectors } from './metamask-selectors';
-import { dismissModal } from './metamask-modal';
+import { press, pressWhenEnabled } from './metamask-overlays';
 import type { ResolvedOptions, WalletState } from './types';
 
 /** Which screen the extension home page shows, once MetaMask has started. */
 export async function walletState(page: Page): Promise<WalletState | 'unknown'> {
-  const deadline = Date.now() + 20000;
-  while (Date.now() < deadline) {
-    if (await isVisible(page, selectors.onboarding.importWallet, 500)) return 'onboarding';
-    if (await isVisible(page, selectors.unlock.password, 500)) return 'locked';
-    if (await isVisible(page, selectors.home.header, 500)) return 'unlocked';
-  }
-  return 'unknown';
+  const screens = { onboarding: selectors.onboarding.importWallet, locked: selectors.unlock.submit, unlocked: selectors.home.header } as const;
+  return firstOf(page, screens).catch(() => 'unknown' as const);
 }
 
 /** Import a wallet from its seed phrase on a fresh MetaMask install. */
@@ -26,16 +21,16 @@ export async function onboard(
   { seedPhrase, password, backupAndSync }: Pick<ResolvedOptions, 'seedPhrase' | 'password' | 'backupAndSync'>,
 ): Promise<void> {
   const s = selectors.onboarding;
-  await click(page, s.importWallet, { timeout: 30000 });
-  await click(page, s.importWithSrp);
+  await press(page, s.importWallet);
+  await press(page, s.importWithSrp);
 
   await fillSeedPhrase(page, seedPhrase);
-  await clickWhenEnabled(page, s.srpConfirm);
+  await pressWhenEnabled(page, s.srpConfirm);
 
   await fill(page, s.newPassword, password);
   await fill(page, s.confirmPassword, password);
-  await click(page, s.passwordTerms);
-  await clickWhenEnabled(page, s.passwordSubmit);
+  await press(page, s.passwordTerms);
+  await pressWhenEnabled(page, s.passwordSubmit);
 
   await reachHome(page, { password, backupAndSync });
 }
@@ -59,7 +54,8 @@ export async function unlock(page: Page, { password }: Pick<ResolvedOptions, 'pa
 
 async function submitPassword(page: Page, password: string): Promise<void> {
   await fill(page, selectors.unlock.password, password);
-  await click(page, selectors.unlock.submit);
+  await press(page, selectors.unlock.submit);
+  await waitForGone(page, selectors.unlock.submit);
 }
 
 /**
@@ -69,107 +65,97 @@ async function submitPassword(page: Page, password: string): Promise<void> {
  * or a request, so only the form is watched.
  */
 export async function leaveUnlockForm(page: Page, { password }: Pick<ResolvedOptions, 'password'>): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (!(await isVisible(page, selectors.unlock.password, 500))) return;
-    await submitPassword(page, password);
-    if (await isGone(page, selectors.unlock.password, 10000)) return;
-  }
-  throw await failure(page, 'MetaMask kept showing its unlock form');
+  if (await isShown(page, selectors.unlock.submit)) await submitPassword(page, password);
 }
 
 /**
  * Go through whatever MetaMask shows until the wallet's home: the screens
  * that may follow the password or an unlock (passkey, analytics, "download
- * the app", "Done"), and the unlock form if MetaMask locked meanwhile. After
- * "Done", MetaMask takes a moment to record the onboarding as complete and
- * redirects to it until then, so the home page is reloaded.
+ * the app", "Done"), and the unlock form if MetaMask locked meanwhile. Each
+ * is handled once and waited for to go: one that shows again is a failure.
  */
 async function reachHome(page: Page, { password, backupAndSync }: { password: string; backupAndSync?: boolean }): Promise<void> {
   const s = selectors.onboarding;
-  const deadline = Date.now() + 90000;
-  let syncTurnedOff = false;
-  while (Date.now() < deadline) {
-    if (await isVisible(page, selectors.home.header, 500)) return;
-    if (await isVisible(page, s.passkeyMaybeLater, 500)) await click(page, s.passkeyMaybeLater);
-    if (await isVisible(page, s.metricsCheckbox, 500)) {
-      await optOutOfMetrics(page);
-      await click(page, s.metricsContinue);
-    }
-    if (await isVisible(page, s.downloadAppContinue, 500)) await click(page, s.downloadAppContinue);
-    if (backupAndSync === false && !syncTurnedOff && (await isVisible(page, s.manageDefaultSettings, 500))) {
-      await turnOffBackupAndSync(page);
-      syncTurnedOff = true;
-    }
-    if (await isVisible(page, s.done, 500)) {
-      await click(page, s.done);
-      await sleep(1000);
-      await reloadHome(page);
-    }
-    if (await isVisible(page, selectors.unlock.password, 500)) await submitPassword(page, password);
+  const handled = new Set<string>();
+  for (;;) {
+    const screens: Record<string, Selector> = {
+      home: selectors.home.header,
+      passkey: s.passkeyMaybeLater,
+      metrics: s.metricsCheckbox,
+      downloadApp: s.downloadAppContinue,
+      // Next to "Done", and to be done first: the settings lead back to it
+      ...(backupAndSync === false && !handled.has('settings') ? { settings: s.manageDefaultSettings } : {}),
+      done: s.done,
+      unlock: selectors.unlock.submit,
+    };
+    const screen = await firstOf(page, screens);
+    if (screen === 'home') return;
+    if (handled.has(screen)) throw await failure(page, `MetaMask showed its "${screen}" screen again`);
+    handled.add(screen);
+    if (screen === 'passkey') await press(page, s.passkeyMaybeLater);
+    if (screen === 'metrics') await optOutOfMetrics(page);
+    if (screen === 'downloadApp') await press(page, s.downloadAppContinue);
+    if (screen === 'settings') await turnOffBackupAndSync(page);
+    if (screen === 'done') await finishOnboarding(page);
+    if (screen === 'unlock') await submitPassword(page, password);
+    if (screen !== 'settings' && screen !== 'unlock' && screen !== 'done') await waitForGone(page, screens[screen]);
   }
-  throw await failure(page, 'MetaMask did not show the wallet');
+}
+
+/**
+ * Press "Done". MetaMask records the onboarding as complete, which takes it
+ * a moment, then opens the wallet in its side panel, and leaves this page on
+ * the last onboarding screen: once the side panel is there, the home page is
+ * loaded again, and shows the wallet. Loaded before, it routes back to the
+ * onboarding, and a reload while MetaMask records it cuts it short.
+ */
+async function finishOnboarding(page: Page): Promise<void> {
+  const browser = page.browser();
+  const isSidePanel = (target: Target) => target.type() === 'page' && target.url().includes('/sidepanel.html');
+  const before = new Set(browser.targets().filter(isSidePanel));
+  await press(page, selectors.onboarding.done);
+  await browser
+    .waitForTarget((target) => isSidePanel(target) && !before.has(target), { timeout: page.getDefaultTimeout() })
+    .catch(async () => {
+      throw await failure(page, 'MetaMask did not open its side panel after "Done"');
+    });
+  await reloadHome(page);
+  await waitFor(page, selectors.home.header);
 }
 
 // Backup and sync restores, for a seed phrase, the accounts and contacts saved
-// from other installs. Off, every import starts from the same state.
+// from other installs. Off, every import starts from the same state. The
+// settings lead back to the last onboarding screen.
 async function turnOffBackupAndSync(page: Page): Promise<void> {
   const s = selectors.onboarding;
-  await click(page, s.manageDefaultSettings);
-  await click(page, s.generalSettings);
+  await press(page, s.manageDefaultSettings);
+  await press(page, s.generalSettings);
   const toggle = await waitFor(page, s.backupAndSyncToggle);
   const on = await toggle.evaluate((el) => el.closest('.toggle-button')?.classList.contains('toggle-button--on') ?? el.className.includes('--on'));
-  if (on) await toggle.click();
-  await click(page, s.categoryBack);
-  await click(page, s.settingsBack);
+  if (on) await press(page, s.backupAndSyncSwitch);
+  await press(page, s.categoryBack);
+  await press(page, s.settingsBack);
+  await waitFor(page, s.done);
 }
 
 async function optOutOfMetrics(page: Page): Promise<void> {
   const checkbox = await waitFor(page, selectors.onboarding.metricsCheckbox);
-  const checked = await checkbox.evaluate((el) => el.getAttribute('data-checked') === 'true');
-  if (checked) await checkbox.click();
+  if (await checkbox.evaluate((el) => el.getAttribute('data-checked') === 'true')) await press(page, selectors.onboarding.metricsCheckbox);
+  await press(page, selectors.onboarding.metricsContinue);
 }
 
-// Reload the home page, on `route` if one is given. Through about:blank:
-// changing only the "#" part of the URL would be a same-document navigation,
-// which goto() waits on forever
-async function reloadHome(page: Page, route = ''): Promise<void> {
-  const homeUrl = page.url().split('#')[0];
-  await page.goto('about:blank');
-  await page.goto(`${homeUrl}${route}`);
-}
-
-/**
- * Add an account to the wallet and select it. Yields its name, "Account N".
- * A click that lands while the list is still settling is lost, so the button
- * is pressed again when no account shows up.
- */
+/** Add an account to the wallet and select it. Yields its name, "Account N". */
 export async function addAccount(page: Page): Promise<string> {
   await openAccountList(page);
   const before = await accountNames(page);
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const added = (await newAccount(page, before, 0)) || (await pressAddAccount(page, before));
-    if (added) {
-      await selectAccount(page, added);
-      return added;
-    }
-  }
-  throw await failure(page, 'MetaMask added no account');
-}
-
-async function pressAddAccount(page: Page, before: string[]): Promise<string | null> {
-  await clickWhenEnabled(page, selectors.accounts.add, { timeout: 30000 });
-  return newAccount(page, before, 15000);
-}
-
-/** The name of an account that wasn't in `before`, within `timeout` ms. */
-async function newAccount(page: Page, before: string[], timeout: number): Promise<string | null> {
-  const deadline = Date.now() + timeout;
-  do {
-    const [added] = (await accountNames(page)).filter((name) => !before.includes(name));
-    if (added) return added;
-    await sleep(250);
-  } while (Date.now() < deadline);
-  return null;
+  await pressWhenEnabled(page, selectors.accounts.add);
+  let added: string | undefined;
+  await waitUntil(page, 'MetaMask to add an account', async () => {
+    [added] = (await accountNames(page)).filter((name) => !before.includes(name));
+    return added !== undefined;
+  });
+  await selectAccount(page, added!);
+  return added!;
 }
 
 export async function accountNames(page: Page): Promise<string[]> {
@@ -183,38 +169,16 @@ export async function switchAccount(page: Page, name: string): Promise<void> {
   await selectAccount(page, name);
 }
 
-// A click on the menu is lost while the home screen settles, as with the
-// buttons in the list, or swallowed by a modal MetaMask shows over the home
-// screen after some activity (the Transaction Shield offer, for one): any
-// modal is dismissed first, and the menu is pressed again until the list shows.
 async function openAccountList(page: Page): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    // Back in front: a tab something opened meanwhile would hide this page and stall its rendering
-    await page.bringToFront().catch(() => {});
-    await dismissModal(page);
-    await click(page, selectors.home.accountMenu);
-    if (await isVisible(page, selectors.accounts.name, 10000)) return;
-  }
-  throw await failure(page, 'MetaMask did not open the account list');
+  await page.bringToFront();
+  await press(page, selectors.home.accountMenu);
+  await waitFor(page, selectors.accounts.name);
 }
 
-// Picking an account closes the list and shows it in the home header. As with
-// adding one, a lost click leaves the list open, so the account is pressed again.
+// Picking an account closes the list and shows it in the home header
 async function selectAccount(page: Page, name: string): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await click(page, selectors.accounts.cell(name));
-    if (await isSelected(page, name, 5000)) return;
-  }
-  throw await failure(page, `MetaMask did not select "${name}"`);
-}
-
-async function isSelected(page: Page, name: string, timeout: number): Promise<boolean> {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    if ((await selectedAccount(page)) === name) return true;
-    await sleep(250);
-  }
-  return false;
+  await press(page, selectors.accounts.cell(name));
+  await waitUntil(page, `"${name}" to be the selected account`, async () => (await selectedAccount(page)) === name);
 }
 
 async function selectedAccount(page: Page): Promise<string | null> {
@@ -228,38 +192,37 @@ export async function importAccount(page: Page, privateKey: string): Promise<str
   const before = await selectedAccount(page);
   // Straight to the form the account list's "Add wallet" menu leads to
   await reloadHome(page, '#/add-wallet-page');
-  await fill(page, selectors.accounts.privateKey, privateKey, { timeout: 30000 });
-  await clickWhenEnabled(page, selectors.accounts.importConfirm);
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    const selected = await selectedAccount(page);
-    if (selected && selected !== before) return selected;
-    await sleep(250);
-  }
-  throw await failure(page, 'MetaMask did not import the account');
+  await fill(page, selectors.accounts.privateKey, privateKey);
+  await pressWhenEnabled(page, selectors.accounts.importConfirm);
+  let imported: string | null = null;
+  await waitUntil(page, 'MetaMask to import the account', async () => {
+    imported = await selectedAccount(page);
+    return imported !== null && imported !== before;
+  });
+  return imported!;
+}
+
+// Reload the home page, on `route` if one is given. Through about:blank:
+// changing only the "#" part of the URL would be a same-document navigation,
+// which goto() waits on forever
+async function reloadHome(page: Page, route = ''): Promise<void> {
+  const homeUrl = page.url().split('#')[0];
+  await page.goto('about:blank');
+  await page.goto(`${homeUrl}${route}`);
 }
 
 /** Lock the wallet from the menu of its home page. Nothing to do on a wallet already locked. */
 export async function lock(page: Page): Promise<void> {
   if ((await walletState(page)) === 'locked') return;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await openMenu(page);
-    await click(page, selectors.menu.lock);
-    if (await isVisible(page, selectors.unlock.password, 10000)) return;
-  }
-  throw await failure(page, 'MetaMask did not lock');
+  await openMenu(page);
+  await press(page, selectors.menu.lock);
+  await waitFor(page, selectors.unlock.submit);
 }
 
-// As with the account list, a click on the menu is lost while the home screen
-// settles or swallowed by a modal, so it is pressed again until the menu shows.
 async function openMenu(page: Page): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.bringToFront().catch(() => {});
-    await dismissModal(page);
-    await click(page, selectors.menu.open);
-    if (await isVisible(page, selectors.menu.lock, 5000)) return;
-  }
-  throw await failure(page, 'MetaMask did not open its menu');
+  await page.bringToFront();
+  await press(page, selectors.menu.open);
+  await waitFor(page, selectors.menu.lock);
 }
 
 /**
@@ -270,38 +233,25 @@ export async function disconnectSite(page: Page, origin: string): Promise<void> 
   const s = selectors.permissions;
   const { host } = new URL(origin);
   await openConnections(page);
-  if (!(await isVisible(page, s.site(host), 5000))) throw await failure(page, `MetaMask lists no connection to "${host}"`);
-  await openSite(page, host);
-  // Disconnecting goes back to the list, without the site. A lost click
-  // leaves the site's page or the modal showing, and is pressed again.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (!(await isVisible(page, s.confirmDisconnect, 500))) await click(page, s.disconnect);
-    if (!(await isVisible(page, s.confirmDisconnect, 5000))) continue;
-    await click(page, s.confirmDisconnect);
-    if ((await isGone(page, [...s.confirmDisconnect, ...s.disconnect], 5000)) && (await isGone(page, s.site(host), 5000))) return;
-  }
-  throw await failure(page, `MetaMask did not disconnect "${host}"`);
+  await waitFor(page, s.site(host)).catch(async () => {
+    throw await failure(page, `MetaMask lists no connection to "${host}"`);
+  });
+  await press(page, s.site(host));
+  await press(page, s.disconnect);
+  await press(page, s.confirmDisconnect);
+  // Disconnecting goes back to the list, without the site
+  await waitForGone(page, [...s.confirmDisconnect, ...s.disconnect]);
+  await waitForGone(page, s.site(host));
 }
 
 /** The list of connected sites, from the menu's "Permissions". */
 async function openConnections(page: Page): Promise<void> {
   const s = selectors.permissions;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await openMenu(page);
-    await click(page, selectors.menu.permissions);
-    if (!(await isVisible(page, [s.list, s.hub], 10000))) continue;
-    if (await isVisible(page, s.list, 500)) return;
-    // The hub goes on to the list by itself when there is nothing else to show
-    if (await isVisible(page, s.connections, 3000)) await click(page, s.connections);
-    if (await isVisible(page, s.list, 10000)) return;
-  }
-  throw await failure(page, 'MetaMask did not open its permissions');
-}
-
-async function openSite(page: Page, host: string): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await click(page, selectors.permissions.site(host));
-    if (await isVisible(page, selectors.permissions.disconnect, 5000)) return;
-  }
-  throw await failure(page, `MetaMask did not open the permissions of "${host}"`);
+  await openMenu(page);
+  await press(page, selectors.menu.permissions);
+  // A wallet that also holds token permissions shows a hub first; it goes on
+  // to the list by itself when there is nothing else to show
+  if ((await firstOf(page, { list: s.list, hub: s.hub })) === 'list') return;
+  if ((await firstOf(page, { list: s.list, connections: s.connections })) === 'connections') await press(page, s.connections);
+  await waitFor(page, s.list);
 }

@@ -14,9 +14,13 @@ const TRANSACTION = `${POPUP}#/confirm-transaction/1/`;
  * url it had last, the page itself by its current one. Already 400x620, so it
  * is not resized.
  */
-function fakePage(targetUrl: string, { url = targetUrl, closed = false } = {}) {
+function fakePage(targetUrl: string, { url = targetUrl, closed = false, timeout = 2000 } = {}) {
   const page = {
     closed,
+    // The budget of the waits on the page, which Dappress sets when it takes the page
+    timeout,
+    setDefaultTimeout: (budget: number) => void (page.timeout = budget),
+    getDefaultTimeout: () => page.timeout,
     url: () => url,
     isClosed: () => page.closed,
     target: () => target,
@@ -68,7 +72,7 @@ test('waitForDismissal: returns once the popup closes', async () => {
   const popup = fakePage(SWITCH, { url: `${POPUP}#/` });
   setTimeout(() => (popup.closed = true), 150);
   const started = Date.now();
-  await waitForDismissal(popup as unknown as Page, SWITCH, 2000);
+  await waitForDismissal(popup as unknown as Page, SWITCH);
   assert.ok(Date.now() - started < 1000, 'returned when the popup closed, not at the deadline');
   assert.ok(popup.closed);
 });
@@ -76,21 +80,21 @@ test('waitForDismissal: returns once the popup closes', async () => {
 test('waitForDismissal: a popup that goes on to another request is left to it', async () => {
   const popup = fakePage(SWITCH, { url: TRANSACTION });
   const started = Date.now();
-  await waitForDismissal(popup as unknown as Page, SWITCH, 2000);
+  await waitForDismissal(popup as unknown as Page, SWITCH);
   assert.ok(Date.now() - started < 500);
 });
 
-test('waitForDismissal: gives up at the deadline on a popup that stays', async () => {
-  const popup = fakePage(SWITCH);
+test("waitForDismissal: gives up at the page's budget on a popup that stays", async () => {
+  const popup = fakePage(SWITCH, { timeout: 200 });
   const started = Date.now();
-  await waitForDismissal(popup as unknown as Page, SWITCH, 200);
+  await waitForDismissal(popup as unknown as Page, SWITCH);
   assert.ok(Date.now() - started >= 200);
 });
 
 test('waitForDismissal: the side panel stays, nothing to wait for', async () => {
   const panel = fakePage(`${EXTENSION}/sidepanel.html#/confirmation/switch-chain`);
   const started = Date.now();
-  await waitForDismissal(panel as unknown as Page, panel.url(), 2000);
+  await waitForDismissal(panel as unknown as Page, panel.url());
   await sleep(0);
   assert.ok(Date.now() - started < 100);
 });
