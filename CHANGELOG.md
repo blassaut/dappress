@@ -15,10 +15,13 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Fixed
 
+- A command no longer presses a toast's link instead of its button. MetaMask leaves the link of a "Transaction confirmed" toast over the bottom of its screens, invisible once the toast has faded, and a click there opened the transaction's details. Buttons and links are now pressed from the keyboard; anything else is clicked once nothing covers it, a toast or an offer such as Transaction Shield's being closed first.
+- `confirmTransaction({ spendingCap, gas: { gasLimit } })` keeps the gas limit: the command waits for MetaMask to hold it before confirming, where MetaMask could send its own estimate.
 - A click no longer lands on an element that has no box yet: an element MetaMask has not laid out, or is redrawing, is no longer taken as still because its box stays empty.
 
 ### Changed
 
+- Commands are faster, the conformance suite by a third: they wait for what MetaMask shows rather than for fixed delays, and no longer press a button again in case the first click was lost. `timeout` is the time allowed for each screen MetaMask shows, the request among them.
 - The README says what fails on Chrome 155 and why: a Chrome bug kills its network service now and then under Cypress, which restarts MetaMask's background and refuses Cypress's tasks. The conformance workflow tests Chrome 156 in place of 155, and 154 as the previous major, until Chrome 156 is stable.
 - Node.js 22.12 or later: `puppeteer-core` 25 is an ES module, which Node.js loads from CommonJS from that version on.
 
