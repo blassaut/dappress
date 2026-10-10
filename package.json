@@ -71,7 +71,7 @@
     "cypress": ">=15.10.0"
   },
   "dependencies": {
-    "@noble/hashes": "^1.8.0",
+    "@noble/hashes": "^2.4.0",
     "@scure/bip39": "^1.6.0",
     "fflate": "^0.8.3",
     "puppeteer-core": "^25.12.0"
