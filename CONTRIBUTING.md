@@ -85,7 +85,7 @@ Example: Chrome 155 kills its network service now and then under Cypress (crbug.
 
 ## Wallet profiles
 
-A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of `chainChanged`, a method one wallet has and another has not. A wallet profile records those answers on the real wallet: each request with its result or error, each event with its payload, and how the provider turned up, grouped by method and by event. Nothing is interpreted, and what was not observed is not in the profile. The format is in `scripts/profile.ts`, schema `dappress-wallet-profile/0`.
+A dapp breaks from one wallet to the next on what the wallet answers: the code of a rejection, the format of `chainChanged`, a method one wallet has and another has not. A wallet profile records those answers on the real wallet: each request with its result or error, each event with its payload, and how the provider turned up, grouped by method and by event. Nothing is interpreted, and what was not observed is not in the profile. The format is in `src/profile-schema.ts`, and the building and the diff in `src/profile-build.ts`; schema `dappress-wallet-profile/0`.
 
 `reports/profiles/` on `main` holds one profile per wallet, the reference for comparisons: MetaMask's, written by the conformance suite for the default version, and the ones recorded by hand. The suite's own output for every release goes to the `conformance-reports` branch. Comparing two profiles gives the list of what to check in a dapp before its users switch wallets:
 
@@ -97,14 +97,20 @@ One row per method and per event, and `no` where the two wallets answer differen
 
 ### Recording a wallet
 
-It takes about twenty minutes. Disable the other wallet extensions first: two wallets active inject two providers, and the profile would mix what each answers. And use a wallet made for testing, never your own: the profile holds everything the dapp saw, your accounts' addresses and the signatures you made included, and it is published.
+1. Disable the other wallet extensions: two active wallets inject two providers, and the profile would mix what each answers. The page warns when it sees another one.
+2. Use a wallet made for testing, never your own: the profile holds everything the dapp saw, your accounts' addresses and the signatures you made included, and it is published.
+3. `npx dappress probe` (or `npm run build && node dist/cli.js probe` from a clone), open the page it prints, pick the wallet, enter its version, and follow the steps: for each request you decide on, the page says whether to accept or reject, and you press "Send it to the wallet" to send it. Ctrl+C stops the page and Anvil.
+4. Download the profile, check it with `npm run profile -- diff reports/profiles/metamask-13.50.0-headless.json <file>`, and open a pull request adding it to `reports/profiles/`: the workflow publishes what that folder holds with the suite's own, and the next person with a dapp to check has it.
 
-1. Open [MetaMask's test dapp](https://metamask.github.io/test-dapp/), open the console, and paste the content of `conformance/recorder.js` in it before touching the page.
-2. Click through the dapp: connect, each signature, a transaction, a network to add and one to switch to, a token to watch. Accept each once, then do it again and reject it. `conformance/cypress/e2e/actions.cy.ts` is the list the MetaMask profile is recorded from.
-3. In the console, `copy(JSON.stringify(window.__dappressTrace))`, and paste it in a file, say `trace.json`. If the clipboard fails you, this downloads it instead: `const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(window.__dappressTrace)])); a.download = 'trace.json'; a.click();`
-4. `npm run profile -- build trace.json --wallet Rabby --version 0.94.11 --out reports/profiles/rabby-0.94.11.json`.
+The page runs the requests of `conformance/cypress/e2e/actions.cy.ts`, in its order, from `src/probe/flow.ts`; a step added to the suite goes there too. The conformance workflow goes through the page with Dappress's commands, on MetaMask and on the mocks (`npm run conformance -- --probe`), and checks its profile against theirs.
 
-Then run the diff above against the MetaMask profile, and open a pull request with the profile in `reports/profiles/`: the workflow publishes what that folder holds with the suite's own, and the next person with a dapp to check has it.
+The page's test token is `src/probe/TestToken.sol`, compiled once into `src/probe/page/token.ts`. After a change to the contract, compile it again with Foundry, from the repository's root:
+
+    work=$(mktemp -d) && mkdir "$work/src" && cp src/probe/TestToken.sol "$work/src/" \
+      && (cd "$work" && forge build --use 0.8.28 --optimize --no-metadata --root . >/dev/null) \
+      && jq -r .bytecode.object "$work/out/TestToken.sol/TestToken.json"
+
+and put the printed bytecode in `TOKEN_BYTECODE`.
 
 ### How the recorder works
 

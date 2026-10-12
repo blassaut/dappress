@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+main {
+  max-width: 46rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.warning {
+  border-left: 0.25rem solid #d97706;
+  padding-left: 0.75rem;
+}
+#wallets {
+  list-style: none;
+  padding: 0;
+}
+#wallets label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+#wallets img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+input,
+button {
+  font: inherit;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+}
+#instruction {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+#steps li[data-verdict='not-as-asked'] {
+  color: #b91c1c;
+}
+#steps .outcome {
+  display: block;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+pre {
+  overflow-x: auto;
+  font-size: 0.8rem;
+}

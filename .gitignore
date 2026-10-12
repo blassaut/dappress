@@ -9,3 +9,5 @@ conformance/cypress/debug/
 .gstack/
 reports/metamask-*.json
 reports/mock-*.json
+# Design notes and plans, kept locally
+docs/superpowers/
