@@ -136,17 +136,25 @@ function listStep(title: string, text: string, verdict: string): void {
   element('steps').append(item);
 }
 
-/** Wait for a click on one of the buttons, and say which. */
-function clicked<T extends string>(ids: T[]): Promise<T> {
+/**
+ * Wait for a click on one of the buttons, and say which. Its listeners go
+ * at the first click, or when `signal` aborts: a wait nobody needs any more
+ * leaves none behind.
+ */
+function clicked<T extends string>(ids: T[], signal?: AbortSignal): Promise<T> {
   return new Promise((resolve) => {
-    const handlers = ids.map((id) => {
-      const handler = () => {
-        ids.forEach((other, index) => element(other).removeEventListener('click', handlers[index]));
-        resolve(id);
-      };
-      element(id).addEventListener('click', handler);
-      return handler;
-    });
+    const done = new AbortController();
+    signal?.addEventListener('abort', () => done.abort(), { once: true, signal: done.signal });
+    for (const id of ids) {
+      element(id).addEventListener(
+        'click',
+        () => {
+          done.abort();
+          resolve(id);
+        },
+        { signal: done.signal },
+      );
+    }
   });
 }
 
@@ -169,8 +177,10 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
     (result) => ({ result }),
     (error: { code?: unknown; message?: string }) => ({ error: { code: error?.code, message: error?.message } }),
   );
-  const skipped = clicked(['skip']).then(() => undefined);
+  const race = new AbortController();
+  const skipped = clicked(['skip'], race.signal).then(() => undefined);
   const outcome = await Promise.race([settled.then((value) => ({ ...value, asked: Date.now() - started >= ASKING_AFTER }) as Outcome), skipped]);
+  race.abort();
   clearTimeout(asking);
   element<HTMLButtonElement>('skip').disabled = true;
   // The wallet has answered: the step no longer waits on it
