@@ -4,7 +4,7 @@
 // downloads MetaMask, loads it into the browser Cypress launches (from the
 // wallet cache when asked), and registers the tasks behind the cy.* commands.
 
-import { resolveOptions, publicOptions } from './config';
+import { resolveOptions, publicOptions, keysOnAnotherChain } from './config';
 import { captureDebuggerUrl } from './browser';
 import { prepareExtension } from './download';
 import { prepareCachedWallet, installCachedWallet } from './wallet-cache';
@@ -39,13 +39,17 @@ export function configureDappress(
   // The profile it replays goes to the browser side with the options
   if (options.mock) {
     const profile = loadProfile(options.mock);
+    // A chain the profile never saw the wallet on fails here, before the run
+    const exposed = publicOptions(options, profile);
     const chains = Object.keys(options.chains);
     console.log(
-      `[dappress] Mock of ${profile.wallet.name} ${profile.wallet.version}: keys at ${options.rpcUrl}${chains.length ? `, chains ${chains.join(', ')}` : ''}`,
+      `[dappress] Mock of ${profile.wallet.name} ${profile.wallet.version}${exposed.mock?.chain ? ` on chain ${exposed.mock.chain}` : ''}: keys at ${options.rpcUrl}${chains.length ? `, chains ${chains.join(', ')}` : ''}`,
     );
     // The one task: the address of a key cy.importAccount() gives, which the mock lets the RPC endpoint act for
     on('task', { 'dappress:addressOf': (privateKey: string) => addressOf(privateKey) });
-    config.expose = { ...config.expose, dappress: publicOptions(options, profile) };
+    config.expose = { ...config.expose, dappress: exposed };
+    const start = exposed.mock?.chain;
+    if (start && !Object.keys(options.chains).some((chain) => chain.toLowerCase() === start)) warnIfKeysElsewhere(start, options.rpcUrl);
     return config;
   }
 
@@ -85,4 +89,23 @@ export function configureDappress(
   // Non-sensitive settings the browser side reads with Cypress.expose()
   config.expose = { ...config.expose, dappress: publicOptions(options) };
   return config;
+}
+
+/**
+ * Ask the keys' endpoint which chain it is on, and say so when it is not the
+ * one the mock starts on: the mock reads and sends there all the same. The run
+ * does not wait for it; an endpoint not up yet says nothing.
+ */
+function warnIfKeysElsewhere(chain: string, rpcUrl: string): void {
+  fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] }),
+  })
+    .then((response) => response.json() as Promise<{ result?: string }>)
+    .then(({ result }) => {
+      const warning = keysOnAnotherChain(chain, result, rpcUrl);
+      if (warning) console.warn(warning);
+    })
+    .catch(() => {});
 }

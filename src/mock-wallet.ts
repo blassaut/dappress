@@ -26,6 +26,11 @@ export interface MockWalletOptions {
    * wallet_addEthereumChain; these come first.
    */
   chains?: Record<string, string>;
+  /**
+   * The chain the wallet is on when the run starts, as its user set it in the
+   * wallet: one its profile saw it on (chainsSeen()). Default: mainnet, 0x1.
+   */
+  chain?: string;
   /** How long a command waits for the dapp to send the request it decides on, in ms. */
   timeout: number;
   /** Told what the mock answers from the profile, for the test's log: the wallet's name, and what it answered. */
@@ -103,7 +108,7 @@ const DECIDES: Record<string, { kinds: Kind[]; accept: boolean }> = {
 const SIGNING = ['personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4'];
 
 /** Create the mock wallet of `profile`. `createMockWallet(options).provider` is what to give the page as window.ethereum. */
-export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }: MockWalletOptions): MockWallet {
+export function createMockWallet({ profile, rpcUrl, chains = {}, chain: startingChain = '0x1', timeout, log }: MockWalletOptions): MockWallet {
   const wallet = `${profile.wallet.name} ${profile.wallet.version}`;
   // An answer taken from the profile is worth a line in the test's log: it is what the wallet does
   let lastRecorded: string | undefined;
@@ -123,9 +128,10 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   let selected = 0;
   // The accounts the dapp is connected with
   let connected: string[] = [];
-  // The chain the wallet is on, and the ones the dapp added or was allowed onto
-  let chainId = '0x1';
-  const known = new Set<string>([chainId]);
+  // The chain the wallet is on, the one its user set to start with, and the ones the dapp added or was allowed onto
+  let chainId = startingChain.toLowerCase();
+  // Mainnet too, where the profile saw the wallet on it: started elsewhere, it still has it, as MetaMask and Rabby do
+  const known = new Set<string>([chainId, ...chainsSeen(profile).filter((chain) => chain === '0x1')]);
   const permitted = new Set<string>([chainId]);
   // The chains the wallet knows of itself: those it asked the user to switch to, as the profile saw them rejected.
   // A switch it answered without asking says nothing: the wallet may have been on that chain already
@@ -706,6 +712,21 @@ export function retarget(error: ProviderError, recordedParams: unknown, params: 
   const now = chainIn(params);
   if (!was || !now || was === now) return error;
   return JSON.parse(JSON.stringify(error).split(was).join(now)) as ProviderError;
+}
+
+/**
+ * The chains the profile saw the wallet on: those it answered eth_chainId
+ * with, announced with chainChanged or connect, or switched to when asked.
+ * A mock may start on one of them, as the wallet's user set it.
+ */
+export function chainsSeen(profile: Profile): string[] {
+  const seen = [
+    ...(profile.methods.eth_chainId ?? []).filter((observation) => !observation.error).map((observation) => observation.result),
+    ...(profile.events.chainChanged ?? []).map((event) => event.payload),
+    ...(profile.events.connect ?? []).map((event) => (event.payload as { chainId?: unknown } | undefined)?.chainId),
+    ...(profile.methods.wallet_switchEthereumChain ?? []).filter((observation) => !observation.error).map((observation) => chainIn(observation.params)),
+  ];
+  return [...new Set(seen.filter((chain): chain is string => typeof chain === 'string').map((chain) => chain.toLowerCase()))];
 }
 
 function chainIn(params: unknown): string | undefined {

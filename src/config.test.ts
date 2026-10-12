@@ -3,9 +3,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { DEFAULTS, METAMASK_CHECKSUMS, resolveOptions, publicOptions } from './config';
+import { DEFAULTS, METAMASK_CHECKSUMS, keysOnAnotherChain, resolveOptions, publicOptions } from './config';
+import { loadProfile } from './wallet-profile';
 
-const ENV_KEYS = ['DAPPRESS_METAMASK_VERSION', 'DAPPRESS_METAMASK_CHECKSUM', 'DAPPRESS_SEED_PHRASE', 'DAPPRESS_PASSWORD', 'DAPPRESS_MOCK', 'DAPPRESS_RPC_URL'];
+const ENV_KEYS = [
+  'DAPPRESS_METAMASK_VERSION',
+  'DAPPRESS_METAMASK_CHECKSUM',
+  'DAPPRESS_SEED_PHRASE',
+  'DAPPRESS_PASSWORD',
+  'DAPPRESS_MOCK',
+  'DAPPRESS_MOCK_CHAIN',
+  'DAPPRESS_RPC_URL',
+];
 const SEED_PHRASE = 'one two three four five six seven eight nine ten eleven twelve';
 const network = { chainId: '0x7a69', chainName: 'Anvil', rpcUrls: ['http://127.0.0.1:8545'], nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 } };
 
@@ -133,4 +142,61 @@ test('the options exposed to the browser hold no secret', (t) => {
   quiet(t);
   const options = resolveOptions({ seedPhrase: SEED_PHRASE, network, autoSetup: false }, { projectRoot: project() });
   assert.deepEqual(publicOptions(options), { metamaskVersion: DEFAULTS.metamaskVersion, autoSetup: false, network, chains: {} });
+});
+
+test('mockChain: a chain the profile saw the wallet on is the one its mock starts on, from the options or the environment', (t) => {
+  quiet(t);
+  const phantom = loadProfile('phantom');
+  const options = resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'phantom', mockChain: '0xAA36A7' }, { projectRoot: project() });
+  assert.equal(publicOptions(options, phantom).mock?.chain, '0xaa36a7');
+  process.env.DAPPRESS_MOCK_CHAIN = '0x7a69';
+  const fromEnv = resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'rabby', mockChain: '0x1' }, { projectRoot: project() });
+  assert.equal(publicOptions(fromEnv, loadProfile('rabby')).mock?.chain, '0x7a69');
+});
+
+test('mockChain: mainnet, where a mock starts without it, is always taken, as the real Phantom is on mainnet by default', (t) => {
+  quiet(t);
+  const options = resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'phantom', mockChain: '0x1' }, { projectRoot: project() });
+  assert.equal(publicOptions(options, loadProfile('phantom')).mock?.chain, '0x1');
+});
+
+test('mockChain: a chain the profile never saw the wallet on fails, naming those it takes, mainnet first', (t) => {
+  quiet(t);
+  const phantom = loadProfile('phantom');
+  for (const mockChain of ['0x7a69', '0x2105']) {
+    const options = resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'phantom', mockChain }, { projectRoot: project() });
+    assert.throws(
+      () => publicOptions(options, phantom),
+      new RegExp(
+        `^Error: \\[dappress\\] mockChain ${mockChain}: the Phantom 26\\.32\\.0 profile never saw the wallet on that chain, so its mock cannot start there\\. It takes 0x1, 0xaa36a7$`,
+      ),
+    );
+  }
+});
+
+test('mockChain: a decimal chain id is refused, with its hex, as eth_chainId answers it', (t) => {
+  quiet(t);
+  const options = resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'phantom', mockChain: '11155111' }, { projectRoot: project() });
+  assert.throws(
+    () => publicOptions(options, loadProfile('phantom')),
+    /^Error: \[dappress\] mockChain 11155111: a chain id is expected in hex, as eth_chainId answers it: 0xaa36a7$/,
+  );
+});
+
+test("a mock started on a chain whose reads go to the keys' endpoint, on another chain, is told how to fix it; nothing when they agree", () => {
+  assert.equal(
+    keysOnAnotherChain('0xaa36a7', '0x7A69', 'http://127.0.0.1:8545'),
+    '[dappress] The mock starts on chain 0xaa36a7, and the chains option names no RPC for it: its reads and transactions go to http://127.0.0.1:8545, which is on chain 0x7a69. Start Anvil with --chain-id 11155111, or as a fork of that chain, or name its RPC in the chains option',
+  );
+  assert.equal(keysOnAnotherChain('0xaa36a7', '0xaa36a7', 'http://127.0.0.1:8545'), undefined);
+  assert.equal(keysOnAnotherChain('0xaa36a7', undefined, 'http://127.0.0.1:8545'), undefined);
+});
+
+test('without mockChain, the mock starts where it always did; without a mock, mockChain is ignored, with a warning', (t) => {
+  const output = quiet(t);
+  const mock = publicOptions(resolveOptions({ seedPhrase: SEED_PHRASE, mock: 'phantom' }, { projectRoot: project() }), loadProfile('phantom')).mock;
+  assert.ok(mock && !('chain' in mock));
+  const options = resolveOptions({ seedPhrase: SEED_PHRASE, mockChain: '0xaa36a7' }, { projectRoot: project() });
+  assert.equal(publicOptions(options).mock, undefined);
+  assert.match(output.logged(), /mockChain is for a mock/);
 });
