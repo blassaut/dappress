@@ -64,6 +64,18 @@ async function discover(): Promise<Announced[]> {
   return announced;
 }
 
+/**
+ * The identity flags window.ethereum carries, as the recorder read them: the
+ * ones the profile will hold, which tell whose window.ethereum it is.
+ */
+function showFlags(): void {
+  const flags = window.__dappressTrace?.discovery?.flags;
+  if (!injected() || !flags) return;
+  const set = Object.keys(flags).filter((flag) => flags[flag]);
+  element('flags').textContent = set.length ? `window.ethereum says it is: ${set.join(', ')}.` : 'window.ethereum carries no identity flag.';
+  show('flags');
+}
+
 /** The wallet chosen, its version, and whether others are active in the page. */
 function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: string; otherWallets: boolean }> {
   show('choose');
@@ -73,6 +85,7 @@ function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: str
   const start = element<HTMLButtonElement>('start');
   let chosen: Announced | undefined;
   if (!wallets.length) show('no-wallet');
+  showFlags();
   wallets.forEach((wallet, index) => {
     const item = document.createElement('li');
     const label = document.createElement('label');
