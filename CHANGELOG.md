@@ -25,6 +25,7 @@ What changes for the users of Dappress, version by version. The format follows [
 ### Fixed
 
 - `cy.getAccountAddress()` yields `null` when the dapp has no account: before it connects, once its connection is rejected, or once it is disconnected. It yielded the `[]` the provider answered, which passed `should('exist')` and failed `should('eq', address)` with "expected '[]'". Its type is now `Chainable<string | null>`.
+- Dappress no longer takes the event handlers of another plugin, as the Cucumber preprocessor's. Cypress keeps one handler per event, the last one registered, and on the real MetaMask Dappress always registered `before:run`: with the preprocessor registered first, its `before:run` never ran, and the run failed with "Unexpected state in beforeSpecHandler: uninitialized". Dappress now registers `before:run` only with the `cache` option, and `chainEvents(on)`, from `dappress`, gives an `on` to hand every plugin, Dappress included, through which each event reaches Cypress once and runs every plugin's handlers, in the order registered, whatever that order: each `before:browser:launch` handler gets the launch options of the one before. See "With Cucumber (BDD)" in the README.
 
 ## [0.11.0] - 2026-10-12
 

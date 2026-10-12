@@ -11,5 +11,5 @@
     "types": ["cypress", "node"],
     "skipLibCheck": true
   },
-  "include": ["src", "scripts", "conformance/*.ts", "conformance/cypress/**/*.ts"]
+  "include": ["src", "scripts", "conformance/*.ts", "conformance/cypress/**/*.ts", "conformance/cucumber/**/*.ts"]
 }

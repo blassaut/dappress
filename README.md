@@ -31,6 +31,7 @@ Most projects run both: the mocks on every pull request, the real MetaMask night
 - [Quick start](#quick-start)
 - [With the real MetaMask](#with-the-real-metamask)
 - [With a mock](#with-a-mock)
+- [With Cucumber (BDD)](#with-cucumber-bdd)
 - [Commands](#commands)
 - [Configuration](#configuration)
 - [Wallet profiles](#wallet-profiles)
@@ -334,6 +335,65 @@ The first three need a development node, as a real chain refuses to rewrite stor
 | A method the wallet lacks, a chain switch it refuses, a constant answer | The wallet's profile                               |
 | Balances, blocks, calls, gas, nonces                                   | The chain the dapp is on: its RPC, a fork, or Anvil |
 | Signatures, and the signature of a transaction                         | Anvil, with its accounts                            |
+
+## With Cucumber (BDD)
+
+Cypress keeps one handler per plugin event, the last one registered, tasks aside, which it merges. The [Cucumber preprocessor](https://github.com/badeball/cypress-cucumber-preprocessor) writes its reports from its own `before:run`, `after:run`, `before:spec` and `after:spec` handlers, and Dappress loads MetaMask from `before:browser:launch`. Give both plugins the `on` of `chainEvents()`: each event then reaches Cypress once, and runs every plugin's handler in the order registered, whatever that order.
+
+```sh
+npm install --save-dev @badeball/cypress-cucumber-preprocessor @bahmutov/cypress-esbuild-preprocessor esbuild
+```
+
+```ts
+// cypress.config.ts
+import { defineConfig } from 'cypress';
+import createBundler from '@bahmutov/cypress-esbuild-preprocessor';
+import { addCucumberPreprocessorPlugin } from '@badeball/cypress-cucumber-preprocessor';
+import { createEsbuildPlugin } from '@badeball/cypress-cucumber-preprocessor/esbuild';
+import { chainEvents, configureDappress } from 'dappress';
+
+export default defineConfig({
+  e2e: {
+    baseUrl: 'http://localhost:3000',
+    specPattern: 'cypress/e2e/**/*.feature',
+    testIsolation: false,
+    async setupNodeEvents(cypressOn, config) {
+      const on = chainEvents(cypressOn);
+      await addCucumberPreprocessorPlugin(on, config);
+      on('file:preprocessor', createBundler({ plugins: [createEsbuildPlugin(config)] }));
+      return configureDappress(on, config);
+    },
+  },
+});
+```
+
+```json
+// .cypress-cucumber-preprocessorrc.json: the report
+{
+  "json": {
+    "enabled": true,
+    "output": "cucumber-report.json"
+  }
+}
+```
+
+The step definitions call the commands as a test does:
+
+```ts
+// cypress/e2e/wallet.ts, the steps of cypress/e2e/wallet.feature
+import { When, Then } from '@badeball/cypress-cucumber-preprocessor';
+
+When('I connect my wallet', () => {
+  cy.contains('button', 'Connect wallet').click();
+  cy.connectToDapp();
+});
+
+Then('the dapp shows my address', () => {
+  cy.getAccountAddress().then((address) => cy.contains(address!));
+});
+```
+
+`chainEvents()` does the same for any other plugin with event handlers of its own. Without it, the last plugin to register an event takes it from the others: the preprocessor fails with "Unexpected state in beforeSpecHandler", or MetaMask is not loaded. Dappress registers `before:run` only with the `cache` option, and no event but its tasks with a mock.
 
 ## Commands
 

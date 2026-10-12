@@ -10,6 +10,7 @@
 // DAPPRESS_MOCK names it. --open opens the Cypress app on the suite, with the
 // same wallet and the same Anvil node, and writes no report.
 // --probe goes through the probe page (dist/probe: run npm run build first) with Dappress's commands, and checks the profile it records against MetaMask's, or the mock's. It writes no report.
+// --cucumber runs conformance/cucumber, one feature under the Cucumber preprocessor beside Dappress, and checks the preprocessor's JSON report. It writes no report of its own.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -28,6 +29,7 @@ import { startProbeServer } from '../src/probe/server';
 const args = process.argv.slice(2);
 const open = args.includes('--open');
 const probe = args.includes('--probe');
+const cucumber = args.includes('--cucumber');
 const metamaskVersion = args.find((arg) => !arg.startsWith('--')) || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
 const modeName = process.env.DAPPRESS_MODE || (process.env.DAPPRESS_HEADLESS === '1' ? 'headless' : 'sidepanel');
 const mode = modeName === 'mock' ? MOCK_MODE : MODES[modeName];
@@ -59,6 +61,7 @@ async function main(): Promise<void> {
   const anvil = await startAnvil(wallet.seedPhrase);
   if (open) return openApp(anvil);
   if (probe) return runProbe(anvil);
+  if (cucumber) return runCucumber(anvil);
   let results;
   try {
     results = await cypress.run({
@@ -203,6 +206,37 @@ async function runProbe(anvil: ChildProcess): Promise<void> {
   if ('status' in results) throw new Error(results.message);
   console.log(`[dappress] Probe page: ${results.totalPassed} passed, ${results.totalFailed} failed`);
   process.exit(results.totalFailed === 0 ? 0 : 1);
+}
+
+/**
+ * One feature under the Cucumber preprocessor, beside Dappress: the
+ * preprocessor writes its report only if its before:run, before:spec,
+ * after:spec and after:run handlers all ran, next to Dappress's.
+ */
+async function runCucumber(anvil: ChildProcess): Promise<void> {
+  const project = path.join(__dirname, '..', 'conformance', 'cucumber');
+  const reportFile = path.join(project, 'cucumber-report.json');
+  fs.rmSync(reportFile, { force: true });
+  let results;
+  try {
+    results = await cypress.run({
+      project,
+      browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
+      headed: mode.headed,
+      env: { DAPPRESS_METAMASK_VERSION: metamaskVersion },
+    });
+  } finally {
+    anvil.kill();
+  }
+  if ('status' in results) throw new Error(results.message);
+  type Feature = { elements: { steps: { result: { status: string } }[] }[] };
+  const report: Feature[] = fs.existsSync(reportFile) ? JSON.parse(fs.readFileSync(reportFile, 'utf8')) : [];
+  const steps = report.flatMap((feature) => feature.elements.flatMap((scenario) => scenario.steps.map((step) => step.result.status)));
+  const reported = steps.length > 0 && steps.every((status) => status === 'passed');
+  console.log(
+    `[dappress] Cucumber: ${results.totalPassed} passed, ${results.totalFailed} failed; report: ${steps.length} steps, ${reported ? 'all passed' : 'not all passed'}`,
+  );
+  process.exit(results.totalFailed === 0 && reported ? 0 : 1);
 }
 
 async function startAnvil(seedPhrase: string): Promise<ChildProcess> {
