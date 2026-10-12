@@ -293,6 +293,16 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         if (capable) return recorded(method, capable);
         break;
       }
+      case 'wallet_sendCalls': {
+        // EIP-5792: a batch on a chain the wallet named no atomic capability for is refused as the wallet refused it,
+        // without asking; on another, no batch was recorded, and the mock does not invent one
+        const chain = String((list[0] as { chainId?: unknown } | undefined)?.chainId ?? chainId).toLowerCase();
+        if (!atomicChains().includes(chain)) {
+          const refused = refuseWithoutAsking('transaction', method, list);
+          if (refused) throw refused;
+        }
+        throw unsupported(method);
+      }
       case 'wallet_revokePermissions': {
         const refused = refusal(method);
         if (refused) throw refused;
@@ -397,6 +407,14 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         });
       return permission;
     });
+  }
+
+  /** The chains the wallet named an atomic capability for (EIP-5792): those it batches calls on. */
+  function atomicChains(): string[] {
+    return observations('wallet_getCapabilities')
+      .flatMap((observation) => Object.entries((observation.result ?? {}) as Record<string, { atomic?: { status?: string } }>))
+      .filter(([, capability]) => ['ready', 'supported'].includes(capability.atomic?.status ?? ''))
+      .map(([chain]) => chain.toLowerCase());
   }
 
   /** EIP-5792's capabilities of `account`, as the wallet answered them, for the chains asked or all it named. */

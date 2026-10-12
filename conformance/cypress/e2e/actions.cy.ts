@@ -243,6 +243,21 @@ describe('MetaMask actions', () => {
     testDapp.chainId().should('have.text', anvil.chainId);
   });
 
+  it('wallet_sendCalls on a chain without EIP-7702: refused without asking', () => {
+    // MetaMask batches calls through EIP-7702 only, on the chains it names in its capabilities: not on Anvil's
+    answer('wallet_getCapabilities', [account, [anvil.chainId]]).then((settled) => {
+      if (recorded('wallet_getCapabilities')) expect(settled).to.deep.equal({ result: {} });
+    });
+    const calls = [
+      { to: secondAccount, value: '0x1' },
+      { to: secondAccount, value: '0x2' },
+    ];
+    answer('wallet_sendCalls', [{ version: '2.0.0', chainId: anvil.chainId, from: account, atomicRequired: false, calls }])
+      .its('error.code')
+      .should('eq', recorded('wallet_sendCalls') ? 5710 : UNSUPPORTED);
+    provider.call('eth_getTransactionCount', [account, 'latest']).should('eq', '0x0');
+  });
+
   it('confirmTransaction', () => {
     testDapp.sendEth();
     cy.confirmTransaction();

@@ -350,6 +350,39 @@ test('wallet_getCapabilities: what the wallet named, for the chains asked; refus
   await assert.rejects(unrecorded.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[0]] }), (error: ProviderRpcError) => error.code === 4200);
 });
 
+const withBatches: Profile = {
+  ...withPermissions,
+  methods: {
+    ...withPermissions.methods,
+    wallet_sendCalls: [
+      {
+        params: [{ version: '2.0.0', chainId: '0x7a69', from: '0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a', atomicRequired: false, calls: [] }],
+        error: { code: 5710, message: 'EIP-7702 not supported on chain: 0x7a69' },
+      },
+    ],
+  },
+};
+const batch = (chainId: string) => ({
+  method: 'wallet_sendCalls',
+  params: [{ version: '2.0.0', chainId, from: ACCOUNTS[0], atomicRequired: false, calls: [{ to: ACCOUNTS[1], value: '0x1' }] }],
+});
+
+test('wallet_sendCalls: refused without asking where the wallet named no atomic capability; not invented where it did', async () => {
+  const { mock, provider, sent } = await connectedWallet(withBatches);
+  await assert.rejects(
+    provider.request(batch('0x539')),
+    (error: ProviderRpcError) => error.code === 5710 && error.message === 'EIP-7702 not supported on chain: 0x539',
+  );
+  // A command waiting for the batch is told at once that the wallet answered it
+  await assert.rejects(mock.act('confirmTransaction'), /Nothing for confirmTransaction to decide on: .*5710.*without asking/);
+  // On a chain the wallet batches on, no batch was recorded
+  await assert.rejects(provider.request(batch('0x88bb0')), (error: ProviderRpcError) => error.code === 4200);
+  assert.equal(sent.filter((call) => /send|sign/i.test(call.method)).length, 0, 'nothing signed or sent');
+  // A wallet whose profile never answered it
+  const { provider: unrecorded } = await connectedWallet(withPermissions);
+  await assert.rejects(unrecorded.request(batch('0x539')), (error: ProviderRpcError) => error.code === 4200);
+});
+
 test('the accounts: added, switched, disconnected, as the wallet names them', async () => {
   const { mock, provider } = wallet();
   const events: unknown[] = [];

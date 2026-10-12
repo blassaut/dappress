@@ -21,6 +21,11 @@ declare global {
 /** The wallet's provider: what it injected, not what the dapp made of window.ethereum. */
 export const walletOf = (win: Window): Provider => win.dappressProvider ?? win.ethereum;
 
+// How long the wallet may take to answer: Dappress's default timeout, as its commands wait for MetaMask.
+// An answer may wait on the RPC of each chain MetaMask supports: wallet_getCapabilities asks each one
+// for the account's code, about 150 ms apiece, one after the other, over 4 s from GitHub's runners
+const ANSWER_TIMEOUT = 20000;
+
 export const provider = {
   request(method: string, params?: unknown) {
     cy.window({ log: false }).then((win) => {
@@ -33,7 +38,7 @@ export const provider = {
     });
   },
 
-  result: () => cy.window({ log: false }).then((win) => win.dappressPending),
+  result: () => cy.window({ log: false }).then({ timeout: ANSWER_TIMEOUT }, (win) => win.dappressPending),
 
   call: (method: string, params?: unknown[]) => cy.window({ log: false }).then((win) => walletOf(win).request({ method, params })),
 

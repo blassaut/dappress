@@ -245,7 +245,7 @@ A mock is a wallet in the page, in place of the extension. It answers your dapp 
 ### What it does not do
 
 - **Reach a wallet the dapp does not find in the page.** A mock is an injected wallet, found through `window.ethereum` or EIP-6963. WalletConnect, a wallet SDK such as Coinbase's, and an embedded wallet such as Privy's are out of its reach.
-- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: EIP-5792's batch calls (`wallet_sendCalls`) are not recorded yet, and MetaMask's profile is the only one with `wallet_getCapabilities`. The `eth_*` reads go to the chain, recorded or not.
+- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: MetaMask's profile is the only one with EIP-5792's `wallet_getCapabilities`, and it records `wallet_sendCalls` only as MetaMask's refusal on a chain it does not batch on, `5710`: a batch MetaMask would send is not recorded yet. The `eth_*` reads go to the chain, recorded or not.
 - **Show screens.** A mock tests your dapp, not the wallet's interface: how MetaMask displays your request needs the real MetaMask.
 - **Estimate fees.** `cy.confirmTransaction({ gas })` takes `'networkSuggested'` or custom values, not `'low'`, `'market'` or `'aggressive'`.
 - **Sign for an imported key on a testnet.** `cy.importAccount()` lets Anvil act for the key's address, not sign for it: that account sends on Anvil's chain or a fork only.
