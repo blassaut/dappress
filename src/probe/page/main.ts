@@ -10,7 +10,7 @@
 // window.dappressProbe.
 
 import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
-import { STEPS, ASKING_AFTER, classify, chunksOf, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
+import { STEPS, ASKING_AFTER, classify, chunksOf, describeOutcome, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
 import { anvilClient } from './anvil-client';
 
 interface Provider {
@@ -115,14 +115,6 @@ function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: str
       resolve({ wallet: chosen!, version: version.value.trim(), otherWallets });
     }),
   );
-}
-
-/** What an outcome says, for the list of steps. */
-function describeOutcome(outcome: Outcome | undefined): string {
-  if (!outcome) return 'skipped';
-  if ('error' in outcome) return `error ${String(outcome.error.code)} ${outcome.error.message ?? ''}`.trim();
-  const json = JSON.stringify(outcome.result) ?? 'undefined';
-  return json.length > 200 ? `${json.slice(0, 200)}…` : json;
 }
 
 function listStep(title: string, text: string, verdict: string): void {

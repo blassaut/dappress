@@ -316,7 +316,17 @@ export function chunksOf(trace: TraceChunk, marks: Mark[]): TraceChunk[] {
   return chunks;
 }
 
+// JSON.stringify throws on a BigInt, which a wallet may answer with: a hex quantity, as a node would send it
+const hexBigInt = (_key: string, value: unknown) => (typeof value === 'bigint' ? `0x${value.toString(16)}` : value);
+
 /** The trace as plain JSON, as a file holds it: a BigInt as a hex quantity. A cycle throws. */
 export function plainTrace(trace: TraceChunk): TraceChunk {
-  return JSON.parse(JSON.stringify(trace, (_key, value: unknown) => (typeof value === 'bigint' ? `0x${value.toString(16)}` : value))) as TraceChunk;
+  return JSON.parse(JSON.stringify(trace, hexBigInt)) as TraceChunk;
+}
+
+/** What an outcome says, for the list of steps: the error's code and message, or the result, cut short. */
+export function describeOutcome(outcome: Outcome): string {
+  if ('error' in outcome) return `error ${String(outcome.error.code)} ${outcome.error.message ?? ''}`.trim();
+  const json = JSON.stringify(outcome.result, hexBigInt) ?? 'undefined';
+  return json.length > 200 ? `${json.slice(0, 200)}…` : json;
 }

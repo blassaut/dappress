@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, classify, chunksOf, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
+import { STEPS, classify, chunksOf, describeOutcome, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
 import type { TraceChunk } from '../profile-schema';
 
 const ACCOUNT = '0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a';
@@ -122,4 +122,11 @@ test('the trace leaves the page as plain JSON: a BigInt as a hex quantity, a cyc
   const cyclic = { recorder: '2', entries: [] } as unknown as TraceChunk & { self?: unknown };
   cyclic.self = cyclic;
   assert.throws(() => plainTrace(cyclic), /circular/i);
+});
+
+test("an outcome as the list of steps shows it: the error's code and message, or the result, a BigInt in it as hex", () => {
+  assert.equal(describeOutcome({ error: { code: 4001, message: 'User rejected the request.' }, asked: true }), 'error 4001 User rejected the request.');
+  assert.equal(describeOutcome({ result: { balance: 255n }, asked: false }), '{"balance":"0xff"}');
+  assert.equal(describeOutcome({ result: undefined, asked: false }), 'undefined');
+  assert.equal(describeOutcome({ result: 'a'.repeat(300), asked: false }).length, 201);
 });
