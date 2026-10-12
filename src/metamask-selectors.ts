@@ -162,6 +162,11 @@ export const selectors = {
   },
 };
 
+// The fields a secret is typed into: the words of the seed phrase, and the
+// private key. MetaMask shows the focused word in clear, and the length of
+// every other: no screenshot is taken of a page that holds one (failure())
+export const secretFields = [selectors.onboarding.srpInput, '[data-testid^="import-srp__srp-word-"]', selectors.accounts.privateKey];
+
 // Which button each command presses on the confirmation
 export const decisions = {
   connectToDapp: selectors.connect.confirm,

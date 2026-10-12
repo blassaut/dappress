@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Security
+
+- A command that fails on MetaMask's seed phrase or private key screen no longer takes a screenshot of it. MetaMask shows the focused word of the phrase in clear, and the length of every other: a screenshot taken while the last word was being typed showed that word, and a CI job that uploads the screenshots of a failed run published it. The error still says what the page shows, in words, which never hold what a field holds.
+
 ## [0.10.0] - 2026-10-07
 
 ### Added

@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { ElementHandle, Page } from 'puppeteer-core';
+import { secretFields } from './metamask-selectors';
 
 export type Selector = string | string[];
 
@@ -273,11 +274,14 @@ export async function fill(page: Page, selector: Selector, text: string): Promis
 
 /**
  * The error for something that went wrong on `page`: what the page shows, in
- * words for the log and as a screenshot to look at.
+ * words for the log and as a screenshot to look at. The words never hold a
+ * secret, as the text of a page leaves out what its fields hold; a screenshot
+ * may, so none is taken of a page that holds a secret field.
  */
 export async function failure(page: Page, message: string): Promise<Error> {
   const prefix = `[dappress] ${message} on ${page.url()}`;
   const shown = await pageText(page);
+  if (await holdsSecret(page)) return new Error(`${prefix}. ${shown}No screenshot: the page holds a field for the seed phrase or a private key.`);
   try {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
     const file = path.join(SCREENSHOTS_DIR, `${Date.now()}.png`);
@@ -286,6 +290,19 @@ export async function failure(page: Page, message: string): Promise<Error> {
   } catch {
     return new Error(`${prefix}. ${shown}`.trim());
   }
+}
+
+// Whether the page holds a field a secret is typed into, shown or not. A page
+// that cannot say is taken to hold one
+async function holdsSecret(page: Page): Promise<boolean> {
+  for (const field of secretFields) {
+    try {
+      if (await page.$(field)) return true;
+    } catch {
+      return true;
+    }
+  }
+  return false;
 }
 
 // The visible text of the page, shortened: enough to tell which MetaMask
