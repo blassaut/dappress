@@ -117,7 +117,7 @@ test('a host that only looks like the loopback is refused, on every route and me
       `evil.example:${port}@127.0.0.1`,
       `LOCALHOST:${port}`,
       '127.0.0.1',
-      `127.0.0.1:${port + 1}`,
+      `127.0.0.1:${Number(port) + 1}`,
       `[::1]:${port}`,
       `0.0.0.0:${port}`,
       'localhost',
