@@ -44,7 +44,11 @@ export function anvilClient(url: string, fetcher: typeof fetch = fetch, wait: Re
       await call('anvil_setBalance', [account, BALANCE]);
     },
     deployToken: async (holder) => {
-      const [deployer] = await call<string[]>('eth_accounts');
+      // Never the holder's own account, which Anvil holds too when the wallet is one of its accounts (its
+      // well-known test phrase, or the conformance suite's): a transaction sent behind the wallet's back takes
+      // a nonce the wallet does not know of, and its next transaction fails with "nonce too low"
+      const deployer = (await call<string[]>('eth_accounts')).find((account) => account.toLowerCase() !== holder.toLowerCase());
+      if (!deployer) throw new Error('Anvil has no account of its own to deploy the test token from');
       const data = `${TOKEN_BYTECODE}${holder.replace(/^0x/, '').toLowerCase().padStart(64, '0')}`;
       const hash = await call<string>('eth_sendTransaction', [{ from: deployer, data }]);
       const receipt = await receiptOf(hash);

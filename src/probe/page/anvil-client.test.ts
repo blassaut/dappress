@@ -40,6 +40,18 @@ test("the token is deployed from Anvil's first account, its supply to the holder
   assert.equal(transaction.data, `${TOKEN_BYTECODE}${'0'.repeat(24)}${ACCOUNT.slice(2)}`);
 });
 
+test("the token is never deployed from the holder's account, which the wallet sends from: Anvil's next one deploys it", async () => {
+  const { sent, fetcher } = fakeAnvil({
+    eth_accounts: () => [ACCOUNT.toUpperCase().replace('0X', '0x'), DEPLOYER],
+    eth_sendTransaction: () => '0xhash',
+    eth_getTransactionReceipt: () => ({ status: '0x1', contractAddress: TOKEN }),
+  });
+  await anvilClient('http://127.0.0.1:8545', fetcher).deployToken(ACCOUNT);
+  assert.equal((sent.find((call) => call.method === 'eth_sendTransaction')!.params[0] as { from: string }).from, DEPLOYER);
+  const { fetcher: alone } = fakeAnvil({ eth_accounts: () => [ACCOUNT] });
+  await assert.rejects(anvilClient('http://127.0.0.1:8545', alone).deployToken(ACCOUNT), /Anvil has no account of its own/);
+});
+
 test('the receipt is waited for: Anvil may not have it yet when it returns the hash', async () => {
   let reads = 0;
   const { fetcher } = fakeAnvil({
