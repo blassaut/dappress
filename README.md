@@ -279,7 +279,7 @@ jobs:
 
 ### Your chain, at your block
 
-Anvil holds the keys; each chain holds its state. When your dapp adds its chain with `wallet_addEthereumChain`, as most do on connection, the mock reads from the RPC the dapp gives, and sends a transaction there once Anvil signed it, nonce, gas and fees taken from that chain. A wallet recorded refusing `wallet_addEthereumChain`, Phantom, refuses it too, without asking: `cy.useNetwork()` then fails, naming the chain, and a fork of a chain that wallet supports is what to use.
+Anvil holds the keys; each chain holds its state. When your dapp adds its chain with `wallet_addEthereumChain`, as most do on connection, the mock reads from the RPC the dapp gives, and sends a transaction there once Anvil signed it, nonce, gas and fees taken from that chain. A wallet recorded refusing `wallet_addEthereumChain`, Phantom, refuses it too, without asking, and stays on the chains it knows (mainnet, on the mock): `cy.useNetwork()` fails, and so does `cy.connectToDapp()` when the wallet setup names a `network`. For Phantom the setup's network must be mainnet (`0x1`) or absent; the dapp then runs on a fork that keeps that chain id.
 
 **On your testnet.** Start Anvil with the seed phrase of a test wallet funded there, and your tests send real transactions, as with MetaMask:
 

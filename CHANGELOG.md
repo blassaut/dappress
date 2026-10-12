@@ -16,7 +16,7 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Fixed
 
-- Phantom's mock refuses `wallet_addEthereumChain` as Phantom was recorded refusing it, `4901`, without asking, with the chain asked for in the message. It asked the user for any chain it did not know, so `cy.approveNewNetwork()` made it succeed where the real Phantom refuses, and a test passed on the mock that would fail on the wallet. A command waiting for the network request says at once that the wallet refused it. A wallet recorded accepting the chain, or rejected by its user, still asks. `cy.useNetwork()`, and `cy.connectToDapp()` with a `network` in the wallet setup, fail at once on such a wallet, naming it, the chain and its answer: it cannot be moved onto that chain, and a fork of a chain it supports is what to use.
+- Phantom's mock refuses `wallet_addEthereumChain` as Phantom was recorded refusing it, `4901`, without asking. It asked the user for any chain it did not know, so `cy.approveNewNetwork()` made it succeed where the real Phantom refuses, and a test passed on the mock that would fail on the wallet. A command waiting for the network request says at once that the wallet refused it. A wallet recorded accepting the chain, or rejected by its user, still asks. `cy.useNetwork()`, and `cy.connectToDapp()` with a `network` in the wallet setup, fail at once on such a mock, naming the wallet, the chain and its answer, and the chains the mock knows: run the dapp on a fork that keeps one of their ids. The real MetaMask's refusal is reported with the wallet, the chain and its answer only.
 
 ## [0.10.1] - 2026-10-12
 
