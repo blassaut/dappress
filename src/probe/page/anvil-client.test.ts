@@ -61,3 +61,13 @@ test("Anvil's error, or a deployment that failed, says so", async () => {
   });
   await assert.rejects(anvilClient('http://127.0.0.1:8545', reverted).deployToken(ACCOUNT), /The test token was not deployed/);
 });
+
+test('a receipt that never comes is not taken for a deployment that failed', async () => {
+  const { sent, fetcher } = fakeAnvil({
+    eth_accounts: () => [DEPLOYER],
+    eth_sendTransaction: () => '0xhash',
+    eth_getTransactionReceipt: () => null,
+  });
+  await assert.rejects(anvilClient('http://127.0.0.1:8545', fetcher, { attempts: 3, every: 1 }).deployToken(ACCOUNT), /No receipt from Anvil within 0\.003 s/);
+  assert.equal(sent.filter((call) => call.method === 'eth_getTransactionReceipt').length, 3);
+});
