@@ -9,6 +9,7 @@
 // sidepanel (default), headless, or popup; mock replays a wallet profile,
 // DAPPRESS_MOCK names it. --open opens the Cypress app on the suite, with the
 // same wallet and the same Anvil node, and writes no report.
+// --probe goes through the probe page (dist/probe: run npm run build first) with Dappress's commands, and checks the profile it records against MetaMask's, or the mock's. It writes no report.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -22,9 +23,11 @@ import type { Report } from './matrix';
 import { buildProfile, readTrace } from './profile';
 import { loadProfile } from '../src/wallet-profile';
 import { foundry } from '../src/probe/anvil';
+import { startProbeServer } from '../src/probe/server';
 
 const args = process.argv.slice(2);
 const open = args.includes('--open');
+const probe = args.includes('--probe');
 const metamaskVersion = args.find((arg) => !arg.startsWith('--')) || process.env.DAPPRESS_METAMASK_VERSION || DEFAULTS.metamaskVersion;
 const modeName = process.env.DAPPRESS_MODE || (process.env.DAPPRESS_HEADLESS === '1' ? 'headless' : 'sidepanel');
 const mode = modeName === 'mock' ? MOCK_MODE : MODES[modeName];
@@ -55,6 +58,7 @@ async function main(): Promise<void> {
   process.env.DAPPRESS_CONFORMANCE_WALLET = JSON.stringify({ accounts: wallet.accounts, imported: wallet.imported });
   const anvil = await startAnvil(wallet.seedPhrase);
   if (open) return openApp(anvil);
+  if (probe) return runProbe(anvil);
   let results;
   try {
     results = await cypress.run({
@@ -169,6 +173,36 @@ async function openApp(anvil: ChildProcess): Promise<void> {
   const code = await new Promise<number>((resolve) => app.on('exit', (exitCode) => resolve(exitCode ?? 0)));
   anvil.kill();
   process.exit(code);
+}
+
+/**
+ * The probe page, gone through with Dappress's commands on the wallet of this
+ * run: MetaMask, or the mock. Its profile must answer as the suite's own.
+ */
+async function runProbe(anvil: ChildProcess): Promise<void> {
+  const root = path.join(__dirname, '..', 'dist', 'probe');
+  const server = await startProbeServer({ root, anvilUrl: ANVIL_URL, reference: loadProfile('metamask'), dappressVersion }).catch((error: Error) => {
+    anvil.kill();
+    throw new Error(`${error.message}: run npm run build first`);
+  });
+  process.env.DAPPRESS_PROBE_URL = server.url;
+  process.env.DAPPRESS_PROBE_REFERENCE = mockWallet ?? 'metamask';
+  let results;
+  try {
+    results = await cypress.run({
+      project: path.join(__dirname, '..', 'conformance'),
+      configFile: 'cypress.probe.config.ts',
+      browser: process.env.DAPPRESS_BROWSER || 'chrome-for-testing',
+      headed: mode.headed,
+      env: { DAPPRESS_METAMASK_VERSION: metamaskVersion },
+    });
+  } finally {
+    await server.close();
+    anvil.kill();
+  }
+  if ('status' in results) throw new Error(results.message);
+  console.log(`[dappress] Probe page: ${results.totalPassed} passed, ${results.totalFailed} failed`);
+  process.exit(results.totalFailed === 0 ? 0 : 1);
 }
 
 async function startAnvil(seedPhrase: string): Promise<ChildProcess> {
