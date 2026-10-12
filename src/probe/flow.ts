@@ -293,6 +293,15 @@ export function asksTheUser(step: Step): boolean {
  * not announce itself. isMetaMask names no one: every wallet sets it, and
  * MetaMask announces itself. With nothing announced, the wallet chosen is
  * window.ethereum itself.
+ *
+ * Missed, then: a wallet that does not announce itself and holds
+ * window.ethereum with isMetaMask alone, or with a flag the recorder does not
+ * read (conformance/recorder.js lists the ones it does). Nothing in the page
+ * tells it from the chosen wallet's own window.ethereum, which may say
+ * isMetaMask alone too, as Phantom's does. That is acceptable: such a wallet
+ * is rare, as current wallets announce themselves; the flags it would put in
+ * the profile are isMetaMask alone, the ones a dapp reads as "a wallet" and
+ * not as a given one; and the page shows those flags before the run starts.
  */
 export function otherWallets(announced: number, chosen: { name?: string; rdns?: string }, flags: Record<string, boolean> | undefined): boolean {
   if (announced > 1) return true;
