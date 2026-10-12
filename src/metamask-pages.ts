@@ -23,16 +23,24 @@ function isHomeRoute(url: string): boolean {
   return /(notification|sidepanel)\.html(#\/?)?$/.test(url);
 }
 
+// The screens MetaMask shows a dapp's request on. Any other route, such as
+// #/tx/<chain>/<hash> that the side panel flickers through while connecting,
+// or #/unlock once the wallet locked, shows no request
+const REQUEST_SCREENS = ['connect', 'confirm-transaction', 'confirmation', 'confirm-add-suggested-token', 'confirm-add-suggested-nft'];
+
 /**
- * The request a page's route shows: the screen, and the id MetaMask gives
+ * The request a page's route shows: its screen, and the id MetaMask gives
  * the request in it, as in #/confirm-transaction/<id>/signature-request,
- * #/confirmation/<id> or #/connect/<id>/confirm-permissions. What follows the
- * id is a step of the same request. A screen MetaMask routes without an id,
- * such as #/confirm-add-suggested-token, is known by its name alone.
+ * #/confirmation/<id> or #/connect/<id>/confirm-permissions; null on a
+ * route that shows none. What follows the id is a step of the same request,
+ * and a query (?loader=…) is not part of it. MetaMask routes some requests
+ * without an id: #/confirm-add-suggested-token always, and a confirmation
+ * at its bare screen before it moves to its id.
  */
-function requestOf(url: string): string {
-  const [page, route = ''] = url.split('#');
-  return `${page}#/${route.split('/').filter(Boolean).slice(0, 2).join('/')}`;
+function requestOf(url: string): { screen: string; id?: string } | null {
+  const route = (url.split('#')[1] ?? '').split('?')[0];
+  const [screen, id] = route.split('/').filter(Boolean);
+  return screen !== undefined && REQUEST_SCREENS.includes(screen) ? { screen, id } : null;
 }
 
 /**
@@ -40,14 +48,21 @@ function requestOf(url: string): string {
  * one, at `shown`. A dapp that sends a request as soon as the one before is
  * answered (an approval, then the swap) has it shown in the same window, in
  * place of the one answered, under its own id: the answered one is gone,
- * though the window kept its buttons. The same request is not another one,
- * shown again after a click that was lost or on another step of its own;
- * neither is the home route, which shows none. A page whose request was not
- * known, being on its home route, cannot tell.
+ * though the window kept its buttons. Only a request screen of another kind,
+ * or of the same kind under another id, is another request. The same request
+ * is not, shown again after a click that was lost, on another step of its
+ * own, or at its bare screen before or after its id; nor is a route that
+ * shows no request, the home route, the unlock screen or one MetaMask
+ * passes through, after which the request may well come back. Neither is a
+ * second request on a screen without an id, as two wallet_watchAsset in a
+ * row: it cannot be told from the first, and the command waiting for the
+ * first one's button fails, saying MetaMask kept the request open.
  */
 export function showsAnotherRequest(answered: string, shown: string): boolean {
-  if (isHomeRoute(answered) || isHomeRoute(shown)) return false;
-  return requestOf(shown) !== requestOf(answered);
+  const [before, now] = [requestOf(answered), requestOf(shown)];
+  if (!before || !now) return false;
+  if (before.screen !== now.screen) return true;
+  return before.id !== undefined && now.id !== undefined && before.id !== now.id;
 }
 
 function pagesOf(browser: Browser, extensionId: string, pathname: string): Target[] {

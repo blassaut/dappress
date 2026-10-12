@@ -96,6 +96,34 @@ test('showsAnotherRequest: the home route shows no request, and a request answer
   assert.equal(showsAnotherRequest(`${EXTENSION}/sidepanel.html#/`, `${EXTENSION}/sidepanel.html#/connect/QV22AunHqvYYeoH2B`), false);
 });
 
+test('showsAnotherRequest: a route MetaMask passes through, which shows no request, is not another', () => {
+  const connect = `${EXTENSION}/sidepanel.html#/connect/QV22AunHqvYYeoH2B`;
+  assert.equal(showsAnotherRequest(connect, `${EXTENSION}/sidepanel.html#/tx/eip155:31337/0x5a2c`), false);
+  assert.equal(showsAnotherRequest(connect, `${EXTENSION}/sidepanel.html#/unlock`), false);
+});
+
+test('showsAnotherRequest: a confirmation at its bare screen, before or after its id, is the same request', () => {
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-transaction`, SIGNATURE('7409a360')), false);
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), `${POPUP}#/confirm-transaction`), false);
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirmation`, `${POPUP}#/confirmation/switch-chain`), false);
+});
+
+test('showsAnotherRequest: a query is not part of the request', () => {
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-transaction/7409a360?loader=x`, `${POPUP}#/confirm-transaction/7409a360`), false);
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-transaction/7409a360?loader=x`, `${POPUP}#/confirm-transaction/74f45180`), true);
+});
+
+test('showsAnotherRequest: a second request on a screen without an id cannot be told from the first', () => {
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-add-suggested-token`, `${POPUP}#/confirm-add-suggested-token`), false);
+});
+
+test('waitForDismissal: a popup passing through a route that shows no request is waited on until it closes', async () => {
+  const popup = fakePage(TRANSACTION, { url: `${POPUP}#/unlock` });
+  setTimeout(() => (popup.closed = true), 150);
+  await waitForDismissal(popup as unknown as Page, TRANSACTION);
+  assert.ok(popup.closed, 'returned once the popup closed');
+});
+
 test('waitForDismissal: returns once the popup closes', async () => {
   const popup = fakePage(SWITCH, { url: `${POPUP}#/` });
   setTimeout(() => (popup.closed = true), 150);
