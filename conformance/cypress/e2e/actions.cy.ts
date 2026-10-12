@@ -554,7 +554,11 @@ describe('MetaMask actions', () => {
     cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
   });
 
-  it('snapshot, revert: a transaction sent after the revert goes from the nonce the chain went back to', () => {
+  // A transaction, a revert, then another: the second goes from the nonce the chain went back to, and is mined. The real
+  // MetaMask keeps its own view of the chain, which cy.revert() brings back to it: the transaction it sent, which would
+  // count in its next nonce, and its latest block, which may be one the revert removed. `afterFirst` is what happens
+  // between the first transaction and the revert
+  const acrossRevert = (afterFirst: (first: Mined) => void) => {
     if (!differences.addChainRefused) cy.useNetwork(anvil);
     // Read from the node itself: what the chain holds, whatever the wallet makes of it
     const nonce = () => cy.rpc<string>('eth_getTransactionCount', [account, 'latest']);
@@ -564,19 +568,33 @@ describe('MetaMask actions', () => {
       return provider
         .result()
         .its('result')
-        .then((hash) => onChain(hash as string));
+        .then((hash) => onChain(hash as string))
+        .should((transaction) => expect(transaction?.blockNumber, 'mined in block').to.be.a('string'));
     };
     nonce().then((before) => {
       cy.snapshot().as('snapshot');
-      send('0x1').should('include', { nonce: before });
+      send('0x1')
+        .should('include', { nonce: before })
+        .then((first) => afterFirst(first!));
       nonce().should('eq', `0x${(BigInt(before) + 1n).toString(16)}`);
       cy.get<string>('@snapshot').then((id) => cy.revert(id));
       nonce().should('eq', before);
-      // The real MetaMask keeps its own view of the chain, which a revert does not reach: the transaction it sent stays in
-      // its activity and counts in the next nonce, one the node holds as a future transaction and never mines, and its
-      // latest block, once it saw the one reverted, is one the chain no longer has, where eth_sendTransaction fails, -32603
-      if (!mock) return;
+      // What the dapp reads through the wallet follows
+      provider.waitFor('eth_getTransactionCount', [account, 'latest'], (seen) => seen === before).should('eq', before);
       send('0x2').should('include', { nonce: before });
+    });
+  };
+
+  it('snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to', () => {
+    acrossRevert(() => {});
+  });
+
+  it('snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to', () => {
+    // MetaMask polls the chain for its latest block, every 20 s: the block of the transaction becomes its latest, one the revert removes
+    acrossRevert((first) => {
+      provider
+        .waitFor('eth_blockNumber', [], (seen) => BigInt(seen as string) >= BigInt(first.blockNumber!), 80)
+        .then((seen) => expect(BigInt(seen as string) >= BigInt(first.blockNumber!), 'the wallet at the block of the transaction').to.eq(true));
     });
   });
 
@@ -589,8 +607,12 @@ describe('MetaMask actions', () => {
         .as('snapshot');
       cy.setStorageAt(secondAccount, 7, 1);
       cy.mine(2);
-      cy.get<string>('@snapshot').then((id) => cy.revert(id));
-      cy.rpc('eth_blockNumber').should('eq', block);
+      cy.rpc<string>('eth_blockNumber').then((head) => {
+        cy.get<string>('@snapshot').then((id) => cy.revert(id));
+        // The real MetaMask takes a block for its latest only if it is higher than the one it has, which may be `head`:
+        // cy.revert() mines one block past it there
+        cy.rpc('eth_blockNumber').should('eq', mock ? block : `0x${(BigInt(head) + 1n).toString(16)}`);
+      });
       cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
     });
     // The revert consumed the snapshot: a second one fails, naming it

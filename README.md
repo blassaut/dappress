@@ -335,7 +335,7 @@ beforeEach(() => cy.snapshot().as('snapshot'));
 afterEach(() => cy.get('@snapshot').then((id) => cy.revert(id)));
 ```
 
-This is for the mocks, which read the chain afresh on every request. The real MetaMask keeps its own view of the chain, which a revert does not reach: a transaction it sent stays in its activity and counts in the nonce of the next one, which the node then holds as a future transaction and never mines; and once MetaMask saw a block the revert removed, it asks the chain for that block, and `eth_sendTransaction` fails with `-32603` until the chain is past it again. With the real MetaMask, revert only where it sends no transaction afterwards, in the same spec.
+A mock reads the chain afresh on every request, and needs nothing more. The real MetaMask keeps its own view of the chain, which a revert does not reach: the transactions it sent, which count in the nonce of its next one, and its latest block, which it replaces only with a higher one, and which may be one the revert removed. So on the real MetaMask, `cy.revert()` then mines one block past the block the chain was at before the revert, and deletes MetaMask's activity for its selected account on its network, from Settings → Developer tools → "Delete activity and nonce data", which also makes MetaMask connect to the network anew. MetaMask sends its next transaction at once, from the nonce the chain went back to. The chain's state is the snapshot's, but its block number ends higher than at the snapshot, by the blocks mined since it plus one. The wallet's activity of that account on that network is gone, the transactions before the snapshot included.
 
 ### Where each answer comes from
 

@@ -5,6 +5,16 @@
 export type RpcAnswer = { result?: unknown; error?: { code?: number; message: string } };
 
 /**
+ * How many blocks to mine for the chain, at block `head` after a revert, to be
+ * past `before`, the block it was at before: one more than the revert took away.
+ * The real MetaMask takes a block for its latest only if it is higher than the
+ * one it has, which may be `before`, a block the revert removed.
+ */
+export function blocksPast(before: string, head: string): number {
+  return Math.max(Number(BigInt(before) - BigInt(head)), 0) + 1;
+}
+
+/**
  * Why evm_revert to snapshot `id` failed on the node at `url`, or undefined if
  * it did not. Anvil and Hardhat answer false for a snapshot they do not have:
  * one never taken, or one a revert consumed, its own or one to an earlier snapshot.

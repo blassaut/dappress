@@ -202,6 +202,25 @@ export async function importAccount(page: Page, privateKey: string): Promise<str
   return imported!;
 }
 
+/**
+ * Make MetaMask forget the transactions of the selected account on its
+ * current network, as its settings offer: "Delete activity and nonce data".
+ * Its next transaction then takes the nonce the chain gives, and its
+ * connection to the network is made anew, with a block tracker that starts
+ * from the chain's head. Comes back to the wallet's home.
+ */
+export async function clearActivity(page: Page): Promise<void> {
+  const s = selectors.activity;
+  await waitFor(page, selectors.home.header);
+  await reloadHome(page, s.route);
+  await press(page, s.delete);
+  // In the modal that asks to confirm, which closes once MetaMask has deleted the data
+  await press(page, s.confirm);
+  await waitForGone(page, s.confirm);
+  await reloadHome(page);
+  await waitFor(page, selectors.home.header);
+}
+
 // Reload the home page, on `route` if one is given. Through about:blank:
 // changing only the "#" part of the URL would be a same-document navigation,
 // which goto() waits on forever

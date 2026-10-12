@@ -69,6 +69,14 @@ export const selectors = {
     // "Disconnect", in the modal that asks to confirm
     confirmDisconnect: [testId('disconnect-all'), `xpath/.//*[@data-testid="disconnect-all-modal"]//button[normalize-space(.)="Disconnect"]`],
   },
+  // Settings → Developer tools → "Delete activity and nonce data": it forgets the transactions of the selected
+  // account on the current network, and the nonces they took
+  activity: {
+    route: '#/settings/developer-tools',
+    delete: [testId('developer-options-delete-activity-and-nonce-data'), buttonText('Delete activity and nonce data')],
+    // "Delete", in the modal that asks to confirm
+    confirm: [testId('delete-activity-and-nonce-data-button'), `xpath/.//*[contains(@class, "mm-modal-content")]//button[normalize-space(.)="Delete"]`],
+  },
   // The account list, opened from the home header
   accounts: {
     name: '[data-testid^="multichain-account-cell-name-"]',

@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { revertFailure } from './chain';
+import { blocksPast, revertFailure } from './chain';
+
+test('blocksPast: one block past the head before the revert', () => {
+  assert.equal(blocksPast('0xc', '0xb'), 2);
+  assert.equal(blocksPast('0x1f4', '0x64'), 401);
+  // A revert to the head itself, the chain unchanged: one block all the same
+  assert.equal(blocksPast('0xb', '0xb'), 1);
+});
 
 const ANVIL = 'http://127.0.0.1:8545';
 
