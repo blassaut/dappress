@@ -28,4 +28,10 @@ jobs:
       # Lint, formatting, types and unit tests, as `npm run check` does for a contributor
       - run: npm run check
 
-      - run: npm run build
+      # The build twice, compared: the reproducible build needs the same dist from the same tag
+      - name: Build, twice, to the same dist
+        run: |
+          npm run build
+          cp -r dist "$RUNNER_TEMP/dist"
+          npm run build
+          diff -r "$RUNNER_TEMP/dist" dist

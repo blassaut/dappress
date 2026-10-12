@@ -58,7 +58,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && mkdir -p dist/profiles && cp reports/profiles/*.json dist/profiles/",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && mkdir -p dist/profiles && cp reports/profiles/*.json dist/profiles/ && tsx scripts/build-probe.ts",
     "prepack": "npm run build",
     "conformance": "tsx scripts/conformance.ts",
     "matrix": "tsx scripts/matrix.ts",
@@ -83,6 +83,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^20.19.43",
     "cypress": "^16.1.1",
+    "esbuild": "0.28.2",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",
