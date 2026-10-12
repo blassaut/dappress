@@ -277,8 +277,13 @@ async function main(): Promise<void> {
   // Leaving the page loses the session
   const leaving = (event: BeforeUnloadEvent) => event.preventDefault();
   window.addEventListener('beforeunload', leaving);
-  const marks = await runFlow(wallet.provider, { anvilUrl: config.anvilUrl });
-  window.removeEventListener('beforeunload', leaving);
+  let marks: Mark[];
+  try {
+    marks = await runFlow(wallet.provider, { anvilUrl: config.anvilUrl });
+  } finally {
+    // A flow that failed has no session left to lose
+    window.removeEventListener('beforeunload', leaving);
+  }
   const trace = plainTrace(window.__dappressTrace);
   const profile = buildProfile(chunksOf(trace, marks), {
     wallet: { name: wallet.info.name ?? 'Unknown wallet', version },
