@@ -43,7 +43,7 @@ const differences: {
   batchRefused?: number;
 } =
   {
-    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined },
+    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined, batchRefused: -32601 },
     Phantom: { switchRefused: 4901, addChainRefused: 4901, watchAssetRefused: -32000, noRevokePermissions: true, batchRefused: -32601 },
   }[wallet] ?? {};
 
