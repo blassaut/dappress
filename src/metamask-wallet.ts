@@ -202,6 +202,29 @@ export async function importAccount(page: Page, privateKey: string): Promise<str
   return imported!;
 }
 
+/**
+ * Make MetaMask forget the transactions of the selected account on its
+ * current network, as its settings offer: "Delete activity and nonce data".
+ * Its next transaction then takes the nonce the chain gives. Its latest block
+ * is not reset: only a higher block replaces it. Comes back to the wallet's home.
+ */
+export async function clearActivity(page: Page): Promise<void> {
+  const s = selectors.activity;
+  if ((await walletState(page)) === 'locked') {
+    throw new Error(
+      '[dappress] MetaMask is locked: cy.revert() deletes its activity from its settings, which need it unlocked. Unlock it before, with cy.unlockWallet()',
+    );
+  }
+  await waitFor(page, selectors.home.header);
+  await reloadHome(page, s.route);
+  await press(page, s.delete);
+  // In the modal that asks to confirm, which closes once MetaMask has deleted the data
+  await press(page, s.confirm);
+  await waitForGone(page, s.confirm);
+  await reloadHome(page);
+  await waitFor(page, selectors.home.header);
+}
+
 // Reload the home page, on `route` if one is given. Through about:blank:
 // changing only the "#" part of the URL would be a same-document navigation,
 // which goto() waits on forever

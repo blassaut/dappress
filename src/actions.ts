@@ -95,6 +95,7 @@ export function createTasks(options: ResolvedOptions): Cypress.Tasks {
     lockWallet: onHomePage(metamask.lock),
     unlockWallet,
     disconnectFromDapp: onHomePage(metamask.disconnectSite),
+    clearActivity: onHomePage(metamask.clearActivity),
   };
   for (const decision of Object.keys(metamask.decisions) as metamask.Decision[]) actions[decision] = decide(decision);
 

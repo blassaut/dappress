@@ -323,8 +323,21 @@ it('liquidates a position under water', () => {
 | `cy.increaseTime(seconds)`              | Moves the clock forward, then mines a block: funding, expiries, vesting.                                          |
 | `cy.mine(blocks?)`                      | Mines blocks, one by default.                                                                                    |
 | `cy.rpc(method, params?)`               | Sends any JSON-RPC request, and yields its result: `anvil_setBalance`, `eth_getBalance`, anything the node takes. |
+| `cy.snapshot()`                         | Takes a snapshot of the chain, and yields its id.                                                                |
+| `cy.revert(id)`                         | Puts the chain back as it was at snapshot `id`. Fails, naming the id, if the node has no such snapshot.          |
 
-The first three need a development node, as a real chain refuses to rewrite storage or move its clock: Anvil, a fork it runs, or Hardhat Network. They send Hardhat's method names, which Anvil takes too. `cy.rpc()` works on any node, a testnet included, and with the real MetaMask too. A chain the mock has no RPC for, or one the dapp only switches to, is named with the `chains` option: `{ '0x…': 'https://…' }`.
+All but `cy.rpc()` need a development node, as a real chain refuses to rewrite storage, move its clock or go back: Anvil, a fork it runs, or Hardhat Network. They send Hardhat's method names, which Anvil takes too. `cy.rpc()` works on any node, a testnet included, and with the real MetaMask too. A chain the mock has no RPC for, or one the dapp only switches to, is named with the `chains` option: `{ '0x…': 'https://…' }`.
+
+**Each test from the same state.** Anvil and Hardhat consume a snapshot when they revert to it, and drop the snapshots taken after it: to revert again, take a new one. A snapshot before each test, and a revert after it, give every test the chain the one before found:
+
+```ts
+beforeEach(() => cy.snapshot().as('snapshot'));
+afterEach(() => cy.get('@snapshot').then((id) => cy.revert(id)));
+```
+
+A mock reads the chain afresh on every request, and needs nothing more. The real MetaMask keeps its own view of the chain, which a revert does not reach: the transactions it sent, which count in the nonce of its next one, and its latest block, which it replaces only with a higher one, and which may be one the revert removed. So on the real MetaMask, `cy.revert()` then mines one block past the block the chain was at before the revert, and deletes MetaMask's activity for its selected account on its network, from Settings → Developer tools → "Delete activity and nonce data". The block moves MetaMask's latest block on, and the deletion its nonce: MetaMask sends its next transaction at once, from the nonce the chain went back to. The chain's state is the snapshot's, but its block number ends higher than at the snapshot, by the blocks mined since it plus one: a test that mined a million blocks makes each revert mine a million again. The wallet's activity of that account on that network is gone, the transactions before the snapshot included.
+
+What MetaMask forgets is the activity of its selected account, on the network MetaMask itself is on. A transaction sent from another account, or on another network than the wallet's, keeps its nonce in MetaMask: after the revert, that account's next transaction there takes a nonce the node never mines, and waits. The wallet must be unlocked: `cy.revert()` on a locked MetaMask fails, and says so.
 
 ### Where each answer comes from
 
@@ -442,7 +455,7 @@ The same commands drive the real MetaMask and the mocks.
 | `cy.unlockWallet()`            | Unlocks the wallet. Yields `locked` if it was locked, `unlocked` if there was nothing to do.         |
 | `cy.setupMetaMask()`           | Imports or unlocks the wallet. Runs by itself before each spec, unless `autoSetup` is `false`.       |
 
-The chain commands, `cy.setStorageAt()`, `cy.increaseTime()`, `cy.mine()` and `cy.rpc()`, are in [Your chain, at your block](#your-chain-at-your-block).
+The chain commands, `cy.setStorageAt()`, `cy.increaseTime()`, `cy.mine()`, `cy.rpc()`, `cy.snapshot()` and `cy.revert()`, are in [Your chain, at your block](#your-chain-at-your-block).
 
 ### Transaction options
 

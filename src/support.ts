@@ -7,6 +7,7 @@
 // Each command asks the Node side (src/actions.ts) to drive MetaMask through
 // a Cypress task, then yields back to the test.
 
+import { blocksPast, revertFailure, type RpcAnswer } from './chain';
 import { createMockWallet, installMockWallet, networkRefused } from './mock-wallet';
 import type { ConnectOptions, Network, PublicOptions, TransactionOptions, WalletState } from './types';
 
@@ -73,6 +74,14 @@ declare global {
       increaseTime(seconds: number): Chainable<void>;
       /** Writes `value` at storage `slot` of the contract at `address`, and mines a block: an oracle's price, a balance. */
       setStorageAt(address: string, slot: number | bigint | string, value: number | bigint | string): Chainable<void>;
+      /** Takes a snapshot of the chain the dapp is on, and yields its id for cy.revert(): `cy.snapshot().as('snapshot')`. */
+      snapshot(): Chainable<string>;
+      /**
+       * Puts the chain the dapp is on back as it was at snapshot `id`. The revert consumes the snapshot, and those taken after it:
+       * take a new one to revert again. Fails if the node has no such snapshot. On the real MetaMask, it then mines past the
+       * block the chain was at, and deletes the activity of the selected account on its network, so it sends from the chain's nonce.
+       */
+      revert(id: string): Chainable<void>;
     }
   }
 }
@@ -219,7 +228,7 @@ Cypress.Commands.add('getAccountAddress', () => {
 });
 
 // The chain itself, for what a test sets up beside the wallet: a block, the
-// time, a contract's storage. These need a development node: Anvil, or a fork
+// time, a contract's storage, a snapshot to go back to. These need a development node: Anvil, or a fork
 // it runs, or Hardhat's. The methods are Hardhat's names, which Anvil takes too.
 const chains = Object.fromEntries(Object.entries(options.chains ?? {}).map(([chain, url]) => [chain.toLowerCase(), url]));
 
@@ -234,15 +243,46 @@ function chainEndpoint(): Cypress.Chainable<string> {
   });
 }
 
-Cypress.Commands.add('rpc', (method: string, params: unknown[] = []) => {
+/** Sends `method` to the chain the dapp is on, logged as the chain commands are, and yields the node's answer with its endpoint. */
+function chainRequest(method: string, params: unknown[]): Cypress.Chainable<{ url: string; answer: RpcAnswer }> {
   Cypress.log({ name: 'chain', message: `${method} ${params.length ? JSON.stringify(params) : ''}`.trim() });
   return chainEndpoint().then((url) =>
-    cy.request({ method: 'POST', url, body: { jsonrpc: '2.0', id: 1, method, params }, log: false }).then(({ body }) => {
-      if (body.error) throw new Error(`[dappress] ${method} failed on ${url}: ${body.error.message}`);
-      return body.result;
-    }),
+    cy.request<RpcAnswer>({ method: 'POST', url, body: { jsonrpc: '2.0', id: 1, method, params }, log: false }).then(({ body }) => ({ url, answer: body })),
   );
+}
+
+Cypress.Commands.add('rpc', (method: string, params: unknown[] = []) =>
+  chainRequest(method, params).then(({ url, answer }) => {
+    if (answer.error) throw new Error(`[dappress] ${method} failed on ${url}: ${answer.error.message}`);
+    return answer.result;
+  }),
+);
+
+Cypress.Commands.add('snapshot', () => cy.rpc<string>('evm_snapshot'));
+
+// The real MetaMask keeps its own view of the chain, which a revert does not
+// reach: the transactions it sent count in its next nonce, and its latest block
+// may be one the revert removed, which it keeps until it sees a higher one.
+// The chain is mined past the block it was at, which moves MetaMask's latest
+// block on, and MetaMask forgets the account's activity, which resets its nonce.
+// A mock reads the chain afresh on every request: nothing to do there.
+Cypress.Commands.add('revert', (id: string) => {
+  if (typeof id !== 'string') throw new Error(`[dappress] cy.revert() takes the id cy.snapshot() yielded, not ${JSON.stringify(id)}`);
+  if (mock) return revertTo(id);
+  cy.rpc<string>('eth_blockNumber').then((before) => {
+    revertTo(id);
+    cy.rpc<string>('eth_blockNumber').then((head) => cy.mine(blocksPast(before, head)));
+    metamask('clearActivity');
+  });
 });
+
+// Anvil and Hardhat answer false for a snapshot they do not have: one a revert consumed
+function revertTo(id: string): void {
+  chainRequest('evm_revert', [id]).then(({ url, answer }) => {
+    const failure = revertFailure(id, url, answer);
+    if (failure) throw new Error(failure);
+  });
+}
 
 Cypress.Commands.add('mine', (blocks = 1) => {
   cy.rpc('hardhat_mine', [`0x${blocks.toString(16)}`]);
