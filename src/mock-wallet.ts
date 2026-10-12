@@ -235,16 +235,15 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     return refuseWithoutAsking(kind, method, params);
   }
 
-  /** The permissions the connected dapp holds, granted again without asking: a command waiting to decide on it is told at once. */
-  function grantWithoutAsking(method: string): unknown[] {
+  /**
+   * The permissions granted again to the connected dapp without asking, as
+   * the wallet granted them: a new grant, its own id and date, as Phantom gave
+   * each grant a new date. A command waiting to decide on it is told at once.
+   */
+  function grantWithoutAsking(method: string): unknown {
+    grant = { id: crypto.randomUUID(), date: Date.now() };
     const held = permissions(method);
-    let granted: unknown[];
-    if (held) granted = recorded(method, held);
-    else {
-      granted = [{ parentCapability: 'eth_accounts' }];
-      lastRecorded = `${wallet} answers ${JSON.stringify(granted)} to ${method}, as EIP-2255 says: the profile has no answer of its own`;
-      log?.(lastRecorded);
-    }
+    const granted = held ? recorded(method, held) : result(method);
     answeredWithoutAsking.push({ kind: 'connection', line: lastRecorded! });
     return granted;
   }
@@ -294,9 +293,12 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         return connected;
       }
       case 'wallet_requestPermissions': {
-        // EIP-2255: before the first connection, it is one, and the user is asked. While connected, the user is asked
-        // again only by a wallet seen rejected for it, as MetaMask was; Rabby and Phantom grant it without asking
-        if (connected.length && !observations(method).some((observation) => observation.error?.code === USER_REJECTED)) return grantWithoutAsking(method);
+        // EIP-2255: before the first connection, it is one, and the user is asked. While connected, a wallet seen
+        // granting it and never seen rejected for it grants it without asking, as Rabby and Phantom did; one seen
+        // rejected for it asks again, as MetaMask does, and so does one never seen answering it: the user decides
+        const seen = observations(method);
+        if (connected.length && seen.some((observation) => !observation.error) && !seen.some((observation) => observation.error?.code === USER_REJECTED))
+          return grantWithoutAsking(method);
         await answered('connection', method, list);
         const granted = permissions(method);
         return granted ? recorded(method, granted) : result(method, [{ parentCapability: 'eth_accounts' }]);
@@ -382,6 +384,9 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
 
   function disconnect(): void {
     grant = undefined;
+    // A grant without asking is the connection's: the next connection is asked for
+    for (let index = answeredWithoutAsking.length - 1; index >= 0; index--)
+      if (answeredWithoutAsking[index].kind === 'connection') answeredWithoutAsking.splice(index, 1);
     if (!connected.length) return;
     connected = [];
     emit('accountsChanged', []);

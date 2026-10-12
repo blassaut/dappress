@@ -326,29 +326,59 @@ test('wallet_requestPermissions asks the user while connected where the wallet w
   assert.notEqual(granted.id, first.id);
 });
 
-test('wallet_requestPermissions while connected is granted without asking where the wallet was never seen rejected for it; before, it is a connection', async () => {
-  // As Rabby was recorded: granted at the step that asked the user to reject it
-  const granting: Profile = {
-    ...rabby,
-    methods: { ...rabby.methods, wallet_requestPermissions: [{ params: [{ eth_accounts: {} }], result: [{ parentCapability: 'eth_accounts' }] }] },
-  };
-  const { mock: fresh, provider: freshDapp } = wallet(granting);
+// As Rabby and Phantom were recorded: granted at the step that asked the user to reject it, each grant with a new date
+const grantsWithoutAsking: Profile = {
+  ...rabby,
+  methods: {
+    ...rabby.methods,
+    wallet_requestPermissions: [
+      { params: [{ eth_accounts: {} }], result: [{ parentCapability: 'eth_accounts', date: 1 }] },
+      { params: [{ eth_accounts: {} }], result: [{ parentCapability: 'eth_accounts', date: 2 }] },
+    ],
+  },
+};
+
+test('wallet_requestPermissions while connected is granted without asking where the wallet was seen granting it and never rejected for it; before, it is a connection', async () => {
+  const { mock: fresh, provider: freshDapp } = wallet(grantsWithoutAsking);
   const connecting = freshDapp.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
   await fresh.act('connectToDapp');
-  assert.deepEqual(await connecting, [{ parentCapability: 'eth_accounts' }]);
+  const [connection] = (await connecting) as Permission[];
+  assert.equal(connection.parentCapability, 'eth_accounts');
 
-  const { mock, provider } = await connectedWallet(granting);
-  assert.deepEqual(await provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] }), [{ parentCapability: 'eth_accounts' }]);
+  const { mock, provider } = await connectedWallet(grantsWithoutAsking);
+  const before = Date.now();
+  const [first] = (await provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] })) as Permission[];
+  assert.equal(first.parentCapability, 'eth_accounts');
+  assert.ok(first.date >= before, 'a new date');
   // A command waiting to decide on it is told at once
   const started = Date.now();
   await assert.rejects(
     mock.act('rejectConnection'),
-    /Nothing for rejectConnection to decide on: Rabby 0\.94\.11 answers \[\{"parentCapability":"eth_accounts"\}\] to wallet_requestPermissions, as recorded, without asking/,
+    /Nothing for rejectConnection to decide on: Rabby 0\.94\.11 answers \[\{"parentCapability":"eth_accounts","date":\d+\}\] to wallet_requestPermissions, as recorded, without asking/,
   );
   assert.ok(Date.now() - started < 1000);
-  // Without a recorded shape: the bare permission, without asking too
-  const { provider: bareDapp } = await connectedWallet(metamask);
-  assert.deepEqual(await bareDapp.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] }), [{ parentCapability: 'eth_accounts' }]);
+  // Each grant is a new one
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const [second] = (await provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] })) as Permission[];
+  assert.ok(second.date > first.date, 'another date');
+});
+
+test('wallet_requestPermissions while connected asks where the profile never saw it answered: the user decides', async () => {
+  const { mock, provider } = await connectedWallet(metamask);
+  const asking = provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+  await mock.act('connectToDapp');
+  assert.deepEqual(await asking, [{ parentCapability: 'eth_accounts' }]);
+});
+
+test('a grant without asking does not outlive the connection: the next connection waits for its command', async () => {
+  const { mock, provider } = await connectedWallet(grantsWithoutAsking);
+  await provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+  await provider.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
+  // The command first, as cy.connectToDapp() waits for the dapp's request
+  const deciding = mock.act('connectToDapp');
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await deciding;
+  assert.deepEqual(await connecting, [ACCOUNTS[0]]);
 });
 
 test('wallet_getCapabilities: what the wallet named, for the chains asked; refused for an account not connected; not invented', async () => {
