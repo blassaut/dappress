@@ -25,12 +25,21 @@ const wallet = (Cypress.expose('dappress') as { mock?: { profile: { wallet: { na
  * What the other wallets do differently, as their profiles recorded it: the
  * code they refuse a switch to a chain the dapp was not allowed on with,
  * without asking; what wallet_watchAsset answers when accepted, or the code
- * it is refused with, without asking; whether wallet_revokePermissions exists.
+ * it is refused with, without asking; the code it refuses to add a chain
+ * with, without asking; whether it takes no chain it does not have (the dapp
+ * stays on the wallet's own chain: mainnet); whether wallet_revokePermissions exists.
  */
-const differences: { switchRefused?: number; watchAssetAnswers?: unknown; watchAssetRefused?: number; noRevokePermissions?: boolean } =
+const differences: {
+  switchRefused?: number;
+  addChainRefused?: number;
+  noCustomChains?: boolean;
+  watchAssetAnswers?: unknown;
+  watchAssetRefused?: number;
+  noRevokePermissions?: boolean;
+} =
   {
     Rabby: { switchRefused: -32603, watchAssetAnswers: undefined },
-    Phantom: { switchRefused: 4901, watchAssetRefused: -32000, noRevokePermissions: true },
+    Phantom: { switchRefused: 4901, addChainRefused: 4901, noCustomChains: true, watchAssetRefused: -32000, noRevokePermissions: true },
   }[wallet] ?? {};
 
 // Take the dapp's permission back: wallet_revokePermissions, or the wallet's own screen where it has none
@@ -87,6 +96,9 @@ const anvil = {
   rpcUrls: ['http://127.0.0.1:8545'],
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
 };
+// The chain the dapp is on from its connection to the end of the suite: Anvil's, where the wallet takes a chain the dapp adds
+const mainnet = '0x1';
+const dappChain = differences.noCustomChains ? mainnet : anvil.chainId;
 const unreachable = { ...anvil, chainId: '0x539', chainName: 'Unreachable', rpcUrls: ['http://127.0.0.1:8546'] };
 
 describe('MetaMask actions', () => {
@@ -110,7 +122,7 @@ describe('MetaMask actions', () => {
     cy.connectToDapp();
     testDapp.accounts().should('contain.text', account);
     cy.getAccountAddress().should('eq', account);
-    testDapp.chainId().should('have.text', hoodi);
+    testDapp.chainId().should('have.text', differences.noCustomChains ? mainnet : hoodi);
   });
 
   it('wallet_getPermissions, once connected', () => {
@@ -192,16 +204,25 @@ describe('MetaMask actions', () => {
 
   it('rejectNewNetwork', () => {
     provider.request('wallet_addEthereumChain', [unreachable]);
-    cy.rejectNewNetwork();
-    provider.result().its('error.code').should('eq', USER_REJECTED);
-    testDapp.chainId().should('have.text', hoodi);
+    if (differences.addChainRefused) {
+      provider.result().its('error.code').should('eq', differences.addChainRefused);
+    } else {
+      cy.rejectNewNetwork();
+      provider.result().its('error.code').should('eq', USER_REJECTED);
+    }
+    testDapp.chainId().should('have.text', differences.noCustomChains ? mainnet : hoodi);
   });
 
   it('approveNewNetwork', () => {
     provider.request('wallet_addEthereumChain', [anvil]);
-    cy.approveNewNetwork();
-    provider.result().should('have.property', 'result');
-    testDapp.chainId().should('have.text', anvil.chainId);
+    // A wallet that refuses to add the chain without asking leaves the dapp on its own chain
+    if (differences.addChainRefused) {
+      provider.result().its('error.code').should('eq', differences.addChainRefused);
+    } else {
+      cy.approveNewNetwork();
+      provider.result().should('have.property', 'result');
+    }
+    testDapp.chainId().should('have.text', dappChain);
   });
 
   it('rejectSwitchNetwork', () => {
@@ -212,7 +233,7 @@ describe('MetaMask actions', () => {
       cy.rejectSwitchNetwork();
       provider.result().its('error.code').should('eq', USER_REJECTED);
     }
-    testDapp.chainId().should('have.text', anvil.chainId);
+    testDapp.chainId().should('have.text', dappChain);
   });
 
   it('approveSwitchNetwork', () => {
@@ -220,7 +241,7 @@ describe('MetaMask actions', () => {
     // A wallet that refuses the switch without asking leaves the dapp where it was
     if (differences.switchRefused) {
       provider.result().its('error.code').should('eq', differences.switchRefused);
-      testDapp.chainId().should('have.text', anvil.chainId);
+      testDapp.chainId().should('have.text', dappChain);
       return;
     }
     cy.approveSwitchNetwork();
@@ -239,20 +260,28 @@ describe('MetaMask actions', () => {
   });
 
   it('useNetwork, back to a network the dapp is allowed on', () => {
+    if (differences.noCustomChains) {
+      // The wallet cannot be moved onto Anvil: the command fails at once, and says why
+      cy.on('fail', (error) => {
+        expect(error.message).to.match(/^\[dappress\] \S+ refused the network Anvil \(0x7a69\): it answers 4901 .*cannot be moved onto that chain/);
+      });
+      cy.useNetwork(anvil);
+      return;
+    }
     cy.useNetwork(anvil);
     testDapp.chainId().should('have.text', anvil.chainId);
   });
 
   it('wallet_sendCalls on a chain without EIP-7702: refused without asking', () => {
     // MetaMask batches calls through EIP-7702 only, on the chains it names in its capabilities: not on Anvil's
-    answer('wallet_getCapabilities', [account, [anvil.chainId]]).then((settled) => {
+    answer('wallet_getCapabilities', [account, [dappChain]]).then((settled) => {
       if (recorded('wallet_getCapabilities')) expect(settled).to.deep.equal({ result: {} });
     });
     const calls = [
       { to: secondAccount, value: '0x1' },
       { to: secondAccount, value: '0x2' },
     ];
-    answer('wallet_sendCalls', [{ version: '2.0.0', chainId: anvil.chainId, from: account, atomicRequired: false, calls }])
+    answer('wallet_sendCalls', [{ version: '2.0.0', chainId: dappChain, from: account, atomicRequired: false, calls }])
       .its('error.code')
       .should('eq', recorded('wallet_sendCalls') ? 5710 : UNSUPPORTED);
     provider.call('eth_getTransactionCount', [account, 'latest']).should('eq', '0x0');
@@ -423,8 +452,9 @@ describe('MetaMask actions', () => {
 
   it('chain commands: mine, increaseTime, setStorageAt, rpc', () => {
     const block = (tag = 'latest') => cy.rpc<{ number: string; timestamp: string }>('eth_getBlockByNumber', [tag, false]);
-    // On the local node, where these commands act: connectToDapp() left the dapp on the wallet setup's network
-    cy.useNetwork(anvil);
+    // On the local node, where these commands act: connectToDapp() left the dapp on the wallet setup's network.
+    // A wallet that takes no chain stays on its own, which the mock backs with the local node
+    if (!differences.noCustomChains) cy.useNetwork(anvil);
     cy.rpc<string>('eth_chainId').should('eq', anvil.chainId);
     block().then(({ number, timestamp }) => {
       cy.mine(2);

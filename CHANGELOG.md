@@ -14,6 +14,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 - On a mock, `wallet_requestPermissions` asks the user even while the dapp is connected, as MetaMask was seen doing: `cy.connectToDapp()` or `cy.rejectConnection()` answers it. It asked only before the first connection.
 
+### Fixed
+
+- Phantom's mock refuses `wallet_addEthereumChain` as Phantom was recorded refusing it, `4901`, without asking, with the chain asked for in the message. It asked the user for any chain it did not know, so `cy.approveNewNetwork()` made it succeed where the real Phantom refuses, and a test passed on the mock that would fail on the wallet. A command waiting for the network request says at once that the wallet refused it. A wallet recorded accepting the chain, or rejected by its user, still asks. `cy.useNetwork()`, and `cy.connectToDapp()` with a `network` in the wallet setup, fail at once on such a wallet, naming it, the chain and its answer: it cannot be moved onto that chain, and a fork of a chain it supports is what to use.
+
 ## [0.10.1] - 2026-10-12
 
 ### Security

@@ -311,7 +311,11 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
       }
       case 'wallet_addEthereumChain': {
         const chain = chainOf(list[0]);
-        if (!known.has(chain)) await answered('network', method, list);
+        if (!known.has(chain)) {
+          const refused = alwaysRefused('network', method, list);
+          if (refused) throw refused;
+          await answered('network', method, list);
+        }
         // The chain's own RPC, unless the options name one
         const [given] = ((list[0] as { rpcUrls?: unknown }).rpcUrls ?? []) as string[];
         if (typeof given === 'string') added.set(chain, given);
@@ -646,6 +650,13 @@ export function installMockWallet(win: Window & { ethereum?: unknown }, mock: Mo
   // The wallet announces the chain it is on once the page has had a chance to listen
   if (options.profile.events.connect)
     setTimeout(() => mock.provider.request({ method: 'eth_chainId' }).then((chainId) => mock.emit('connect', { chainId })), 0);
+}
+
+/** What cy.useNetwork() says when the wallet refused to add the network: which wallet, which chain, its answer, and what to do instead. */
+export function networkRefused(wallet: string, network: { chainId: string; chainName?: string }, error: { code?: number; message: string }): string {
+  const chain = network.chainName ? `${network.chainName} (${network.chainId})` : network.chainId;
+  const answer = error.code === undefined ? `"${error.message}"` : `${error.code} "${error.message}"`;
+  return `[dappress] ${wallet} refused the network ${chain}: it answers ${answer}. This wallet cannot be moved onto that chain: use a fork of a chain it supports.`;
 }
 
 /**
