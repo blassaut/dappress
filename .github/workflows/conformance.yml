@@ -191,6 +191,64 @@ jobs:
           path: reports/mock-*.json
           if-no-files-found: ignore
 
+  # The probe page, gone through with Dappress's commands: on MetaMask, and on
+  # the mocks. The profile it records must answer as theirs, method by method.
+  probe:
+    needs: version
+    if: needs.version.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: headless
+            wallet: ''
+          - mode: mock
+            wallet: metamask
+          - mode: mock
+            wallet: rabby
+          - mode: mock
+            wallet: phantom
+    name: probe (${{ matrix.mode == 'mock' && format('{0} mock', matrix.wallet) || 'MetaMask' }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Chrome for Testing
+        id: chrome
+        run: |
+          path=$(scripts/install-chrome.sh stable)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: npm ci
+
+      # The page is served from dist/probe
+      - run: npm run build
+
+      - name: Go through the probe page
+        run: xvfb-run --auto-servernum npm run conformance -- "$METAMASK_VERSION" --probe
+        env:
+          METAMASK_VERSION: ${{ needs.version.outputs.version }}
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
+          DAPPRESS_MODE: ${{ matrix.mode }}
+          DAPPRESS_MOCK: ${{ matrix.wallet }}
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: probe-screenshots-${{ matrix.mode }}-${{ matrix.wallet || 'metamask' }}
+          # Cypress's screenshots, and what MetaMask showed when a Dappress command failed
+          path: |
+            conformance/cypress/screenshots
+            /tmp/dappress
+          if-no-files-found: ignore
+
   publish:
     needs: [version, suite, mock]
     # A failing mode still has its report published
