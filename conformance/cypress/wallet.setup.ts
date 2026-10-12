@@ -2,8 +2,9 @@ import type { WalletSetup } from '../../src';
 
 // The public Hardhat / Anvil test wallet, moved onto the Hoodi testnet at
 // connection so the suite never touches Ethereum mainnet.
-// A wallet that takes no chain the dapp adds, Phantom, stays on its own: there is no network to move it onto.
-const noCustomChains = /phantom/i.test(process.env.DAPPRESS_MOCK ?? '');
+// The Phantom mock refuses to add a chain, so there is no network to move it onto: it stays where it starts.
+// Must match `differences.addChainRefused` in e2e/actions.cy.ts
+const noCustomChains = process.env.DAPPRESS_MOCK === 'phantom';
 
 const wallet: WalletSetup = {
   network: noCustomChains
