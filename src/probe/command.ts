@@ -21,13 +21,13 @@ export type Parsed = { command: 'probe'; anvilPort: number } | { error: string }
 export function parseArgs(args: string[]): Parsed {
   const [command, ...rest] = args;
   if (!command) return { error: USAGE };
-  if (command !== 'probe') return { error: `Unknown command "${command}".\n\n${USAGE}` };
+  if (command !== 'probe') return { error: `[dappress] Unknown command "${command}".\n\n${USAGE}` };
   let anvilPort = ANVIL_PORT;
   for (let i = 0; i < rest.length; i++) {
-    if (rest[i] !== '--anvil-port') return { error: `Unknown option "${rest[i]}".\n\n${USAGE}` };
+    if (rest[i] !== '--anvil-port') return { error: `[dappress] Unknown option "${rest[i]}".\n\n${USAGE}` };
     const value = rest[++i];
     if (!/^\d+$/.test(value ?? '') || Number(value) < 1 || Number(value) > 65535)
-      return { error: `--anvil-port takes a port number, not "${value ?? ''}".\n\n${USAGE}` };
+      return { error: `[dappress] --anvil-port takes a port number, not "${value ?? ''}".\n\n${USAGE}` };
     anvilPort = Number(value);
   }
   return { command: 'probe', anvilPort };

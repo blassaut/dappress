@@ -33,9 +33,9 @@ test('the arguments: probe, and the port of Anvil', () => {
   assert.deepEqual(parseArgs(['probe']), { command: 'probe', anvilPort: 8545 });
   assert.deepEqual(parseArgs(['probe', '--anvil-port', '9545']), { command: 'probe', anvilPort: 9545 });
   assert.deepEqual(parseArgs([]), { error: USAGE });
-  assert.deepEqual(parseArgs(['record']), { error: `Unknown command "record".\n\n${USAGE}` });
-  assert.deepEqual(parseArgs(['probe', '--anvil-port', 'x']), { error: `--anvil-port takes a port number, not "x".\n\n${USAGE}` });
-  assert.deepEqual(parseArgs(['probe', '--open']), { error: `Unknown option "--open".\n\n${USAGE}` });
+  assert.deepEqual(parseArgs(['record']), { error: `[dappress] Unknown command "record".\n\n${USAGE}` });
+  assert.deepEqual(parseArgs(['probe', '--anvil-port', 'x']), { error: `[dappress] --anvil-port takes a port number, not "x".\n\n${USAGE}` });
+  assert.deepEqual(parseArgs(['probe', '--open']), { error: `[dappress] Unknown option "--open".\n\n${USAGE}` });
 });
 
 test('without a command, the usage, and a failure', async () => {
