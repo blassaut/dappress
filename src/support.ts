@@ -7,7 +7,7 @@
 // Each command asks the Node side (src/actions.ts) to drive MetaMask through
 // a Cypress task, then yields back to the test.
 
-import { createMockWallet, installMockWallet } from './mock-wallet';
+import { createMockWallet, installMockWallet, networkRefused } from './mock-wallet';
 import type { ConnectOptions, Network, PublicOptions, TransactionOptions, WalletState } from './types';
 
 export type { ConnectOptions, CustomGas, GasEstimate, TransactionOptions, WalletState } from './types';
@@ -77,7 +77,7 @@ declare global {
   }
 }
 
-type Settled = { result?: unknown; error?: { message: string } };
+type Settled = { result?: unknown; error?: { code?: number; message: string } };
 
 // The dapp's window, with the provider MetaMask injects.
 // Kept off the global Window, which the project under test may describe its own way.
@@ -195,7 +195,8 @@ Cypress.Commands.add('useNetwork', (network = options.network ?? undefined) => {
   dappWindow()
     .then({ timeout: 60000 }, () => request)
     .then(({ error }) => {
-      if (error) throw new Error(`[dappress] MetaMask refused the network: ${error.message}`);
+      if (error)
+        throw new Error(networkRefused(mock ? mock.profile.wallet.name : 'MetaMask', network, error, mockWallet ? mockWallet.chainsKept() : undefined));
     });
   waitForChainId(network.chainId);
 });

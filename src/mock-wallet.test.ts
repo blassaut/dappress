@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMockWallet, ProviderRpcError } from './mock-wallet';
+import { createMockWallet, networkRefused, ProviderRpcError } from './mock-wallet';
 import type { Profile } from './wallet-profile';
 
 const ACCOUNTS = ['0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'];
@@ -430,6 +430,42 @@ test('a method the wallet refused whenever it was asked, other than by the user,
   };
   const { provider } = wallet(phantom);
   await assert.rejects(provider.request({ method: 'wallet_watchAsset', params: { type: 'ERC20' } }), (error: ProviderRpcError) => error.code === -32000);
+});
+
+test('adding a chain the wallet refused whenever it was asked is refused without asking, as recorded', async () => {
+  const phantom: Profile = {
+    ...metamask,
+    wallet: { name: 'Phantom', version: '26.32.0' },
+    methods: {
+      ...metamask.methods,
+      wallet_addEthereumChain: [{ params: [{ chainId: '0x88bb0' }], error: { code: 4901, message: 'The Provider is not connected to the requested chain.' } }],
+    },
+  };
+  const { mock, provider } = wallet(phantom, 5000);
+  await assert.rejects(
+    provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x7a69', rpcUrls: ['http://chain'] }] }),
+    (error: ProviderRpcError) => error.code === 4901 && error.message === 'The Provider is not connected to the requested chain.',
+  );
+  assert.notEqual(await provider.request({ method: 'eth_chainId' }), '0x7a69');
+  assert.deepEqual(mock.chainsKept(), ['0x1']);
+  // A command waiting for the network request is told at once
+  const started = Date.now();
+  await assert.rejects(mock.act('approveNewNetwork'), /Nothing for approveNewNetwork to decide on: Phantom 26\.32\.0 answers 4901 .*, without asking/);
+  assert.ok(Date.now() - started < 1000);
+});
+
+test('the message of a network the wallet refused names the wallet, the chain and its answer; a mock that takes no chain adds the chains it knows', () => {
+  const error = { code: 4901, message: 'The Provider is not connected to the requested chain.' };
+  const network = { chainId: '0x7a69', chainName: 'Anvil' };
+  assert.equal(
+    networkRefused('MetaMask', network, error),
+    '[dappress] MetaMask refused the network Anvil (0x7a69): it answers 4901 "The Provider is not connected to the requested chain.".',
+  );
+  assert.equal(
+    networkRefused('Phantom', network, error, ['0x1']),
+    '[dappress] Phantom refused the network Anvil (0x7a69): it answers 4901 "The Provider is not connected to the requested chain.". This wallet takes no chain the dapp adds: it knows only 0x1. Run the dapp on a fork that keeps one of these chain ids.',
+  );
+  assert.match(networkRefused('MetaMask', { chainId: '0x1' }, { message: 'No' }), /refused the network 0x1: it answers "No"\.$/);
 });
 
 test("on a chain the dapp added, reads go to the chain's RPC, and a transaction is signed by the keys and sent there", async () => {
