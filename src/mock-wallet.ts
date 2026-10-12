@@ -60,6 +60,8 @@ export interface MockWallet {
   emit(event: string, payload: unknown): void;
   /** The RPC endpoint of the chain the dapp is on, for the commands that act on the chain itself. */
   chainEndpoint(): Promise<string>;
+  /** The page the dapp runs in: the permissions name its origin. */
+  inPage(page: { location: { origin: string } }): void;
 }
 
 /** An error as a wallet throws it to the dapp: a code, and data when there is some. */
@@ -131,6 +133,9 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   }
   let locked = false;
   let rpcId = 0;
+  // The dapp's permission, granted anew on each connection (EIP-2255), and the page it runs in
+  let grant: { id: string; date: number } | undefined;
+  let page: { location: { origin: string } } | undefined;
 
   // The RPC endpoint of each chain: named in the options, or given by the dapp as it adds the chain
   const named = new Map<string, string>(Object.entries(chains).map(([chain, url]) => [chain.toLowerCase(), url]));
@@ -268,10 +273,25 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         return chainId;
       case 'net_version':
         return String(parseInt(chainId, 16));
-      case 'eth_requestAccounts':
-      case 'wallet_requestPermissions': {
+      case 'eth_requestAccounts': {
         if (!connected.length) await answered('connection', method, list);
-        return method === 'eth_requestAccounts' ? connected : result(method, [{ parentCapability: 'eth_accounts' }]);
+        return connected;
+      }
+      case 'wallet_requestPermissions': {
+        // EIP-2255: the user is asked, connected or not, as MetaMask was seen doing
+        await answered('connection', method, list);
+        const granted = permissions(method);
+        return granted ? recorded(method, granted) : result(method, [{ parentCapability: 'eth_accounts' }]);
+      }
+      case 'wallet_getPermissions': {
+        const held = permissions(method);
+        if (held) return recorded(method, held);
+        break;
+      }
+      case 'wallet_getCapabilities': {
+        const capable = capabilities(method, list);
+        if (capable) return recorded(method, capable);
+        break;
       }
       case 'wallet_revokePermissions': {
         const refused = refusal(method);
@@ -329,6 +349,7 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
   }
 
   function disconnect(): void {
+    grant = undefined;
     if (!connected.length) return;
     connected = [];
     emit('accountsChanged', []);
@@ -347,7 +368,53 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
       chosen = all.filter((_, index) => options.accounts!.includes(nameOf(index)));
     }
     connected = chosen;
+    grant = { id: crypto.randomUUID(), date: Date.now() };
     emit('accountsChanged', chosen);
+  }
+
+  /**
+   * The permissions the dapp holds, in the shape the wallet answered `method`
+   * with: the accounts, the chains, the origin, the id and the date in it are
+   * the mock's own. None while disconnected; undefined where the profile
+   * recorded no such answer.
+   */
+  function permissions(method: string): unknown[] | undefined {
+    const answers = observations(method).filter((observation) => Array.isArray(observation.result));
+    if (!answers.length) return undefined;
+    const held = grant;
+    if (!connected.length || !held) return [];
+    const shape = (answers.find((observation) => (observation.result as unknown[]).length)?.result ?? []) as Record<string, unknown>[];
+    return shape.map((recordedPermission) => {
+      const permission = { ...recordedPermission };
+      if ('invoker' in permission && page) permission.invoker = page.location.origin;
+      if ('id' in permission) permission.id = held.id;
+      if ('date' in permission) permission.date = held.date;
+      if (Array.isArray(permission.caveats))
+        permission.caveats = (permission.caveats as { type: string }[]).map((caveat) => {
+          if (caveat.type === 'restrictReturnedAccounts') return { ...caveat, value: [...connected] };
+          if (caveat.type === 'restrictNetworkSwitching') return { ...caveat, value: [...permitted] };
+          return caveat;
+        });
+      return permission;
+    });
+  }
+
+  /** EIP-5792's capabilities of `account`, as the wallet answered them, for the chains asked or all it named. */
+  function capabilities(method: string, [account, asked]: unknown[]): unknown {
+    const answers = observations(method).filter((observation) => observation.result && typeof observation.result === 'object');
+    if (!answers.length) return undefined;
+    // Asked for an account the dapp is not connected with: the wallet's refusal, EIP-1193's 4100 where it recorded none
+    if (!connected.includes(String(account).toLowerCase())) {
+      const refused = observations(method).find((observation) => observation.error)?.error;
+      throw recorded(
+        method,
+        new ProviderRpcError(refused ?? { code: 4100, message: 'The requested account and/or method has not been authorized by the user.' }),
+      );
+    }
+    const all = Object.assign({}, ...answers.map((observation) => observation.result)) as Record<string, unknown>;
+    if (!Array.isArray(asked)) return all;
+    const chainsAsked = asked.map((chain) => String(chain).toLowerCase());
+    return Object.fromEntries(Object.entries(all).filter(([chain]) => chainsAsked.includes(chain)));
   }
 
   /** The transaction as the options of confirmTransaction() set it: the spending cap, the fee. */
@@ -536,6 +603,9 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     provider,
     emit,
     chainEndpoint,
+    inPage: (dappPage) => {
+      page = dappPage;
+    },
     act: (action, argument) =>
       own[action] ? own[action](argument) : DECIDES[action] ? decide(action, argument) : Promise.reject(new Error(`[dappress] Unknown action ${action}`)),
   };
@@ -547,6 +617,7 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
  */
 export function installMockWallet(win: Window & { ethereum?: unknown }, mock: MockWallet, options: MockWalletOptions): void {
   win.ethereum = mock.provider;
+  mock.inPage(win);
   const announced = options.profile.discovery?.eip6963[0];
   const info = { uuid: crypto.randomUUID(), name: announced?.name ?? options.profile.wallet.name, icon: ICON, rdns: announced?.rdns ?? 'io.dappress.mock' };
   // The page's own CustomEvent: the one its listeners expect

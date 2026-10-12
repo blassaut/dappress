@@ -43,6 +43,23 @@ const reconnect = () => {
   cy.connectToDapp();
 };
 const USER_REJECTED = 4001;
+const UNSUPPORTED = 4200;
+
+// The methods the mock's profile recorded, which the mock answers; on the real MetaMask, all of them.
+// A method the profile has not seen is refused with 4200 by the mock
+const profileMethods = (Cypress.expose('dappress') as { mock?: { profile: { methods: Record<string, unknown> } } } | undefined)?.mock?.profile.methods;
+const recorded = (method: string) => !profileMethods || method in profileMethods;
+
+// A request and what the dapp got back, result or error, for a request no command decides
+type Settled = { result?: unknown; error?: { code: number; message: string } };
+const answer = (method: string, params?: unknown[]): Cypress.Chainable<Settled> => {
+  provider.request(method, params);
+  return provider.result() as unknown as Cypress.Chainable<Settled>;
+};
+
+// EIP-2255: a permission, and the values of its caveat of `type`
+type Permission = { parentCapability: string; caveats?: { type: string; value: unknown }[] };
+const caveat = (permission: Permission, type: string) => permission.caveats?.find((candidate) => candidate.type === type)?.value;
 const SIGNATURE = /^0x[0-9a-f]{130}$/;
 
 // allowance(owner, spender) of an ERC-20 token, as the data of an eth_call
@@ -94,6 +111,51 @@ describe('MetaMask actions', () => {
     testDapp.accounts().should('contain.text', account);
     cy.getAccountAddress().should('eq', account);
     testDapp.chainId().should('have.text', hoodi);
+  });
+
+  it('wallet_getPermissions, once connected', () => {
+    answer('wallet_getPermissions').then((settled) => {
+      if (!recorded('wallet_getPermissions')) return expect(settled).to.have.nested.property('error.code', UNSUPPORTED);
+      const permissions = settled.result as Permission[];
+      const accountsPermission = permissions.find((permission) => permission.parentCapability === 'eth_accounts');
+      expect(accountsPermission, 'the eth_accounts permission').not.to.equal(undefined);
+      // MetaMask names the connected accounts and the chains the dapp may switch to in caveats
+      if (wallet !== 'MetaMask') return;
+      expect(caveat(accountsPermission!, 'restrictReturnedAccounts')).to.deep.equal([account]);
+      const chains = permissions.find((permission) => permission.parentCapability === 'endowment:permitted-chains');
+      expect(caveat(chains!, 'restrictNetworkSwitching')).to.include(hoodi);
+    });
+  });
+
+  it('wallet_getCapabilities', () => {
+    answer('wallet_getCapabilities', [account]).then((settled) => {
+      if (!recorded('wallet_getCapabilities')) return expect(settled).to.have.nested.property('error.code', UNSUPPORTED);
+      expect(settled).to.have.nested.property(`result.${hoodi}.atomic.status`);
+    });
+    // Asked for some chains: those only
+    answer('wallet_getCapabilities', [account, [hoodi]]).then((settled) => {
+      if (recorded('wallet_getCapabilities')) expect(Object.keys(settled.result as object)).to.deep.equal([hoodi]);
+    });
+    // For an account the dapp is not connected with: refused
+    answer('wallet_getCapabilities', [secondAccount]).should('have.property', 'error');
+  });
+
+  it('wallet_requestPermissions, rejected with rejectConnection', () => {
+    // Asked again while connected, the wallet asks the user again
+    provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
+    cy.rejectConnection();
+    provider.result().its('error.code').should('eq', USER_REJECTED);
+    cy.getAccountAddress().should('eq', account);
+  });
+
+  it('wallet_requestPermissions, accepted with connectToDapp', () => {
+    provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
+    cy.connectToDapp();
+    provider
+      .result()
+      .its('result')
+      .should((permissions: Permission[]) => expect(permissions.map((permission) => permission.parentCapability)).to.include('eth_accounts'));
+    cy.getAccountAddress().should('eq', account);
   });
 
   it('confirmSignature (personal_sign)', () => {
@@ -334,6 +396,10 @@ describe('MetaMask actions', () => {
     cy.disconnectFromDapp();
     cy.get('@accountsChanged').should('have.been.calledWith', []);
     provider.call('eth_accounts').should('deep.equal', []);
+    // No permission left to the dapp
+    answer('wallet_getPermissions').then((settled) => {
+      if (recorded('wallet_getPermissions')) expect(settled).to.deep.equal({ result: [] });
+    });
     // Leave the dapp connected, as the tests before found it
     testDapp.connect();
     cy.connectToDapp();

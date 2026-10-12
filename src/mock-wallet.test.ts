@@ -243,6 +243,113 @@ test('a constant the wallet answered is answered as recorded, and one it never d
   assert.equal(await provider.request({ method: 'eth_blockNumber' }), '0x10');
 });
 
+// What MetaMask 13.50.0 answered the conformance suite, its accounts, chains, origin, ids and dates those of that run
+const RECORDED_PERMISSIONS = [
+  {
+    id: 'recorded',
+    parentCapability: 'eth_accounts',
+    invoker: 'https://metamask.github.io',
+    caveats: [{ type: 'restrictReturnedAccounts', value: ['0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a'] }],
+    date: 1,
+  },
+  {
+    id: 'recorded',
+    parentCapability: 'endowment:permitted-chains',
+    invoker: 'https://metamask.github.io',
+    caveats: [{ type: 'restrictNetworkSwitching', value: ['0x1', '0x88bb0'] }],
+    date: 1,
+  },
+];
+const UNAUTHORIZED = { code: 4100, message: 'The requested account and/or method has not been authorized by the user.' };
+const withPermissions: Profile = {
+  ...metamask,
+  methods: {
+    ...metamask.methods,
+    wallet_getPermissions: [{ result: RECORDED_PERMISSIONS }, { result: [] }],
+    wallet_requestPermissions: [
+      { params: [{ eth_accounts: {} }], error: REJECTED },
+      { params: [{ eth_accounts: {} }], result: RECORDED_PERMISSIONS },
+    ],
+    wallet_getCapabilities: [
+      {
+        params: ['0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a'],
+        result: { '0x1': { atomic: { status: 'ready' } }, '0x88bb0': { atomic: { status: 'ready' } } },
+      },
+      { params: ['0x1738166e1e4a4500dfb74b8e34d7be026c7c4289'], error: UNAUTHORIZED },
+    ],
+  },
+};
+
+const connectedWallet = async (profile: Profile) => {
+  const made = wallet(profile);
+  made.mock.inPage({ location: { origin: 'https://dapp.example' } });
+  const connecting = made.provider.request({ method: 'eth_requestAccounts' });
+  await made.mock.act('connectToDapp');
+  await connecting;
+  return made;
+};
+
+type Permission = { id: string; parentCapability: string; invoker: string; date: number; caveats: { type: string; value: unknown }[] };
+
+test("the permissions: as the wallet shapes them, with the mock's own accounts, chains, origin and grant; none while disconnected", async () => {
+  const { provider } = wallet(withPermissions);
+  assert.deepEqual(await provider.request({ method: 'wallet_getPermissions' }), []);
+  const before = Date.now();
+  const { mock: connected, provider: dapp } = await connectedWallet(withPermissions);
+  const [accounts, chains] = (await dapp.request({ method: 'wallet_getPermissions' })) as Permission[];
+  assert.deepEqual(accounts.caveats, [{ type: 'restrictReturnedAccounts', value: [ACCOUNTS[0]] }]);
+  assert.deepEqual(chains.caveats, [{ type: 'restrictNetworkSwitching', value: ['0x1'] }]);
+  for (const permission of [accounts, chains]) {
+    assert.equal(permission.invoker, 'https://dapp.example');
+    assert.notEqual(permission.id, 'recorded');
+    assert.ok(permission.date >= before);
+  }
+  assert.equal(accounts.id, chains.id, 'one grant');
+  await connected.act('disconnectFromDapp');
+  assert.deepEqual(await dapp.request({ method: 'wallet_getPermissions' }), []);
+  // A wallet whose profile never answered it: not invented
+  await assert.rejects(wallet(metamask).provider.request({ method: 'wallet_getPermissions' }), (error: ProviderRpcError) => error.code === 4200);
+});
+
+test('wallet_requestPermissions asks the user even while connected, and each grant is a new one', async () => {
+  const { mock, provider } = await connectedWallet(withPermissions);
+  const [first] = (await provider.request({ method: 'wallet_getPermissions' })) as Permission[];
+  const refused = settled(provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] }));
+  await mock.act('rejectConnection');
+  assert.equal(((await refused).error as ProviderRpcError).code, 4001);
+  assert.deepEqual(await provider.request({ method: 'eth_accounts' }), [ACCOUNTS[0]], 'still connected');
+
+  const granting = provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+  await mock.act('connectToDapp');
+  const [granted] = (await granting) as Permission[];
+  assert.equal(granted.parentCapability, 'eth_accounts');
+  assert.notEqual(granted.id, first.id);
+  // Without a recorded shape: the bare permission
+  const { mock: bare, provider: bareDapp } = await connectedWallet(metamask);
+  const asking = bareDapp.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+  await bare.act('connectToDapp');
+  assert.deepEqual(await asking, [{ parentCapability: 'eth_accounts' }]);
+});
+
+test('wallet_getCapabilities: what the wallet named, for the chains asked; refused for an account not connected; not invented', async () => {
+  const { provider: disconnected } = wallet(withPermissions);
+  await assert.rejects(disconnected.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[0]] }), (error: ProviderRpcError) => error.code === 4100);
+  const { provider } = await connectedWallet(withPermissions);
+  assert.deepEqual(await provider.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[0]] }), {
+    '0x1': { atomic: { status: 'ready' } },
+    '0x88bb0': { atomic: { status: 'ready' } },
+  });
+  assert.deepEqual(await provider.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[0], ['0x88BB0', '0x7a69']] }), {
+    '0x88bb0': { atomic: { status: 'ready' } },
+  });
+  await assert.rejects(
+    provider.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[1]] }),
+    (error: ProviderRpcError) => error.code === 4100 && error.message === UNAUTHORIZED.message,
+  );
+  const { provider: unrecorded } = await connectedWallet(metamask);
+  await assert.rejects(unrecorded.request({ method: 'wallet_getCapabilities', params: [ACCOUNTS[0]] }), (error: ProviderRpcError) => error.code === 4200);
+});
+
 test('the accounts: added, switched, disconnected, as the wallet names them', async () => {
   const { mock, provider } = wallet();
   const events: unknown[] = [];
