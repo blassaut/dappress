@@ -249,7 +249,8 @@ function finish(profile: Profile, reference: Profile): void {
     link.href = URL.createObjectURL(new Blob([`${JSON.stringify(profile, null, 2)}\n`], { type: 'application/json' }));
     link.download = file;
     link.click();
-    URL.revokeObjectURL(link.href);
+    // The download reads the URL after the click returns: revoked at once, it may find nothing
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   });
 }
 
