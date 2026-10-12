@@ -278,6 +278,16 @@ export const STEPS: Step[] = [
   { title: 'Read the permissions once revoked', instruction: ALONE, expect: 'none', request: () => ({ method: 'wallet_getPermissions' }) },
 ];
 
+/**
+ * What the page says of a request still pending after ASKING_AFTER: `waiting`
+ * for the user's decision on a step that asks for one; `slow` on a step the
+ * wallet answers alone, which has nothing to decide, only to skip if it hangs.
+ * MetaMask takes longer than that to read its capabilities on every chain.
+ */
+export function pendingState(step: Step): 'waiting' | 'slow' {
+  return step.expect === 'none' ? 'slow' : 'waiting';
+}
+
 export type Verdict = 'as-asked' | 'without-asking' | 'not-as-asked';
 
 /**

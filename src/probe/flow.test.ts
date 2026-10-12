@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, classify, chunksOf, describeOutcome, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
+import { STEPS, classify, chunksOf, describeOutcome, pendingState, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
 import type { TraceChunk } from '../profile-schema';
 
 const ACCOUNT = '0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a';
@@ -46,6 +46,14 @@ test('each step that waits for the user says what to do and which prompt it is',
     assert.ok(step.decision, `${step.title} names its prompt`);
     assert.match(step.instruction, /(Accept|Reject) in your wallet/, step.title);
   }
+});
+
+test('a slow request waits for a decision only on a step that asks for one', () => {
+  const byTitle = (title: string) => STEPS.find((step) => step.title === title)!;
+  assert.equal(pendingState(byTitle('Read the capabilities')), 'slow');
+  assert.equal(pendingState(byTitle('Revoke the permissions')), 'slow');
+  assert.equal(pendingState(byTitle('Connect, rejected')), 'waiting');
+  assert.equal(pendingState(byTitle('Switch back to Anvil')), 'waiting');
 });
 
 test('the requests carry what the earlier steps found out', () => {

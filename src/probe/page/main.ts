@@ -10,7 +10,7 @@
 // window.dappressProbe.
 
 import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
-import { STEPS, ASKING_AFTER, classify, chunksOf, describeOutcome, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
+import { STEPS, ASKING_AFTER, classify, chunksOf, describeOutcome, pendingState, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
 import { anvilClient } from './anvil-client';
 
 interface Provider {
@@ -173,7 +173,7 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
   probe.dataset.attempt = String(++attempts);
   setState('running', step);
   const asking = setTimeout(() => {
-    setState('waiting', step);
+    setState(pendingState(step), step);
     element<HTMLButtonElement>('skip').disabled = false;
   }, ASKING_AFTER);
   // A provider that throws instead of rejecting gives an error outcome all
