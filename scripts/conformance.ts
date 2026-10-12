@@ -21,6 +21,7 @@ import { MODES, MOCK_MODE, mockReportName, reportName } from './modes';
 import type { Report } from './matrix';
 import { buildProfile, readTrace } from './profile';
 import { loadProfile } from '../src/wallet-profile';
+import { foundry } from '../src/probe/anvil';
 
 const args = process.argv.slice(2);
 const open = args.includes('--open');
@@ -185,11 +186,6 @@ async function startAnvil(seedPhrase: string): Promise<ChildProcess> {
   }
   anvil.kill();
   throw new Error(`[dappress] Anvil did not answer on ${ANVIL_URL}`);
-}
-
-function foundry(tool: string): string {
-  const installed = path.join(os.homedir(), '.foundry', 'bin', tool);
-  return fs.existsSync(installed) ? installed : tool;
 }
 
 async function isUp(url: string): Promise<boolean> {
