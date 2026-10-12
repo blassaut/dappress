@@ -40,12 +40,9 @@ export interface CliDeps {
   error(line: string): void;
   /** Run `handler` when the command is asked to stop: Ctrl+C, or a signal. */
   onStop(handler: () => void): void;
-  /** End the process: a browser's open connection must not keep the command alive. */
-  exit(code: number): void;
+  /** Run `handler` when the process ends, whatever the reason: an uncaught exception included. */
+  onExit(handler: () => void): void;
 }
-
-// How long closing the page may take before the command stops anyway
-export const CLOSE_BOUND_MS = 2000;
 
 // The built page sits next to this file in dist/probe; the package's root two levels up
 const PAGE_ROOT = __dirname;
@@ -60,7 +57,9 @@ export const defaultDeps: CliDeps = {
     process.once('SIGINT', handler);
     process.once('SIGTERM', handler);
   },
-  exit: (code) => process.exit(code),
+  onExit: (handler) => {
+    process.once('exit', handler);
+  },
 };
 
 /** Run the command line. Yields the exit code, or undefined while the probe runs. */
@@ -77,6 +76,8 @@ export async function runCli(args: string[], deps: CliDeps = defaultDeps): Promi
     deps.error((error as Error).message);
     return 1;
   }
+  // Anvil is a child process that outlives a crash of this one, so it stops with the process however that ends
+  deps.onExit(() => anvil.stop());
   let server: ProbeServer;
   try {
     server = await deps.startServer({ anvilUrl: anvil.url });
@@ -85,13 +86,16 @@ export async function runCli(args: string[], deps: CliDeps = defaultDeps): Promi
     deps.error((error as Error).message);
     return 1;
   }
+  let stopping = false;
   deps.onStop(() => {
-    // close() waits for the open connections, and a browser may keep one alive: bound the wait
-    const bound = new Promise<void>((resolve) => setTimeout(resolve, CLOSE_BOUND_MS).unref());
-    void Promise.race([server.close().catch(() => undefined), bound]).finally(() => {
-      anvil.stop();
-      deps.exit(0);
-    });
+    // A second signal (Ctrl+C, then a SIGTERM) must not close twice
+    if (stopping) return;
+    stopping = true;
+    // Closing cuts the connections still open, so nothing keeps the process alive once Anvil is stopped
+    void server
+      .close()
+      .catch(() => undefined)
+      .finally(() => anvil.stop());
   });
   deps.log(`[dappress] Anvil runs on ${anvil.url}, for this session only.`);
   deps.log(`[dappress] Open ${server.url} in the browser where the wallet to record is installed, and follow the page.`);

@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, runCli, CLOSE_BOUND_MS, USAGE, type CliDeps } from './command';
+import { parseArgs, runCli, USAGE, type CliDeps } from './command';
 
 function fakes(overrides: Partial<CliDeps> = {}) {
   const calls: string[] = [];
   const output: string[] = [];
   let stop: (() => void) | undefined;
+  let exit: (() => void) | undefined;
   const deps: CliDeps = {
     startAnvil: async ({ port }) => {
       calls.push(`anvil ${port}`);
@@ -20,10 +21,12 @@ function fakes(overrides: Partial<CliDeps> = {}) {
     onStop: (handler) => {
       stop = handler;
     },
-    exit: (code) => void calls.push(`exit ${code}`),
+    onExit: (handler) => {
+      exit = handler;
+    },
     ...overrides,
   };
-  return { deps, calls, output, stop: () => stop?.() };
+  return { deps, calls, output, stop: () => stop?.(), exit: () => exit?.() };
 }
 
 test('the arguments: probe, and the port of Anvil', () => {
@@ -55,7 +58,7 @@ test('stopping the command closes the page and stops Anvil', async () => {
   await runCli(['probe'], deps);
   stop();
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(calls.slice(2), ['server closed', 'anvil stopped', 'exit 0']);
+  assert.deepEqual(calls.slice(2), ['server closed', 'anvil stopped']);
 });
 
 test('Anvil that cannot start: its message, a failure, and no page', async () => {
@@ -80,14 +83,18 @@ test('a page that cannot start stops Anvil', async () => {
   assert.match(output.join('\n'), /The probe page is not built/);
 });
 
-test('stopping does not wait for a page that cannot close: Anvil stops and the process exits', async (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
-  const { deps, calls, stop } = fakes({
-    startServer: async () => ({ url: 'http://127.0.0.1:50123/', close: () => new Promise<void>(() => undefined) }),
-  });
+test('a second signal does not close the page again', async () => {
+  const { deps, calls, stop } = fakes();
   await runCli(['probe'], deps);
   stop();
-  t.mock.timers.tick(CLOSE_BOUND_MS);
+  stop();
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(calls.slice(1), ['anvil stopped', 'exit 0']);
+  assert.deepEqual(calls.slice(2), ['server closed', 'anvil stopped']);
+});
+
+test('Anvil stops when the process ends for another reason, an uncaught exception for one', async () => {
+  const { deps, calls, exit } = fakes();
+  await runCli(['probe'], deps);
+  exit();
+  assert.deepEqual(calls.slice(2), ['anvil stopped']);
 });
