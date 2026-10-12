@@ -52,7 +52,13 @@ function goThrough(left: number, done = ''): void {
 // over from another method the wallet rejected; and the success EIP-2255,
 // EIP-3085 and EIP-3326 define, for a method never seen succeeding.
 const mock = Boolean((Cypress.expose('dappress') as { mock?: unknown } | undefined)?.mock);
-const SUCCESS_BY_EIP = ['wallet_requestPermissions', 'wallet_addEthereumChain', 'wallet_switchEthereumChain'];
+// Only the shape each EIP defines is accepted: EIP-3085 and EIP-3326 answer null,
+// and EIP-2255 answers a list of permissions, each with a parentCapability.
+const SUCCESS_BY_EIP: Record<string, (outcome: string) => boolean> = {
+  wallet_requestPermissions: (outcome) => /^result \{.*\bparentCapability\b.*\}\[\]$/.test(outcome),
+  wallet_addEthereumChain: (outcome) => outcome === 'result null',
+  wallet_switchEthereumChain: (outcome) => outcome === 'result null',
+};
 
 // The keys of a result's shape: `result {0x1, 0xaa36a7}`
 const keysOf = (outcome: string) =>
@@ -62,10 +68,13 @@ const keysOf = (outcome: string) =>
     .filter(Boolean);
 
 /**
- * The capabilities MetaMask names are those of the chains it has: the suite's
- * own connection adds Hoodi (its wallet setup), the page adds none. A result
- * whose chains are among those of a result the reference holds is the same
- * answer, on a wallet with fewer chains.
+ * The probe's config sets the wallet setup's network to null, so the real
+ * MetaMask here has fewer chains than in the suite, whose connection adds
+ * Hoodi, and it names fewer chains in its capabilities. A result whose chains
+ * are among those of a result the reference holds is the same answer, on a
+ * wallet with fewer chains. An empty result is accepted too, though the
+ * outcome strings do not say whether the request named chains the wallet has
+ * no capability on, which is the only case where it is right.
  */
 function fewerChains(outcome: string, recorded: string[]): boolean {
   const chains = keysOf(outcome);
@@ -88,8 +97,7 @@ function strays(profile: Profile): string[] {
   return Object.entries(profile.methods).flatMap(([method, observations]) => {
     const recorded = outcomeSet(reference.methods[method]);
     const byMock = (outcome: string) =>
-      mock &&
-      (rejections.has(outcome) || (outcome.startsWith('result ') && SUCCESS_BY_EIP.includes(method) && !recorded.some((known) => known.startsWith('result '))));
+      mock && (rejections.has(outcome) || (SUCCESS_BY_EIP[method]?.(outcome) && !recorded.some((known) => known.startsWith('result '))));
     return outcomeSet(observations)
       .filter((outcome) => !recorded.includes(outcome))
       .filter((outcome) => !(outcome.startsWith('error 4200') && !reference.methods[method]))
