@@ -5,7 +5,8 @@
 // name and its answers are not ours.
 //
 // The end-to-end run reads data-state, data-decision and data-expect on
-// #probe to answer each prompt with Dappress's commands, and the profile on
+// #probe to answer each prompt with Dappress's commands, data-attempt to
+// tell the next request from the one it answered, and the profile on
 // window.dappressProbe.
 
 import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
@@ -35,6 +36,8 @@ const probe = element('probe');
 const VERSION = /^\d+(\.\d+){1,3}$/;
 // How long the wallets have to announce themselves (EIP-6963) once asked
 const DISCOVERY = 500;
+// The requests sent so far, on #probe as data-attempt
+let attempts = 0;
 
 function setState(state: string, step?: Step): void {
   probe.dataset.state = state;
@@ -151,6 +154,10 @@ function clicked<T extends string>(ids: T[]): Promise<T> {
 async function send(provider: Provider, step: Step, context: Context): Promise<Outcome | undefined> {
   const request = step.request!(context);
   const started = Date.now();
+  // A new request each time, also for a step done again: the end-to-end run
+  // answers a prompt once, and waits for the next request before it reads
+  // the page again
+  probe.dataset.attempt = String(++attempts);
   setState('running', step);
   const asking = setTimeout(() => {
     setState('waiting', step);
@@ -164,6 +171,8 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
   const outcome = await Promise.race([settled.then((value) => ({ ...value, asked: Date.now() - started >= ASKING_AFTER }) as Outcome), skipped]);
   clearTimeout(asking);
   element<HTMLButtonElement>('skip').disabled = true;
+  // The wallet has answered: the step no longer waits on it
+  setState('running', step);
   return outcome;
 }
 
