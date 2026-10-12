@@ -63,7 +63,7 @@
     "conformance": "tsx scripts/conformance.ts",
     "matrix": "tsx scripts/matrix.ts",
     "profile": "tsx scripts/profile.ts",
-    "test": "tsx --test src/*.test.ts scripts/*.test.ts conformance/*.test.ts",
+    "test": "tsx --test src/*.test.ts src/probe/*.test.ts scripts/*.test.ts conformance/*.test.ts",
     "check-types": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
