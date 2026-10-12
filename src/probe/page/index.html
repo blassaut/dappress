@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dappress probe</title>
+    <!-- First, before anything else: it sees each provider as it turns up -->
+    <script src="/recorder.js"></script>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/probe.js" defer></script>
+  </head>
+  <body>
+    <main id="probe" data-state="loading">
+      <h1>Record a wallet profile</h1>
+      <p>
+        This page sends your wallet the requests a dapp sends, one by one, and records what it answers. The profile it builds is what a Dappress mock replays.
+      </p>
+      <p class="warning">Use a test wallet. The profile holds its addresses and the signatures you make here, and it is made to be shared.</p>
+
+      <section id="choose" hidden>
+        <h2>1. The wallet</h2>
+        <ul id="wallets"></ul>
+        <p id="no-wallet" class="warning" hidden>No wallet found in this page. Install or enable one, then reload.</p>
+        <p id="others" class="warning" hidden></p>
+        <label for="version">Its version, as its settings or its extension page show it</label>
+        <input id="version" placeholder="0.95.0" autocomplete="off" spellcheck="false" />
+        <button id="start" type="button" disabled>Start</button>
+      </section>
+
+      <section id="run" hidden>
+        <h2>2. The requests</h2>
+        <p id="instruction" aria-live="polite"></p>
+        <div id="not-as-asked" hidden>
+          <p id="mismatch"></p>
+          <button id="redo" type="button">Do it again</button>
+          <button id="keep" type="button">Keep it and go on</button>
+        </div>
+        <button id="skip" type="button" disabled>Skip this step</button>
+        <ol id="steps"></ol>
+      </section>
+
+      <section id="done" hidden>
+        <h2>3. The profile</h2>
+        <p id="summary"></p>
+        <button id="download" type="button">Download the profile</button>
+        <p>Run your tests against it with <code id="usage"></code> in <code>configureDappress()</code>.</p>
+        <p>
+          To share it, open a pull request adding it to <code>reports/profiles/</code> of github.com/blassaut/dappress. Check it holds nothing you would not
+          publish.
+        </p>
+        <h3>Where it differs from MetaMask</h3>
+        <pre id="diff"></pre>
+      </section>
+
+      <p id="failure" class="warning" hidden></p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,271 @@
+// The probe page: choose the wallet, send it the flow's requests one by one,
+// then build its profile, compare it with MetaMask's and download it. The
+// recorder (recorder.js, loaded first) records everything the wallet answers;
+// this file only asks and shows. Text goes in with textContent: a wallet's
+// name and its answers are not ours.
+//
+// The end-to-end run reads data-state, data-decision and data-expect on
+// #probe to answer each prompt with Dappress's commands, and the profile on
+// window.dappressProbe.
+
+import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
+import { STEPS, ASKING_AFTER, classify, chunksOf, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
+import { anvilClient } from './anvil-client';
+
+interface Provider {
+  request(args: { method: string; params?: unknown }): Promise<unknown>;
+}
+interface Announced {
+  info: { name?: string; icon?: string; rdns?: string };
+  provider: Provider;
+}
+
+declare global {
+  interface Window {
+    __dappressTrace?: TraceChunk;
+    dappressProbe?: { profile: Profile };
+  }
+}
+
+const element = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+// Not declared on Window: the conformance support files declare it differently,
+// and all of them share one global type-check
+const injected = () => (window as unknown as { ethereum?: Provider }).ethereum;
+const probe = element('probe');
+const VERSION = /^\d+(\.\d+){1,3}$/;
+// How long the wallets have to announce themselves (EIP-6963) once asked
+const DISCOVERY = 500;
+
+function setState(state: string, step?: Step): void {
+  probe.dataset.state = state;
+  probe.dataset.decision = step?.decision ?? '';
+  probe.dataset.expect = step?.expect ?? '';
+}
+
+function show(id: string, shown = true): void {
+  element(id).hidden = !shown;
+}
+
+/** The wallets announced through EIP-6963, else window.ethereum alone. */
+async function discover(): Promise<Announced[]> {
+  const announced: Announced[] = [];
+  const listen = (event: Event) => {
+    const detail = (event as CustomEvent<Announced>).detail;
+    if (detail?.provider && !announced.some((known) => known.provider === detail.provider)) announced.push(detail);
+  };
+  window.addEventListener('eip6963:announceProvider', listen);
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+  await new Promise((resolve) => setTimeout(resolve, DISCOVERY));
+  window.removeEventListener('eip6963:announceProvider', listen);
+  if (!announced.length && injected()) announced.push({ info: { name: 'window.ethereum' }, provider: injected()! });
+  return announced;
+}
+
+/** The wallet chosen, its version, and whether others are active in the page. */
+function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: string; otherWallets: boolean }> {
+  show('choose');
+  setState('choosing');
+  const list = element('wallets');
+  const version = element<HTMLInputElement>('version');
+  const start = element<HTMLButtonElement>('start');
+  let chosen: Announced | undefined;
+  if (!wallets.length) show('no-wallet');
+  wallets.forEach((wallet, index) => {
+    const item = document.createElement('li');
+    const label = document.createElement('label');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'wallet';
+    radio.value = String(index);
+    radio.addEventListener('change', () => {
+      chosen = wallet;
+      const injectedElsewhere = injected() !== undefined && injected() !== wallet.provider;
+      const others = element('others');
+      others.textContent = injectedElsewhere
+        ? 'window.ethereum belongs to another wallet: the identity flags in the profile would be its. Disable the other wallet extensions, then reload, or go on and the profile will say so.'
+        : '';
+      others.hidden = !injectedElsewhere;
+      update();
+    });
+    label.append(radio);
+    // A wallet's icon is a data: URI (EIP-6963); anything else is left out
+    if (wallet.info.icon?.startsWith('data:image/')) {
+      const icon = document.createElement('img');
+      icon.src = wallet.info.icon;
+      icon.alt = '';
+      label.append(icon);
+    }
+    const name = document.createElement('span');
+    name.textContent = wallet.info.name ?? wallet.info.rdns ?? 'A wallet';
+    label.append(name);
+    item.append(label);
+    list.append(item);
+  });
+  const update = () => {
+    start.disabled = !chosen || !VERSION.test(version.value.trim());
+  };
+  version.addEventListener('input', update);
+  return new Promise((resolve) =>
+    start.addEventListener('click', () => {
+      show('choose', false);
+      const otherWallets = wallets.length > 1 || (injected() !== undefined && injected() !== chosen!.provider);
+      resolve({ wallet: chosen!, version: version.value.trim(), otherWallets });
+    }),
+  );
+}
+
+/** What an outcome says, for the list of steps. */
+function describeOutcome(outcome: Outcome | undefined): string {
+  if (!outcome) return 'skipped';
+  if ('error' in outcome) return `error ${String(outcome.error.code)} ${outcome.error.message ?? ''}`.trim();
+  const json = JSON.stringify(outcome.result) ?? 'undefined';
+  return json.length > 200 ? `${json.slice(0, 200)}…` : json;
+}
+
+function listStep(title: string, text: string, verdict: string): void {
+  const item = document.createElement('li');
+  item.dataset.verdict = verdict;
+  item.textContent = title;
+  const outcome = document.createElement('span');
+  outcome.className = 'outcome';
+  outcome.textContent = verdict === 'without-asking' ? `${text} (the wallet answered without asking)` : text;
+  item.append(outcome);
+  element('steps').append(item);
+}
+
+/** Wait for a click on one of the buttons, and say which. */
+function clicked<T extends string>(ids: T[]): Promise<T> {
+  return new Promise((resolve) => {
+    const handlers = ids.map((id) => {
+      const handler = () => {
+        ids.forEach((other, index) => element(other).removeEventListener('click', handlers[index]));
+        resolve(id);
+      };
+      element(id).addEventListener('click', handler);
+      return handler;
+    });
+  });
+}
+
+/** Send the step's request, and wait for its outcome, or for the user to skip it. */
+async function send(provider: Provider, step: Step, context: Context): Promise<Outcome | undefined> {
+  const request = step.request!(context);
+  const started = Date.now();
+  setState('running', step);
+  const asking = setTimeout(() => {
+    setState('waiting', step);
+    element<HTMLButtonElement>('skip').disabled = false;
+  }, ASKING_AFTER);
+  const settled = provider.request(request).then(
+    (result) => ({ result }),
+    (error: { code?: unknown; message?: string }) => ({ error: { code: error?.code, message: error?.message } }),
+  );
+  const skipped = clicked(['skip']).then(() => undefined);
+  const outcome = await Promise.race([settled.then((value) => ({ ...value, asked: Date.now() - started >= ASKING_AFTER }) as Outcome), skipped]);
+  clearTimeout(asking);
+  element<HTMLButtonElement>('skip').disabled = true;
+  return outcome;
+}
+
+async function runFlow(provider: Provider, context: Context): Promise<Mark[]> {
+  show('run');
+  const trace = window.__dappressTrace!;
+  const anvil = anvilClient(context.anvilUrl);
+  const marks: Mark[] = [];
+  for (const step of STEPS) {
+    element('instruction').textContent = `${step.title}. ${step.instruction}`;
+    for (;;) {
+      if (step.setup) {
+        setState('running', step);
+        try {
+          await step.setup(context, anvil);
+          listStep(step.title, 'done', 'as-asked');
+        } catch (error) {
+          listStep(step.title, `skipped: ${(error as Error).message}`, 'skipped');
+        }
+        break;
+      }
+      let outcome: Outcome | undefined;
+      try {
+        outcome = await send(provider, step, context);
+      } catch (error) {
+        // A step that needs what an earlier one did not get: the account, the token
+        listStep(step.title, `skipped: ${(error as Error).message}`, 'skipped');
+        break;
+      }
+      if (!outcome) {
+        listStep(step.title, 'skipped', 'skipped');
+        break;
+      }
+      step.learn?.(context, outcome);
+      const verdict = classify(step.expect, outcome);
+      listStep(step.title, describeOutcome(outcome), verdict);
+      if (verdict !== 'not-as-asked') break;
+      setState('not-as-asked', step);
+      element('mismatch').textContent =
+        `This step asked you to ${step.expect} in your wallet, and the wallet answered: ${describeOutcome(outcome)}. Both are recorded.`;
+      show('not-as-asked');
+      const choice = await clicked(['redo', 'keep']);
+      show('not-as-asked', false);
+      if (choice === 'keep') break;
+    }
+    marks.push({ test: step.title, to: trace.entries.length });
+  }
+  show('run', false);
+  return marks;
+}
+
+function finish(profile: Profile, reference: Profile): void {
+  window.dappressProbe = { profile };
+  show('done');
+  setState('finished');
+  const methods = Object.keys(profile.methods).length;
+  const events = Object.keys(profile.events).length;
+  element('summary').textContent = `${profile.wallet.name} ${profile.wallet.version}: ${methods} methods and ${events} events recorded.`;
+  const file = `${
+    profile.wallet.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'wallet'
+  }-${profile.wallet.version}.json`;
+  element('usage').textContent = `mock: './${file}'`;
+  element('diff').textContent = diffProfiles(reference, profile);
+  element('download').addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([`${JSON.stringify(profile, null, 2)}\n`], { type: 'application/json' }));
+    link.download = file;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+}
+
+async function main(): Promise<void> {
+  if (!window.__dappressTrace) throw new Error('The recorder did not load: reload the page.');
+  const config = (await (await fetch('/config.json')).json()) as { anvilUrl: string; dappressVersion: string };
+  const reference = (await (await fetch('/reference-profile.json')).json()) as Profile;
+  const wallets = await discover();
+  const { wallet, version, otherWallets } = await choose(wallets);
+  // Leaving the page loses the session
+  const leaving = (event: BeforeUnloadEvent) => event.preventDefault();
+  window.addEventListener('beforeunload', leaving);
+  const marks = await runFlow(wallet.provider, { anvilUrl: config.anvilUrl });
+  window.removeEventListener('beforeunload', leaving);
+  const trace = plainTrace(window.__dappressTrace);
+  const profile = buildProfile(chunksOf(trace, marks), {
+    wallet: { name: wallet.info.name ?? 'Unknown wallet', version },
+    recorded: {
+      by: `dappress probe ${config.dappressVersion}`,
+      date: new Date().toISOString(),
+      browser: navigator.userAgent,
+      ...(otherWallets ? { otherWallets } : {}),
+    },
+  });
+  finish(profile, reference);
+}
+
+main().catch((error: Error) => {
+  setState('failed');
+  const failure = element('failure');
+  failure.textContent = `The probe stopped: ${error.message}`;
+  failure.hidden = false;
+});
