@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMockWallet, networkRefused, ProviderRpcError } from './mock-wallet';
-import type { Profile } from './wallet-profile';
+import { chainsSeen, createMockWallet, networkRefused, ProviderRpcError } from './mock-wallet';
+import { loadProfile, type Profile } from './wallet-profile';
 
 const ACCOUNTS = ['0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'];
 const TOKEN = '0xa06d0bbaa95bcd9418ac3b1b596a51498a57ee61';
@@ -46,7 +46,7 @@ const rabby: Profile = {
 };
 
 /** A wallet over a fake RPC endpoint, which answers as Anvil would and keeps what was sent to it. */
-function wallet(profile = metamask, timeout = 500, chains: Record<string, string> = {}) {
+function wallet(profile = metamask, timeout = 500, chains: Record<string, string> = {}, chain?: string) {
   const sent: { url: string; method: string; params: unknown[] }[] = [];
   const answers: Record<string, (params: unknown[]) => unknown> = {
     eth_accounts: () => ACCOUNTS,
@@ -72,7 +72,7 @@ function wallet(profile = metamask, timeout = 500, chains: Record<string, string
       : { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } };
     return new Response(JSON.stringify(body));
   }) as typeof fetch;
-  const mock = createMockWallet({ profile, rpcUrl: 'http://anvil', chains, timeout });
+  const mock = createMockWallet({ profile, rpcUrl: 'http://anvil', chains, chain, timeout });
   return { mock, provider: mock.provider, sent, lastSent: (method: string) => sent.filter((call) => call.method === method).at(-1) };
 }
 
@@ -606,4 +606,94 @@ test("a chain whose RPC is the keys' own sends through the keys, unlocked: a for
 test('a command with nothing to decide on says so, within the timeout', async () => {
   const { mock } = wallet(metamask, 200);
   await assert.rejects(mock.act('confirmSignature'), /sent no signature request within 200ms/);
+});
+
+test('the chains a profile saw the wallet on: its eth_chainId, chainChanged and connect, and the switches it made', () => {
+  const profile: Profile = {
+    ...metamask,
+    methods: {
+      eth_chainId: [{ result: '0x1' }, { result: '0x88BB0' }],
+      wallet_switchEthereumChain: [
+        { params: [{ chainId: '0xaa36a7' }], error: REJECTED },
+        { params: [{ chainId: '0x1234' }], error: { code: 4902, message: 'Unrecognized chain ID "0x1234".' } },
+        { params: [{ chainId: '0xa4b1' }], result: null },
+      ],
+      wallet_addEthereumChain: [{ params: [{ chainId: '0x539' }], result: null }],
+    },
+    events: { chainChanged: [{ payload: '0x7a69' }], connect: [{ payload: { chainId: '0x2105' } }] },
+  };
+  assert.deepEqual(chainsSeen(profile), ['0x1', '0x88bb0', '0x7a69', '0x2105', '0xa4b1']);
+  assert.deepEqual(chainsSeen(loadProfile('phantom')), ['0xaa36a7']);
+});
+
+test("Phantom's mock started on Sepolia, its Testnet mode on: there it answers, signs and sends; other chains are refused as recorded", async () => {
+  const phantom = loadProfile('phantom');
+  const { mock, provider, sent } = wallet(phantom, 500, { '0xaa36a7': 'http://sepolia' }, '0xAA36A7');
+  const changes: unknown[] = [];
+  provider.on('chainChanged', (chain) => changes.push(chain));
+  assert.equal(await provider.request({ method: 'eth_chainId' }), '0xaa36a7');
+  assert.equal(await provider.request({ method: 'net_version' }), '11155111');
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await mock.act('connectToDapp');
+  await connecting;
+  // Already there: the switch is answered as recorded, without asking
+  assert.equal(await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] }), null);
+  sent.length = 0;
+
+  const signing = provider.request({ method: 'personal_sign', params: ['0x68656c6c6f', ACCOUNTS[0]] });
+  await mock.act('confirmSignature');
+  assert.equal(await signing, '0xsignature');
+  const sending = provider.request({ method: 'eth_sendTransaction', params: [{ from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1' }] });
+  await mock.act('confirmTransaction');
+  assert.equal(await sending, '0xlive');
+  assert.deepEqual(
+    sent.map(({ url, method }) => `${method} ${url}`),
+    [
+      'personal_sign http://anvil',
+      'eth_getTransactionCount http://sepolia',
+      'eth_estimateGas http://sepolia',
+      'eth_getBlockByNumber http://sepolia',
+      'eth_maxPriorityFeePerGas http://sepolia',
+      'eth_signTransaction http://anvil',
+      'eth_sendRawTransaction http://sepolia',
+    ],
+  );
+  assert.equal((sent.find(({ method }) => method === 'eth_signTransaction')?.params[0] as { chainId: string }).chainId, '0xaa36a7');
+
+  // A chain Phantom does not support, mainnet among them: 4901 without asking, naming the chain asked for
+  for (const chainId of ['0x1234', '0x1'])
+    await assert.rejects(
+      provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] }),
+      (error: ProviderRpcError) => error.code === 4901 && error.message === 'The Provider is not connected to the requested chain.',
+    );
+  assert.equal(await provider.request({ method: 'eth_chainId' }), '0xaa36a7');
+  assert.deepEqual(changes, []);
+  assert.deepEqual(mock.chainsKept(), ['0xaa36a7']);
+});
+
+test('a mock started on a chain the options name no RPC for reads and sends at the keys, as for any such chain', async () => {
+  const { mock, provider, sent } = wallet(loadProfile('phantom'), 500, {}, '0xaa36a7');
+  const connecting = provider.request({ method: 'eth_requestAccounts' });
+  await mock.act('connectToDapp');
+  await connecting;
+  sent.length = 0;
+  await provider.request({ method: 'eth_blockNumber' });
+  const sending = provider.request({ method: 'eth_sendTransaction', params: [{ from: ACCOUNTS[0], to: ACCOUNTS[1], value: '0x1' }] });
+  await mock.act('confirmTransaction');
+  assert.equal(await sending, '0xsent');
+  assert.deepEqual(
+    sent.map(({ url, method }) => `${method} ${url}`),
+    ['eth_chainId http://anvil', 'eth_blockNumber http://anvil', 'eth_sendTransaction http://anvil'],
+  );
+  assert.equal(await mock.chainEndpoint(), 'http://anvil');
+});
+
+test("Phantom's mock without a starting chain is on mainnet, and refuses Sepolia as Phantom does there", async () => {
+  const { mock, provider } = wallet(loadProfile('phantom'));
+  assert.equal(await provider.request({ method: 'eth_chainId' }), '0x1');
+  await assert.rejects(
+    provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] }),
+    (error: ProviderRpcError) => error.code === 4901,
+  );
+  assert.deepEqual(mock.chainsKept(), ['0x1']);
 });

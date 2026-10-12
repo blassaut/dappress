@@ -10,6 +10,7 @@ import { generateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import type { DappressOptions, Network, PublicOptions, ResolvedOptions, WalletSetup } from './types';
 import type { Profile } from './wallet-profile';
+import { chainsSeen } from './mock-wallet';
 
 export const DEFAULTS = {
   metamaskVersion: '13.50.0',
@@ -33,6 +34,8 @@ export const DEFAULTS = {
   cacheDir: path.join(os.homedir(), '.cache', 'dappress'),
   // None: the real MetaMask. A wallet's name or a profile's path: its mock, in place of the extension
   mock: null as string | null,
+  // None: the mock starts on mainnet. A chain its profile saw the wallet on: the one its user set, Phantom's Testnet mode
+  mockChain: null as string | null,
   // The endpoint that holds the mock's keys, and stands for a chain it has no RPC for: Anvil's default
   rpcUrl: 'http://127.0.0.1:8545',
   // The RPC of each chain, for the mock: none beyond what the dapp gives as it adds a chain
@@ -69,6 +72,7 @@ export function resolveOptions(
     seedPhrase: process.env.DAPPRESS_SEED_PHRASE || env.DAPPRESS_SEED_PHRASE,
     password: process.env.DAPPRESS_PASSWORD || env.DAPPRESS_PASSWORD,
     mock: process.env.DAPPRESS_MOCK || env.DAPPRESS_MOCK,
+    mockChain: process.env.DAPPRESS_MOCK_CHAIN || env.DAPPRESS_MOCK_CHAIN,
     rpcUrl: process.env.DAPPRESS_RPC_URL || env.DAPPRESS_RPC_URL,
   };
 
@@ -79,6 +83,7 @@ export function resolveOptions(
   const seedPhrase = options.seedPhrase || newWallet();
   // The wallet cache keeps a wallet across runs: nothing to keep of one made for this run
   const cache = options.cache && Boolean(options.seedPhrase);
+  if (options.mockChain && !options.mock) console.warn('[dappress] mockChain is for a mock: the real MetaMask starts on the chain it is on');
   if (options.cache && !cache) console.warn('[dappress] The wallet cache needs a seed phrase of your own: importing the wallet in this run instead');
   const metamaskChecksum = options.metamaskChecksum || METAMASK_CHECKSUMS[options.metamaskVersion] || null;
   return { ...options, seedPhrase, cache, metamaskChecksum };
@@ -106,6 +111,24 @@ function loadWalletSetup(projectRoot = process.cwd()): WalletSetup {
 /** The subset of options that is safe to expose to the browser side (no secrets). */
 export function publicOptions(options: ResolvedOptions, mockProfile?: Profile): PublicOptions {
   const exposed: PublicOptions = { metamaskVersion: options.metamaskVersion, autoSetup: options.autoSetup, network: options.network, chains: options.chains };
-  if (mockProfile) exposed.mock = { profile: mockProfile, rpcUrl: options.rpcUrl, chains: options.chains, timeout: options.timeout };
+  if (mockProfile) {
+    exposed.mock = { profile: mockProfile, rpcUrl: options.rpcUrl, chains: options.chains, timeout: options.timeout };
+    if (options.mockChain) exposed.mock.chain = mockChain(options.mockChain, mockProfile);
+  }
   return exposed;
+}
+
+/**
+ * The chain a mock starts on, as its user set it in the wallet: one its
+ * profile saw the wallet on. The mock never stands on a chain the wallet was
+ * not seen on.
+ */
+export function mockChain(chain: string, profile: Profile): string {
+  const asked = String(chain).trim().toLowerCase();
+  const seen = chainsSeen(profile);
+  if (seen.includes(asked)) return asked;
+  const wallet = `${profile.wallet.name} ${profile.wallet.version}`;
+  throw new Error(
+    `[dappress] mockChain ${String(chain)}: the ${wallet} profile never saw the wallet on that chain, so its mock cannot start there. It takes ${seen.length ? seen.join(', ') : 'none'}`,
+  );
 }

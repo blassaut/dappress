@@ -39,13 +39,15 @@ export function configureDappress(
   // The profile it replays goes to the browser side with the options
   if (options.mock) {
     const profile = loadProfile(options.mock);
+    // A chain the profile never saw the wallet on fails here, before the run
+    const exposed = publicOptions(options, profile);
     const chains = Object.keys(options.chains);
     console.log(
-      `[dappress] Mock of ${profile.wallet.name} ${profile.wallet.version}: keys at ${options.rpcUrl}${chains.length ? `, chains ${chains.join(', ')}` : ''}`,
+      `[dappress] Mock of ${profile.wallet.name} ${profile.wallet.version}${exposed.mock?.chain ? ` on chain ${exposed.mock.chain}` : ''}: keys at ${options.rpcUrl}${chains.length ? `, chains ${chains.join(', ')}` : ''}`,
     );
     // The one task: the address of a key cy.importAccount() gives, which the mock lets the RPC endpoint act for
     on('task', { 'dappress:addressOf': (privateKey: string) => addressOf(privateKey) });
-    config.expose = { ...config.expose, dappress: publicOptions(options, profile) };
+    config.expose = { ...config.expose, dappress: exposed };
     return config;
   }
 

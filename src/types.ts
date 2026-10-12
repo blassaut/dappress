@@ -56,6 +56,14 @@ export interface DappressOptions extends WalletSetup {
    */
   mock?: string;
   /**
+   * The chain the mocked wallet is on when the run starts, as its user set it
+   * in the wallet: `'0xaa36a7'` for Phantom with its Testnet mode on. Only a
+   * chain the wallet's profile saw it on is taken; any other fails, naming
+   * those. Its reads and transactions go where any chain's do: the `chains`
+   * option, else Anvil. Default: mainnet, `0x1`.
+   */
+  mockChain?: string;
+  /**
    * The endpoint that holds the mock wallet's keys: its unlocked accounts sign,
    * as Anvil's do, and it stands for a chain the mock has no RPC for.
    * Default: http://127.0.0.1:8545.
@@ -84,6 +92,7 @@ export interface ResolvedOptions {
   timeout: number;
   cacheDir: string;
   mock: string | null;
+  mockChain: string | null;
   rpcUrl: string;
   chains: Record<string, string>;
 }
@@ -93,7 +102,7 @@ export interface ResolvedOptions {
  * With a mock, the profile it replays and what the mock needs to run.
  */
 export type PublicOptions = Pick<ResolvedOptions, 'metamaskVersion' | 'autoSetup' | 'network'> & {
-  mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number };
+  mock?: { profile: Profile; rpcUrl: string; chains: Record<string, string>; timeout: number; chain?: string };
   /** The RPC of each chain the options name, for the commands that act on the chain itself. */
   chains?: Record<string, string>;
 };

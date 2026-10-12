@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- `mockChain` (or `DAPPRESS_MOCK_CHAIN`) starts a mock on the chain its user set in the wallet, where it started on mainnet only: `'0xaa36a7'` for Phantom with its Testnet mode on, a setting of the wallet a dapp cannot change. The mock answers that chain to `eth_chainId`, holds it as the chain the dapp is allowed on, and reads and sends there as on any chain, at the RPC the `chains` option names for it, else at Anvil; other chains are refused as the profile says, Phantom's with `4901`. Only a chain the profile saw the wallet on is taken, in its `eth_chainId`, `chainChanged` or `connect`, or a switch it made: any other fails as the run starts, naming those. Without it, a mock starts on mainnet, as before.
+
 ### Changed
 
 - Rabby's and Phantom's profiles are recorded anew with the probe page, `npx dappress probe`, each wallet alone in the browser. The methods the page does not send, `eth_sign`, `eth_signTypedData`, `personal_ecRecover`, `eth_getEncryptionPublicKey` and Rabby's `eth_decrypt`, keep the observations of the console recording, marked as such. What their mocks answer differently:
