@@ -7,6 +7,7 @@ What changes for the users of Dappress, version by version. The format follows [
 ### Added
 
 - MetaMask's profile records `wallet_getPermissions`, `wallet_requestPermissions` and EIP-5792's `wallet_getCapabilities`, from new tests of the conformance suite, and its mock answers them where it refused them with `4200`. The permissions keep the shape MetaMask gives them, with the mock's own accounts, chains, origin, id and date in it; the capabilities are those MetaMask named, for the chains the dapp asks for, and an account the dapp is not connected with is refused with MetaMask's `4100`.
+- MetaMask's profile records its refusal of EIP-5792's `wallet_sendCalls` on a chain it does not batch on, `5710` "EIP-7702 not supported on chain", without asking, and its mock gives it on every chain MetaMask named no atomic capability for, with the chain asked for in the message. A command waiting for the batch says at once that the wallet refused it. On a chain MetaMask batches on, no batch is recorded yet, and the mock refuses with `4200`.
 
 ### Changed
 
