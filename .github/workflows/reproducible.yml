@@ -47,13 +47,16 @@ jobs:
 
       - run: npm run build
 
-      # npm takes a few minutes to serve a version after its publication
+      # npm takes a few minutes to serve a version after its publication. Asked
+      # as npm pack and npm install ask: they read the abbreviated document of
+      # the package, which the registry caches apart from the full one npm view
+      # reads, and serves a version later
       - name: Wait for npm to serve the version
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           for attempt in $(seq 1 30); do
-            if npm view "dappress@$VERSION" version >/dev/null 2>&1; then
+            if npm pack "dappress@$VERSION" --dry-run >/dev/null 2>&1; then
               exit 0
             fi
             sleep 30
