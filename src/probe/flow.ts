@@ -293,6 +293,30 @@ export function asksTheUser(step: Step): boolean {
   return step.expect !== 'none';
 }
 
+/**
+ * Whether a wallet other than the chosen one is active in the page, whose
+ * identity flags the profile's discovery may then hold. A wallet may announce
+ * through EIP-6963 another object than its window.ethereum, as Phantom and
+ * Rabby do: that alone is not another wallet. There is another one when more
+ * than one wallet announced itself, or when the chosen one announced itself
+ * alone and window.ethereum's flags name a wallet other than it: one that does
+ * not announce itself. isMetaMask names no one: every wallet sets it, and
+ * MetaMask announces itself. With nothing announced, the wallet chosen is
+ * window.ethereum itself.
+ */
+export function otherWallets(announced: number, chosen: { name?: string; rdns?: string }, flags: Record<string, boolean> | undefined): boolean {
+  if (announced > 1) return true;
+  if (announced === 0 || !flags) return false;
+  const named = `${chosen.name ?? ''} ${chosen.rdns ?? ''}`.toLowerCase().replace(/\s/g, '');
+  // isRabby names rabby, isCoinbaseWallet coinbase
+  const walletOf = (flag: string) =>
+    flag
+      .replace(/^is/, '')
+      .replace(/Wallet$/, '')
+      .toLowerCase();
+  return Object.entries(flags).some(([flag, set]) => set && flag !== 'isMetaMask' && !named.includes(walletOf(flag)));
+}
+
 export type Verdict = 'as-asked' | 'without-asking' | 'not-as-asked';
 
 /**
