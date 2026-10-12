@@ -73,3 +73,25 @@ test('tasks and the preprocessor go to Cypress as given: it merges the tasks its
     ['file:preprocessor', preprocessor],
   ]);
 });
+
+test('a handler that fails leaves the others to run, and the run fails with the first failure', async () => {
+  const cypress = cypressOn();
+  const on = chainEvents(cypress.on) as unknown as (event: string, handler: Handler) => void;
+  const ran: string[] = [];
+  on('after:run', () => {
+    throw new Error('first');
+  });
+  on('after:run', async () => {
+    throw new Error('second');
+  });
+  on('after:run', () => ran.push('report'));
+  await assert.rejects(async () => cypress.kept.get('after:run')!({}), /first/);
+  assert.deepEqual(ran, ['report']);
+});
+
+test('a handler that is not a function fails as it is registered, naming the event', () => {
+  const cypress = cypressOn();
+  const on = chainEvents(cypress.on) as unknown as (event: string, handler: unknown) => void;
+  on('before:spec', () => null);
+  assert.throws(() => on('before:spec', 'not a function'), /before:spec.*function/);
+});

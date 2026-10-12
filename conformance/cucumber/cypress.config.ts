@@ -22,7 +22,7 @@ export default defineConfig({
       await addCucumberPreprocessorPlugin(on, config);
       on('file:preprocessor', createBundler({ plugins: [createEsbuildPlugin(config)] }));
       // With the cache, Dappress registers a before:run of its own beside the preprocessor's.
-      // A headless browser does without the cache all the same, and so does a mock
+      // A headless browser does without the cache all the same, and so does a mock: the check runs only these
       return configureDappress(on, config, { cache: true });
     },
   },

@@ -37,6 +37,11 @@ if (!mode) {
   console.error(`[dappress] Unknown DAPPRESS_MODE "${modeName}": ${Object.keys(MODES).join(', ')}`);
   process.exit(1);
 }
+// The check sets the cache option, for Dappress to register its before:run: a headed run would build a cache for a throwaway wallet
+if (cucumber && mode.headed) {
+  console.error('[dappress] The Cucumber check runs headless or on a mock: DAPPRESS_MODE=headless or mock');
+  process.exit(1);
+}
 // In the mock mode, the wallet whose profile the mock replays: DAPPRESS_MOCK, a name or a profile's path
 const mockWallet = modeName === 'mock' ? process.env.DAPPRESS_MOCK || 'metamask' : null;
 const reportsDir = path.join(__dirname, '..', 'reports');

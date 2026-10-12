@@ -338,7 +338,7 @@ The first three need a development node, as a real chain refuses to rewrite stor
 
 ## With Cucumber (BDD)
 
-Cypress keeps one handler per plugin event, the last one registered, tasks aside, which it merges. The [Cucumber preprocessor](https://github.com/badeball/cypress-cucumber-preprocessor) writes its reports from its own `before:run`, `after:run`, `before:spec` and `after:spec` handlers, and Dappress loads MetaMask from `before:browser:launch`. Give both plugins the `on` of `chainEvents()`: each event then reaches Cypress once, and runs every plugin's handler in the order registered, whatever that order.
+Cypress keeps one handler per plugin event, the last one registered, tasks aside, which it merges. The [Cucumber preprocessor](https://github.com/badeball/cypress-cucumber-preprocessor) writes its reports from its own `before:run`, `after:run`, `before:spec`, `after:spec` and `after:screenshot` handlers, and Dappress loads MetaMask from `before:browser:launch`. Give both plugins the `on` of `chainEvents()`: each event then reaches Cypress once, and runs every plugin's handler in the order registered, whatever that order. A handler that fails leaves the others to run, and the event fails with the first failure.
 
 ```sh
 npm install --save-dev @badeball/cypress-cucumber-preprocessor @bahmutov/cypress-esbuild-preprocessor esbuild
