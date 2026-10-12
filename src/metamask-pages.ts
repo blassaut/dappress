@@ -23,6 +23,33 @@ function isHomeRoute(url: string): boolean {
   return /(notification|sidepanel)\.html(#\/?)?$/.test(url);
 }
 
+/**
+ * The request a page's route shows: the screen, and the id MetaMask gives
+ * the request in it, as in #/confirm-transaction/<id>/signature-request,
+ * #/confirmation/<id> or #/connect/<id>/confirm-permissions. What follows the
+ * id is a step of the same request. A screen MetaMask routes without an id,
+ * such as #/confirm-add-suggested-token, is known by its name alone.
+ */
+function requestOf(url: string): string {
+  const [page, route = ''] = url.split('#');
+  return `${page}#/${route.split('/').filter(Boolean).slice(0, 2).join('/')}`;
+}
+
+/**
+ * Whether a page that showed the request at `answered` now shows another
+ * one, at `shown`. A dapp that sends a request as soon as the one before is
+ * answered (an approval, then the swap) has it shown in the same window, in
+ * place of the one answered, under its own id: the answered one is gone,
+ * though the window kept its buttons. The same request is not another one,
+ * shown again after a click that was lost or on another step of its own;
+ * neither is the home route, which shows none. A page whose request was not
+ * known, being on its home route, cannot tell.
+ */
+export function showsAnotherRequest(answered: string, shown: string): boolean {
+  if (isHomeRoute(answered) || isHomeRoute(shown)) return false;
+  return requestOf(shown) !== requestOf(answered);
+}
+
 function pagesOf(browser: Browser, extensionId: string, pathname: string): Target[] {
   return browser.targets().filter((target) => target.type() === 'page' && target.url().startsWith(`chrome-extension://${extensionId}${pathname}`));
 }
@@ -145,7 +172,7 @@ export async function getConfirmationPage(browser: Browser, extensionId: string,
  */
 export async function waitForDismissal(page: Page, request: string): Promise<void> {
   if (!request.includes('/notification.html')) return;
-  await until(async () => page.isClosed() || (page.url() !== request && !isHomeRoute(page.url())), page.getDefaultTimeout());
+  await until(async () => page.isClosed() || showsAnotherRequest(request, page.url()), page.getDefaultTimeout());
 }
 
 // MetaMask asks Chrome for a 400x620 popup. Under Xvfb on a GitHub runner the

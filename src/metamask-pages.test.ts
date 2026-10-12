@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Browser, Page } from 'puppeteer-core';
-import { getConfirmationPage, waitForDismissal } from './metamask-pages';
+import { getConfirmationPage, showsAnotherRequest, waitForDismissal } from './metamask-pages';
 import { sleep } from './page-helpers';
 
 const EXTENSION = 'chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef';
@@ -68,6 +68,34 @@ test('getConfirmationPage: nothing but a closing popup is no confirmation', asyn
   await assert.rejects(getConfirmationPage(fakeBrowser([closing]), extensionId, 300), /showed no confirmation within 300ms/);
 });
 
+const SIGNATURE = (id: string) => `${POPUP}#/confirm-transaction/${id}/signature-request`;
+
+test('showsAnotherRequest: a request the dapp sent once the one before was answered, under its own id', () => {
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), SIGNATURE('74f45180')), true);
+  assert.equal(showsAnotherRequest(`${POPUP}#/connect/QV22AunHqvYYeoH2B`, `${POPUP}#/connect/5IDpoykTc-WD3`), true);
+});
+
+test('showsAnotherRequest: a request of another kind', () => {
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), TRANSACTION), true);
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-add-suggested-token`, SWITCH), true);
+});
+
+test('showsAnotherRequest: the same request, still there or shown again after a lost click, is not another', () => {
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), SIGNATURE('7409a360')), false);
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-add-suggested-token`, `${POPUP}#/confirm-add-suggested-token`), false);
+});
+
+test('showsAnotherRequest: the same request on another step of its own is not another', () => {
+  assert.equal(showsAnotherRequest(`${POPUP}#/connect/QV22AunHqvYYeoH2B`, `${POPUP}#/connect/QV22AunHqvYYeoH2B/confirm-permissions`), false);
+  assert.equal(showsAnotherRequest(`${POPUP}#/confirm-transaction/1`, TRANSACTION), false);
+});
+
+test('showsAnotherRequest: the home route shows no request, and a request answered from it cannot be told from another', () => {
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), `${POPUP}#/`), false);
+  assert.equal(showsAnotherRequest(SIGNATURE('7409a360'), POPUP), false);
+  assert.equal(showsAnotherRequest(`${EXTENSION}/sidepanel.html#/`, `${EXTENSION}/sidepanel.html#/connect/QV22AunHqvYYeoH2B`), false);
+});
+
 test('waitForDismissal: returns once the popup closes', async () => {
   const popup = fakePage(SWITCH, { url: `${POPUP}#/` });
   setTimeout(() => (popup.closed = true), 150);
@@ -82,6 +110,13 @@ test('waitForDismissal: a popup that goes on to another request is left to it', 
   const started = Date.now();
   await waitForDismissal(popup as unknown as Page, SWITCH);
   assert.ok(Date.now() - started < 500);
+});
+
+test('waitForDismissal: a popup on another step of the same request is waited on until it closes', async () => {
+  const popup = fakePage(`${POPUP}#/connect/QV22AunHqvYYeoH2B`, { url: `${POPUP}#/connect/QV22AunHqvYYeoH2B/confirm-permissions` });
+  setTimeout(() => (popup.closed = true), 150);
+  await waitForDismissal(popup as unknown as Page, `${POPUP}#/connect/QV22AunHqvYYeoH2B`);
+  assert.ok(popup.closed, 'returned once the popup closed');
 });
 
 test("waitForDismissal: gives up at the page's budget on a popup that stays", async () => {
