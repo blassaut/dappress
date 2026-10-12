@@ -58,8 +58,8 @@ declare global {
       unlockWallet(): Chainable<WalletState>;
       /** Moves the dapp onto a network, adding it to MetaMask if needed. Defaults to the wallet setup's network. Yields the chain id. */
       useNetwork(network?: Network): Chainable<string>;
-      /** The address the dapp is connected with. */
-      getAccountAddress(): Chainable<string>;
+      /** The address the dapp is connected with, or null when it has no account: not connected yet, refused, or disconnected. */
+      getAccountAddress(): Chainable<string | null>;
       /**
        * The wallet under test, as a dapp's wallet picker names it: `{ name: 'Rabby Wallet', version: '0.94.11', mock: true }`.
        * Pick it with `cy.getWallet().then(({ name }) => cy.contains('button', name).click())`.
@@ -201,8 +201,6 @@ Cypress.Commands.add('useNetwork', (network = options.network ?? undefined) => {
   waitForChainId(network.chainId);
 });
 
-// The address the dapp sees, asked to the injected provider rather than to the
-// MetaMask UI, so it keeps working across MetaMask versions.
 // The wallet the dapp sees, by the name a wallet picker shows: Privy, RainbowKit and others list wallets by their EIP-6963 name
 Cypress.Commands.add('getWallet', () => {
   const wallet: WalletInfo = mock
@@ -212,9 +210,12 @@ Cypress.Commands.add('getWallet', () => {
   return cy.wrap(wallet, { log: false });
 });
 
+// The address the dapp sees, asked to the injected provider rather than to the
+// MetaMask UI, so it keeps working across MetaMask versions. null when the dapp
+// has no account: a .then() returning undefined leaves Cypress yielding the [] before it
 Cypress.Commands.add('getAccountAddress', () => {
   Cypress.log({ name: 'metamask', message: 'getAccountAddress' });
-  return provider<string[]>('eth_accounts').then(([address]) => address);
+  return provider<string[]>('eth_accounts').then(([address]) => cy.wrap<string | null>(address ?? null, { log: false }));
 });
 
 // The chain itself, for what a test sets up beside the wallet: a block, the

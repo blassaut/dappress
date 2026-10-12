@@ -5,6 +5,8 @@ conformance/cypress/videos/
 conformance/cypress/downloads/
 .DS_Store
 conformance/cypress/debug/
+conformance/cucumber/cucumber-report.json
+conformance/cucumber/cypress/screenshots/
 .claude/
 .gstack/
 reports/metamask-*.json

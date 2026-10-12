@@ -249,6 +249,56 @@ jobs:
             /tmp/dappress
           if-no-files-found: ignore
 
+  # One feature under the Cucumber preprocessor, beside Dappress: the run passes
+  # and the preprocessor's report holds every step, passed.
+  cucumber:
+    needs: version
+    if: needs.version.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: headless
+            wallet: ''
+          - mode: mock
+            wallet: metamask
+    name: cucumber (${{ matrix.mode == 'mock' && 'MetaMask mock' || 'MetaMask' }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Chrome for Testing
+        id: chrome
+        run: |
+          path=$(scripts/install-chrome.sh stable)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: npm ci
+
+      - name: Run the feature
+        run: xvfb-run --auto-servernum npm run conformance:cucumber -- "$METAMASK_VERSION"
+        env:
+          METAMASK_VERSION: ${{ needs.version.outputs.version }}
+          DAPPRESS_BROWSER: ${{ steps.chrome.outputs.path }}
+          DAPPRESS_MODE: ${{ matrix.mode }}
+          DAPPRESS_MOCK: ${{ matrix.wallet }}
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: cucumber-screenshots-${{ matrix.mode }}
+          path: |
+            conformance/cucumber/cypress/screenshots
+            /tmp/dappress
+          if-no-files-found: ignore
+
   publish:
     needs: [version, suite, mock]
     # A failing mode still has its report published

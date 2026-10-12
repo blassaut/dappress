@@ -11,9 +11,11 @@ What changes for the users of Dappress, version by version. The format follows [
   - Reads and transactions go where any chain's do: the RPC the `chains` option names for it, else Anvil. Where Anvil is on another chain, the run says so, and how to fix it.
   - Other chains are refused as the profile says: Phantom's with `4901`. A wallet the profile saw on mainnet, MetaMask or Rabby, still knows mainnet.
   - The option takes mainnet, `0x1`, and the chains the profile saw the wallet on: in its `eth_chainId`, `chainChanged` or `connect`, or a switch it made. Any other fails as the run starts, naming those. A chain id is in hex: a decimal one fails, with its hex.
+- `chainEvents(on)`, from `dappress`, gives an `on` to hand every plugin, Dappress included: each event reaches Cypress once, and runs every plugin's handlers in the order registered, whatever that order. Each `before:browser:launch` handler gets the launch options of the one before, each `after:screenshot` handler the details. A handler that fails leaves the others to run, and the event fails with the first failure. A handler that is not a function fails as it is registered.
 
 ### Changed
 
+- `cy.getAccountAddress()` yields `null` when the dapp has no account: before it connects, once its connection is rejected, or once it is disconnected. It yielded the `[]` the provider answered, which passed `should('exist')` and failed `should('eq', address)` with "expected '[]'". Its type is now `Chainable<string | null>`: TypeScript code that passes the address on as a `string` checks for `null` first, or writes `address!` where the dapp is connected.
 - Rabby's and Phantom's profiles are recorded anew with the probe page, `npx dappress probe`, each wallet alone in the browser. The methods the page does not send, `eth_sign`, `eth_signTypedData`, `personal_ecRecover`, `eth_getEncryptionPublicKey` and Rabby's `eth_decrypt`, keep the observations of the console recording, marked as such. What their mocks answer differently:
   - Both refuse EIP-5792's `wallet_getCapabilities` and `wallet_sendCalls` with `-32601`, as the wallets do, where they refused them with `4200`: a dapp sees a method the wallet lacks, not one the mock cannot answer. A command waiting for the batch says at once that the wallet refused it.
   - Phantom's `window.ethereum` says `isMetaMask` and no longer `isPhantom`, as Phantom alone in the browser was seen saying. A dapp finds Phantom by its EIP-6963 announcement, "Phantom", `app.phantom`, which is unchanged.
@@ -21,6 +23,10 @@ What changes for the users of Dappress, version by version. The format follows [
 - On a mock, `wallet_requestPermissions` while the dapp is connected is granted at once, without asking, where the wallet was seen granting it and never seen rejected for it, as Rabby and Phantom were: each grant a new one, with its own date, and a command waiting to decide on it says at once that the wallet granted it. A wallet seen rejected for it, as MetaMask's profile has it, asks the user again; so does one whose profile never saw the method answered, as it is the user's decision. Before the first connection, it still asks: it is a connection. Since 0.11.0 it asked on every wallet's mock, so `cy.rejectConnection()` made it fail where the real Rabby and Phantom grant it.
 - The probe page no longer warns of another wallet, nor marks the profile with `otherWallets`, when the wallet chosen announces through EIP-6963 another object than its `window.ethereum`, as Rabby and Phantom do alone in the browser. It warns when more than one wallet announces itself, or when the flags of `window.ethereum` name a wallet other than the chosen one.
 - The probe page shows what to do at each step first, on a line of its own beside "Send it to the wallet": accept in your wallet, in green, reject, in red, or nothing to do. The step's name, and what more it says, follow in smaller text.
+
+### Fixed
+
+- Dappress no longer takes the event handlers of another plugin, as the Cucumber preprocessor's. Cypress keeps one handler per event, the last one registered, and on the real MetaMask Dappress always registered `before:run`: with the preprocessor registered first, its `before:run` never ran, and the run failed with "Unexpected state in beforeSpecHandler: uninitialized". Dappress now registers `before:run` only with the `cache` option. With it, give both plugins the `on` of `chainEvents()`, below. See "With Cucumber (BDD)" in the README.
 
 ## [0.11.0] - 2026-10-12
 

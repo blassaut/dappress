@@ -128,6 +128,7 @@ describe('MetaMask actions', () => {
     cy.rejectConnection();
     // The dapp is left as it was: no account, and its button still offers to connect
     provider.call('eth_accounts').should('deep.equal', []);
+    cy.getAccountAddress().should('be.null');
     testDapp.connectButton().should('have.text', 'Connect').and('be.enabled');
     testDapp.accounts().should('be.empty');
   });
@@ -513,6 +514,7 @@ describe('MetaMask actions', () => {
     cy.disconnectFromDapp();
     cy.get('@accountsChanged').should('have.been.calledWith', []);
     provider.call('eth_accounts').should('deep.equal', []);
+    cy.getAccountAddress().should('be.null');
     // No permission left to the dapp
     answer('wallet_getPermissions').then((settled) => {
       if (recorded('wallet_getPermissions')) expect(settled).to.deep.equal({ result: [] });

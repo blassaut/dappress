@@ -14,6 +14,7 @@ import { addressOf } from './keys';
 import { browserLogArgs, watchEventLoop } from './debug';
 import type { DappressOptions } from './types';
 
+export { chainEvents } from './events';
 export type { DappressOptions, Network, WalletSetup } from './types';
 export type { Profile } from './wallet-profile';
 
@@ -26,6 +27,12 @@ export type { Profile } from './wallet-profile';
  *
  * It loads the MetaMask extension into the browser Cypress launches, and
  * registers the tasks behind the cy.* commands from 'dappress/support'.
+ *
+ * Cypress keeps the last handler registered for an event: beside another
+ * plugin with handlers of its own, as the Cucumber preprocessor, give both
+ * the `on` of chainEvents(on). Dappress registers the tasks (merged by
+ * Cypress), and, for the real MetaMask, before:browser:launch and
+ * after:browser:launch, and before:run with the wallet cache only.
  */
 export function configureDappress(
   on: Cypress.PluginEvents,
@@ -60,10 +67,13 @@ export function configureDappress(
   // A cached wallet gets its requests in MetaMask's popup window, which headless Chrome doesn't open
   const usesCache = (browser: Cypress.Browser) => options.cache && !browser.isHeadless;
 
-  // Import the wallet into the cache before the run, out of the time Cypress allows a browser to come up
-  on('before:run', async ({ browser }) => {
-    if (browser && usesCache(browser)) await prepareCachedWallet({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
-  });
+  // Import the wallet into the cache before the run, out of the time Cypress allows a browser to come up.
+  // Without the cache, no before:run: it would take the place of another plugin's
+  if (options.cache) {
+    on('before:run', async ({ browser }) => {
+      if (browser && usesCache(browser)) await prepareCachedWallet({ browserPath: browser.path, extensionDir: await prepareExtension(options), options });
+    });
+  }
 
   on('before:browser:launch', async (browser, launchOptions) => {
     if (browser.family !== 'chromium') {
