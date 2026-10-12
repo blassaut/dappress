@@ -195,7 +195,8 @@ Cypress.Commands.add('useNetwork', (network = options.network ?? undefined) => {
   dappWindow()
     .then({ timeout: 60000 }, () => request)
     .then(({ error }) => {
-      if (error) throw new Error(networkRefused(mock ? mock.profile.wallet.name : 'MetaMask', network, error));
+      if (error)
+        throw new Error(networkRefused(mock ? mock.profile.wallet.name : 'MetaMask', network, error, mockWallet ? mockWallet.chainsKept() : undefined));
     });
   waitForChainId(network.chainId);
 });

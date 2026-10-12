@@ -60,6 +60,8 @@ export interface MockWallet {
   emit(event: string, payload: unknown): void;
   /** The RPC endpoint of the chain the dapp is on, for the commands that act on the chain itself. */
   chainEndpoint(): Promise<string>;
+  /** The chains the dapp may be on, when its profile has it refuse adding any other without asking; none otherwise. */
+  chainsKept(): string[] | undefined;
   /** The page the dapp runs in: the permissions name its origin. */
   inPage(page: { location: { origin: string } }): void;
 }
@@ -625,6 +627,10 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     provider,
     emit,
     chainEndpoint,
+    chainsKept: () => {
+      const seen = observations('wallet_addEthereumChain');
+      return seen.length && seen.every((observation) => observation.error && observation.error.code !== USER_REJECTED) ? [...permitted] : undefined;
+    },
     inPage: (dappPage) => {
       page = dappPage;
     },
@@ -652,11 +658,22 @@ export function installMockWallet(win: Window & { ethereum?: unknown }, mock: Mo
     setTimeout(() => mock.provider.request({ method: 'eth_chainId' }).then((chainId) => mock.emit('connect', { chainId })), 0);
 }
 
-/** What cy.useNetwork() says when the wallet refused to add the network: which wallet, which chain, its answer, and what to do instead. */
-export function networkRefused(wallet: string, network: { chainId: string; chainName?: string }, error: { code?: number; message: string }): string {
+/**
+ * What cy.useNetwork() says when the wallet refused to add the network: which wallet, which chain and its answer.
+ * `kept` is given for a mock that refuses adding chains without asking: the chains it has, one of which a fork has to keep.
+ */
+export function networkRefused(
+  wallet: string,
+  network: { chainId: string; chainName?: string },
+  error: { code?: number; message: string },
+  kept?: string[],
+): string {
   const chain = network.chainName ? `${network.chainName} (${network.chainId})` : network.chainId;
   const answer = error.code === undefined ? `"${error.message}"` : `${error.code} "${error.message}"`;
-  return `[dappress] ${wallet} refused the network ${chain}: it answers ${answer}. This wallet cannot be moved onto that chain: use a fork of a chain it supports.`;
+  const advice = kept
+    ? ` This wallet takes no chain the dapp adds: it knows only ${kept.join(', ')}. Run the dapp on a fork that keeps one of these chain ids.`
+    : '';
+  return `[dappress] ${wallet} refused the network ${chain}: it answers ${answer}.${advice}`;
 }
 
 /**
