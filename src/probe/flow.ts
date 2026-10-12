@@ -29,8 +29,10 @@ export interface AnvilClient {
 
 export interface Step {
   title: string;
-  /** What the page shows while the step runs. */
-  instruction: string;
+  /** What the step does instead of asking the wallet: the page shows it as the action. */
+  action?: string;
+  /** What more the page says of the step, under its title. */
+  note?: string;
   expect: Expect;
   decision?: Decision;
   /** The request to send, from what the earlier steps found out. */
@@ -86,15 +88,10 @@ function tokenOf(context: Context): string {
   return context.token;
 }
 
-const ACCEPT = 'Accept in your wallet.';
-const REJECT = 'Reject in your wallet.';
-const ALONE = 'Your wallet should answer alone: nothing to do.';
-
 export const STEPS: Step[] = [
-  { title: 'Connect, rejected', instruction: REJECT, expect: 'reject', decision: 'connection', request: () => ({ method: 'eth_requestAccounts' }) },
+  { title: 'Connect, rejected', expect: 'reject', decision: 'connection', request: () => ({ method: 'eth_requestAccounts' }) },
   {
     title: 'Connect, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'connection',
     request: () => ({ method: 'eth_requestAccounts' }),
@@ -103,113 +100,99 @@ export const STEPS: Step[] = [
       if (accounts[0]) context.account = accounts[0].toLowerCase();
     },
   },
-  { title: 'Read the permissions', instruction: ALONE, expect: 'none', request: () => ({ method: 'wallet_getPermissions' }) },
-  { title: 'Read the capabilities', instruction: ALONE, expect: 'none', request: (c) => ({ method: 'wallet_getCapabilities', params: [accountOf(c)] }) },
+  { title: 'Read the permissions', expect: 'none', request: () => ({ method: 'wallet_getPermissions' }) },
+  { title: 'Read the capabilities', expect: 'none', request: (c) => ({ method: 'wallet_getCapabilities', params: [accountOf(c)] }) },
   {
     title: 'Read the capabilities of one chain',
-    instruction: ALONE,
     expect: 'none',
     request: (c) => ({ method: 'wallet_getCapabilities', params: [accountOf(c), [HOODI]] }),
   },
   {
     title: 'Read the capabilities of an account not connected',
-    instruction: ALONE,
     expect: 'none',
     request: () => ({ method: 'wallet_getCapabilities', params: [OTHER_ACCOUNT] }),
   },
   {
     title: 'Ask for the permissions again, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'connection',
     request: () => ({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] }),
   },
   {
     title: 'Ask for the permissions again, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'connection',
     request: () => ({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] }),
   },
   {
     title: 'Sign a message, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'signature',
     request: (c) => ({ method: 'personal_sign', params: [hexOf(MESSAGE), accountOf(c)] }),
   },
   {
     title: 'Sign a message, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'signature',
     request: (c) => ({ method: 'personal_sign', params: [hexOf(MESSAGE), accountOf(c)] }),
   },
   {
     title: 'Sign typed data, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'signature',
     request: (c) => ({ method: 'eth_signTypedData_v4', params: [accountOf(c), TYPED_DATA] }),
   },
   {
     title: 'Sign typed data, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'signature',
     request: (c) => ({ method: 'eth_signTypedData_v4', params: [accountOf(c), TYPED_DATA] }),
   },
   {
     title: 'Send a transaction, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'transaction',
     request: (c) => ({ method: 'eth_sendTransaction', params: [{ from: accountOf(c), to: OTHER_ACCOUNT, value: '0x0' }] }),
   },
   {
     title: 'Add a network, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'network',
     request: () => ({ method: 'wallet_addEthereumChain', params: [UNREACHABLE] }),
   },
   {
     title: 'Add Anvil, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'network',
     request: (c) => ({ method: 'wallet_addEthereumChain', params: [anvilChain(c)] }),
   },
   {
     title: 'Switch to Sepolia, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'switch',
     request: () => ({ method: 'wallet_switchEthereumChain', params: [{ chainId: SEPOLIA }] }),
   },
   {
     title: 'Switch to Sepolia, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'switch',
     request: () => ({ method: 'wallet_switchEthereumChain', params: [{ chainId: SEPOLIA }] }),
   },
   {
     title: 'Switch to a chain the wallet does not know',
-    instruction: ALONE,
     expect: 'none',
     request: () => ({ method: 'wallet_switchEthereumChain', params: [{ chainId: UNKNOWN_CHAIN }] }),
   },
   {
     title: 'Switch back to Anvil',
-    instruction: `${ACCEPT} Most wallets switch without asking.`,
+    note: 'Most wallets switch without asking.',
     expect: 'accept',
     decision: 'switch',
     request: () => ({ method: 'wallet_switchEthereumChain', params: [{ chainId: ANVIL_CHAIN }] }),
   },
   {
     title: 'Fund the account and deploy a test token on Anvil',
-    instruction: 'The page funds your account and deploys a token on Anvil: nothing to do.',
+    action: 'The page funds your account and deploys a token on Anvil: nothing to do',
     expect: 'none',
     setup: async (context, anvil) => {
       const account = accountOf(context);
@@ -219,7 +202,7 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Send a batch of calls',
-    instruction: `${ACCEPT} A wallet that cannot batch on Anvil refuses alone.`,
+    note: 'A wallet that cannot batch on Anvil refuses alone.',
     expect: 'accept',
     decision: 'transaction',
     request: (c) => ({
@@ -240,28 +223,24 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Send a transaction, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'transaction',
     request: (c) => ({ method: 'eth_sendTransaction', params: [{ from: accountOf(c), to: OTHER_ACCOUNT, value: '0x1' }] }),
   },
   {
     title: 'Watch the token, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'token',
     request: (c) => ({ method: 'wallet_watchAsset', params: { type: 'ERC20', options: { address: tokenOf(c), symbol: 'DPROBE', decimals: 18 } } }),
   },
   {
     title: 'Watch the token, rejected',
-    instruction: REJECT,
     expect: 'reject',
     decision: 'token',
     request: (c) => ({ method: 'wallet_watchAsset', params: { type: 'ERC20', options: { address: tokenOf(c), symbol: 'DPROBE', decimals: 18 } } }),
   },
   {
     title: 'Approve the token, accepted',
-    instruction: ACCEPT,
     expect: 'accept',
     decision: 'transaction',
     request: (c) => ({
@@ -271,11 +250,10 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Revoke the permissions',
-    instruction: ALONE,
     expect: 'none',
     request: () => ({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] }),
   },
-  { title: 'Read the permissions once revoked', instruction: ALONE, expect: 'none', request: () => ({ method: 'wallet_getPermissions' }) },
+  { title: 'Read the permissions once revoked', expect: 'none', request: () => ({ method: 'wallet_getPermissions' }) },
 ];
 
 /**
@@ -286,6 +264,18 @@ export const STEPS: Step[] = [
  */
 export function pendingState(step: Step): 'waiting' | 'slow' {
   return asksTheUser(step) ? 'waiting' : 'slow';
+}
+
+/**
+ * What the user does at the step, which the page shows first: accept or
+ * reject in the wallet, or nothing, where the wallet answers on its own or the
+ * page does the step itself.
+ */
+export function actionOf(step: Step): string {
+  if (step.action) return step.action;
+  if (step.expect === 'accept') return 'Accept in your wallet';
+  if (step.expect === 'reject') return 'Reject in your wallet';
+  return 'Nothing to do: your wallet answers on its own';
 }
 
 /** Whether the step asks the user to decide in the wallet: the page then lets them send it when ready. */

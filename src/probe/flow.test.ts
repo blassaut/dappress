@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   STEPS,
+  actionOf,
   asksTheUser,
   classify,
   chunksOf,
@@ -56,8 +57,15 @@ test('each step that waits for the user says what to do and which prompt it is',
   for (const step of STEPS) {
     if (step.expect === 'none') continue;
     assert.ok(step.decision, `${step.title} names its prompt`);
-    assert.match(step.instruction, /(Accept|Reject) in your wallet/, step.title);
+    assert.equal(actionOf(step), step.expect === 'accept' ? 'Accept in your wallet' : 'Reject in your wallet', step.title);
   }
+});
+
+test('a step the wallet answers alone says there is nothing to do; the setup, what the page does on Anvil', () => {
+  const byTitle = (title: string) => STEPS.find((step) => step.title === title)!;
+  assert.equal(actionOf(byTitle('Read the capabilities')), 'Nothing to do: your wallet answers on its own');
+  assert.match(actionOf(byTitle('Fund the account and deploy a test token on Anvil')), /^The page funds your account and deploys a token on Anvil/);
+  assert.equal(byTitle('Switch back to Anvil').note, 'Most wallets switch without asking.');
 });
 
 test('a slow request waits for a decision only on a step that asks for one', () => {

@@ -13,6 +13,7 @@ import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../..
 import {
   STEPS,
   ASKING_AFTER,
+  actionOf,
   asksTheUser,
   classify,
   chunksOf,
@@ -222,13 +223,24 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
   return outcome;
 }
 
+/** The step's action, prominent and styled by what the user does, then its title and what more it says. */
+function showStep(step: Step): void {
+  const action = element('action');
+  action.textContent = actionOf(step);
+  action.dataset.kind = step.action ? 'none' : step.expect;
+  element('step-title').textContent = step.title;
+  const note = element('step-note');
+  note.textContent = step.note ?? '';
+  note.hidden = !step.note;
+}
+
 async function runFlow(provider: Provider, context: Context): Promise<Mark[]> {
   show('run');
   const trace = window.__dappressTrace!;
   const anvil = anvilClient(context.anvilUrl);
   const marks: Mark[] = [];
   for (const step of STEPS) {
-    element('instruction').textContent = `${step.title}. ${step.instruction}`;
+    showStep(step);
     for (;;) {
       if (step.setup) {
         setState('running', step);
