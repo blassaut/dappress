@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { startProbeServer, PAGE_FILES, type ProbeServer } from './server';
@@ -182,4 +183,19 @@ test('a page file missing from the build fails the start, not a later request', 
     startProbeServer({ root, anvilUrl: 'http://127.0.0.1:8545', reference, dappressVersion: '0.11.0' }),
     /The probe page is not built: probe\.js is missing/,
   );
+});
+
+test('closing does not wait for a connection that sent nothing, as a browser preconnect does', async () => {
+  const server = await startProbeServer({ root: pageRoot(), anvilUrl: 'http://127.0.0.1:8545', reference, dappressVersion: '0.11.0' });
+  const { port } = new URL(server.url);
+  const socket = net.connect({ host: '127.0.0.1', port: Number(port) });
+  await new Promise((resolve) => socket.once('connect', resolve));
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<string>((resolve) => (timer = setTimeout(() => resolve('close() still pending after a second'), 1000)));
+  try {
+    assert.equal(await Promise.race([server.close().then(() => 'closed'), late]), 'closed');
+  } finally {
+    clearTimeout(timer);
+    socket.destroy();
+  }
 });

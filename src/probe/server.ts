@@ -76,15 +76,24 @@ export async function startProbeServer({ root, anvilUrl, reference, dappressVers
     response.writeHead(200, { 'Content-Type': file.type, 'Content-Length': file.body.length });
     response.end(request.method === 'HEAD' ? undefined : file.body);
   });
+  let failStart: (error: Error) => void = () => undefined;
   await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
+    failStart = reject;
+    server.on('error', failStart);
     server.listen(0, '127.0.0.1', resolve);
   });
+  // The listener only serves the start: once listening, an error is no longer its to report
+  server.off('error', failStart);
   const { port } = server.address() as AddressInfo;
   hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
   return {
     url: `http://127.0.0.1:${port}/`,
-    close: () => new Promise((resolve) => server.close(() => resolve())),
+    close: () =>
+      new Promise((resolve) => {
+        server.close(() => resolve());
+        // close() alone waits for every open socket, including one that never sent a request (a browser's preconnect); everything is served from memory, so cutting them loses nothing
+        server.closeAllConnections();
+      }),
   };
 }
 
