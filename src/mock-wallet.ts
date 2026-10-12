@@ -235,6 +235,19 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     return refuseWithoutAsking(kind, method, params);
   }
 
+  /**
+   * The permissions granted again to the connected dapp without asking, as
+   * the wallet granted them: a new grant, its own id and date, as Phantom gave
+   * each grant a new date. A command waiting to decide on it is told at once.
+   */
+  function grantWithoutAsking(method: string): unknown {
+    grant = { id: crypto.randomUUID(), date: Date.now() };
+    const held = permissions(method);
+    const granted = held ? recorded(method, held) : result(method);
+    answeredWithoutAsking.push({ kind: 'connection', line: lastRecorded! });
+    return granted;
+  }
+
   /** What the wallet answered to `method` when accepted, or `fallback` when the profile has no such answer. */
   function result(method: string, fallback?: unknown): unknown {
     const observation = observations(method).find((candidate) => !candidate.error);
@@ -280,7 +293,12 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         return connected;
       }
       case 'wallet_requestPermissions': {
-        // EIP-2255: the user is asked, connected or not, as MetaMask was seen doing
+        // EIP-2255: before the first connection, it is one, and the user is asked. While connected, a wallet seen
+        // granting it and never seen rejected for it grants it without asking, as Rabby and Phantom did; one seen
+        // rejected for it asks again, as MetaMask does, and so does one never seen answering it: the user decides
+        const seen = observations(method);
+        if (connected.length && seen.some((observation) => !observation.error) && !seen.some((observation) => observation.error?.code === USER_REJECTED))
+          return grantWithoutAsking(method);
         await answered('connection', method, list);
         const granted = permissions(method);
         return granted ? recorded(method, granted) : result(method, [{ parentCapability: 'eth_accounts' }]);
@@ -366,6 +384,9 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
 
   function disconnect(): void {
     grant = undefined;
+    // A grant without asking is the connection's: the next connection is asked for
+    for (let index = answeredWithoutAsking.length - 1; index >= 0; index--)
+      if (answeredWithoutAsking[index].kind === 'connection') answeredWithoutAsking.splice(index, 1);
     if (!connected.length) return;
     connected = [];
     emit('accountsChanged', []);

@@ -5,8 +5,7 @@ import { outcomeSet, type Profile } from '../../../src/profile-build';
 // to accept or reject.
 // The profile it builds must answer as the one the suite recorded for this
 // wallet: every outcome the page saw is one the reference holds, method by
-// method. A mock answers 4200 to what its profile never saw; the reference
-// has no entry then.
+// method.
 
 const reference = Cypress.expose('probeReference') as Profile;
 
@@ -47,19 +46,6 @@ function goThrough(left: number, done = ''): void {
     });
 }
 
-// A mock fills in what its profile never saw by its own rules, which the
-// reference, being that profile, cannot hold: a user's rejection, carried
-// over from another method the wallet rejected; and the success EIP-2255,
-// EIP-3085 and EIP-3326 define, for a method never seen succeeding.
-const mock = Boolean((Cypress.expose('dappress') as { mock?: unknown } | undefined)?.mock);
-// Only the shape each EIP defines is accepted: EIP-3085 and EIP-3326 answer null,
-// and EIP-2255 answers a list of permissions, each with a parentCapability.
-const SUCCESS_BY_EIP: Record<string, (outcome: string) => boolean> = {
-  wallet_requestPermissions: (outcome) => /^result \{.*\bparentCapability\b.*\}\[\]$/.test(outcome),
-  wallet_addEthereumChain: (outcome) => outcome === 'result null',
-  wallet_switchEthereumChain: (outcome) => outcome === 'result null',
-};
-
 // The keys of a result's shape: `result {0x1, 0xaa36a7}`
 const keysOf = (outcome: string) =>
   outcome
@@ -89,19 +75,10 @@ function fewerChains(outcome: string, recorded: string[]): boolean {
 
 /** The outcomes of the recorded profile that the reference does not account for, as `method: outcome`. */
 function strays(profile: Profile): string[] {
-  const rejections = new Set(
-    Object.values(reference.methods)
-      .flatMap((observations) => outcomeSet(observations))
-      .filter((outcome) => outcome.startsWith('error 4001 ')),
-  );
   return Object.entries(profile.methods).flatMap(([method, observations]) => {
     const recorded = outcomeSet(reference.methods[method]);
-    const byMock = (outcome: string) =>
-      mock && (rejections.has(outcome) || (SUCCESS_BY_EIP[method]?.(outcome) && !recorded.some((known) => known.startsWith('result '))));
     return outcomeSet(observations)
       .filter((outcome) => !recorded.includes(outcome))
-      .filter((outcome) => !(outcome.startsWith('error 4200') && !reference.methods[method]))
-      .filter((outcome) => !byMock(outcome))
       .filter((outcome) => !(method === 'wallet_getCapabilities' && fewerChains(outcome, recorded)))
       .map((outcome) => `${method}: ${outcome}`);
   });

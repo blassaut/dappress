@@ -1,6 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, asksTheUser, classify, chunksOf, describeOutcome, pendingState, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
+import {
+  STEPS,
+  actionOf,
+  asksTheUser,
+  classify,
+  chunksOf,
+  describeOutcome,
+  otherWallets,
+  pendingState,
+  plainTrace,
+  OTHER_ACCOUNT,
+  type Context,
+  type Outcome,
+} from './flow';
 import type { TraceChunk } from '../profile-schema';
 
 const ACCOUNT = '0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a';
@@ -44,8 +57,15 @@ test('each step that waits for the user says what to do and which prompt it is',
   for (const step of STEPS) {
     if (step.expect === 'none') continue;
     assert.ok(step.decision, `${step.title} names its prompt`);
-    assert.match(step.instruction, /(Accept|Reject) in your wallet/, step.title);
+    assert.equal(actionOf(step), step.expect === 'accept' ? 'Accept in your wallet' : 'Reject in your wallet', step.title);
   }
+});
+
+test('a step the wallet answers alone says there is nothing to do; the setup, what the page does on Anvil', () => {
+  const byTitle = (title: string) => STEPS.find((step) => step.title === title)!;
+  assert.equal(actionOf(byTitle('Read the capabilities')), 'Nothing to do: your wallet answers on its own');
+  assert.match(actionOf(byTitle('Fund the account and deploy a test token on Anvil')), /^The page funds your account and deploys a token on Anvil/);
+  assert.equal(byTitle('Switch back to Anvil').note, 'Most wallets switch without asking.');
 });
 
 test('a slow request waits for a decision only on a step that asks for one', () => {
@@ -144,4 +164,25 @@ test("an outcome as the list of steps shows it: the error's code and message, or
   assert.equal(describeOutcome({ result: { balance: 255n }, asked: false }), '{"balance":"0xff"}');
   assert.equal(describeOutcome({ result: undefined, asked: false }), 'undefined');
   assert.equal(describeOutcome({ result: 'a'.repeat(300), asked: false }).length, 201);
+});
+
+test('another wallet in the page: more than one announced, or flags on window.ethereum naming another than the one chosen', () => {
+  const phantom = { name: 'Phantom', rdns: 'app.phantom' };
+  const rabby = { name: 'Rabby Wallet', rdns: 'io.rabby' };
+  const metamask = { name: 'MetaMask', rdns: 'io.metamask' };
+  // A wallet alone, whose window.ethereum is another object than its announced provider: isMetaMask only, or its own flag too
+  assert.equal(otherWallets(1, phantom, { isMetaMask: true, isPhantom: false, isRabby: false }), false);
+  assert.equal(otherWallets(1, phantom, { isMetaMask: true, isPhantom: true }), false);
+  assert.equal(otherWallets(1, rabby, { isMetaMask: true, isRabby: true }), false);
+  assert.equal(otherWallets(1, metamask, { isMetaMask: true }), false);
+  assert.equal(otherWallets(1, { name: 'Coinbase Wallet', rdns: 'com.coinbase.wallet' }, { isMetaMask: true, isCoinbaseWallet: true }), false);
+  // No window.ethereum
+  assert.equal(otherWallets(1, phantom, undefined), false);
+  // Two wallets announced, whichever is chosen
+  assert.equal(otherWallets(2, metamask, { isMetaMask: true }), true);
+  // window.ethereum is a wallet that does not announce itself
+  assert.equal(otherWallets(1, metamask, { isMetaMask: true, isRabby: true }), true);
+  assert.equal(otherWallets(1, phantom, { isMetaMask: true, isCoinbaseWallet: true }), true);
+  // Nothing announced: the wallet chosen is window.ethereum itself
+  assert.equal(otherWallets(0, { name: 'window.ethereum' }, { isMetaMask: true, isRabby: true }), false);
 });

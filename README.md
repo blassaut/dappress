@@ -238,14 +238,14 @@ A mock is a wallet in the page, in place of the extension. It answers your dapp 
 
 - **Every command.** Connect, sign, send, add and switch chains, add tokens, add and switch accounts, lock and unlock: the commands are the same as on the real MetaMask, and so are the specs.
 - **What each wallet answers.** Its identity flags and EIP-6963 announcement, the code and message of each rejection, the methods it lacks, the chain switches it refuses without asking. A method or an option the profile does not cover fails with `4200`: the mock never succeeds at what the wallet was not seen doing.
-- **The permissions and capabilities the dapp asks for**, as the wallet answered them, with the mock's own accounts, chains and origin in them: `wallet_getPermissions`, `wallet_requestPermissions`, which asks the user even while connected, as MetaMask does, and `wallet_getCapabilities`.
+- **The permissions and capabilities the dapp asks for**, as the wallet answered them, with the mock's own accounts, chains and origin in them: `wallet_getPermissions`, `wallet_requestPermissions`, which, while connected, is granted without asking where the wallet was seen granting it and never rejected for it (Rabby and Phantom), and asks the user otherwise, as MetaMask does, and `wallet_getCapabilities`.
 - **What the user decides, and only that.** A request waits for your command, `cy.confirmTransaction()` or `cy.rejectTransaction()`, as it would on the real wallet.
 - **Real transactions.** Anvil signs, and the mock sends the transaction to the chain the dapp is on: Anvil's own, your testnet, or a fork. See [Your chain, at your block](#your-chain-at-your-block).
 
 ### What it does not do
 
 - **Reach a wallet the dapp does not find in the page.** A mock is an injected wallet, found through `window.ethereum` or EIP-6963. WalletConnect, a wallet SDK such as Coinbase's, and an embedded wallet such as Privy's are out of its reach.
-- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: MetaMask's profile is the only one with EIP-5792's `wallet_getCapabilities`, and it records `wallet_sendCalls` only as MetaMask's refusal on a chain it does not batch on, `5710`: a batch MetaMask would send is not recorded yet. The `eth_*` reads go to the chain, recorded or not.
+- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: MetaMask's profile is the only one with EIP-5792's capabilities, and it records `wallet_sendCalls` only as MetaMask's refusal on a chain it does not batch on, `5710`: a batch MetaMask would send is not recorded yet. Rabby and Phantom lack both EIP-5792 methods: their profiles record `wallet_getCapabilities` and `wallet_sendCalls` refused with `-32601`, and their mocks refuse them so. The `eth_*` reads go to the chain, recorded or not.
 - **Show screens.** A mock tests your dapp, not the wallet's interface: how MetaMask displays your request needs the real MetaMask.
 - **Estimate fees.** `cy.confirmTransaction({ gas })` takes `'networkSuggested'` or custom values, not `'low'`, `'market'` or `'aggressive'`.
 - **Sign for an imported key on a testnet.** `cy.importAccount()` lets Anvil act for the key's address, not sign for it: that account sends on Anvil's chain or a fork only.
@@ -444,7 +444,7 @@ When a setting appears in several places, the first one found wins: environment 
 
 ## Wallet profiles
 
-A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Rabby and Phantom (recorded by hand) ship with Dappress, in [`reports/profiles`](reports/profiles).
+A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Rabby and Phantom (recorded with the probe page) ship with Dappress, in [`reports/profiles`](reports/profiles).
 
 `npm run profile -- diff <a> <b>` lists where two wallets answer differently.
 

@@ -13,10 +13,12 @@ import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../..
 import {
   STEPS,
   ASKING_AFTER,
+  actionOf,
   asksTheUser,
   classify,
   chunksOf,
   describeOutcome,
+  otherWallets,
   pendingState,
   plainTrace,
   type Context,
@@ -32,6 +34,8 @@ interface Provider {
 interface Announced {
   info: { name?: string; icon?: string; rdns?: string };
   provider: Provider;
+  /** window.ethereum, offered as is when no wallet announced itself. */
+  injectedOnly?: boolean;
 }
 
 declare global {
@@ -73,7 +77,7 @@ async function discover(): Promise<Announced[]> {
   window.dispatchEvent(new Event('eip6963:requestProvider'));
   await new Promise((resolve) => setTimeout(resolve, DISCOVERY));
   window.removeEventListener('eip6963:announceProvider', listen);
-  if (!announced.length && injected()) announced.push({ info: { name: 'window.ethereum' }, provider: injected()! });
+  if (!announced.length && injected()) announced.push({ info: { name: 'window.ethereum' }, provider: injected()!, injectedOnly: true });
   return announced;
 }
 
@@ -99,6 +103,9 @@ function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: str
   let chosen: Announced | undefined;
   if (!wallets.length) show('no-wallet');
   showFlags();
+  // Another wallet besides the one chosen (otherWallets() in flow.ts says when): its flags may be window.ethereum's
+  const announced = wallets.filter((wallet) => !wallet.injectedOnly).length;
+  const othersBeside = (wallet: Announced) => otherWallets(announced, wallet.info, injected() ? window.__dappressTrace?.discovery?.flags : undefined);
   wallets.forEach((wallet, index) => {
     const item = document.createElement('li');
     const label = document.createElement('label');
@@ -108,12 +115,12 @@ function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: str
     radio.value = String(index);
     radio.addEventListener('change', () => {
       chosen = wallet;
-      const injectedElsewhere = injected() !== undefined && injected() !== wallet.provider;
       const others = element('others');
-      others.textContent = injectedElsewhere
-        ? 'window.ethereum belongs to another wallet: the identity flags in the profile would be its. Disable the other wallet extensions, then reload, or go on and the profile will say so.'
+      const elsewhere = othersBeside(wallet);
+      others.textContent = elsewhere
+        ? "Another wallet is active in the page: window.ethereum, and the identity flags in the profile, may be that wallet's. Disable the other wallet extensions, then reload, or go on and the profile will say so."
         : '';
-      others.hidden = !injectedElsewhere;
+      others.hidden = !elsewhere;
       update();
     });
     label.append(radio);
@@ -137,8 +144,7 @@ function choose(wallets: Announced[]): Promise<{ wallet: Announced; version: str
   return new Promise((resolve) =>
     start.addEventListener('click', () => {
       show('choose', false);
-      const otherWallets = wallets.length > 1 || (injected() !== undefined && injected() !== chosen!.provider);
-      resolve({ wallet: chosen!, version: version.value.trim(), otherWallets });
+      resolve({ wallet: chosen!, version: version.value.trim(), otherWallets: othersBeside(chosen!) });
     }),
   );
 }
@@ -217,13 +223,24 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
   return outcome;
 }
 
+/** The step's action, prominent and styled by what the user does, then its title and what more it says. */
+function showStep(step: Step): void {
+  const action = element('action');
+  action.textContent = actionOf(step);
+  action.dataset.kind = step.action ? 'none' : step.expect;
+  element('step-title').textContent = step.title;
+  const note = element('step-note');
+  note.textContent = step.note ?? '';
+  note.hidden = !step.note;
+}
+
 async function runFlow(provider: Provider, context: Context): Promise<Mark[]> {
   show('run');
   const trace = window.__dappressTrace!;
   const anvil = anvilClient(context.anvilUrl);
   const marks: Mark[] = [];
   for (const step of STEPS) {
-    element('instruction').textContent = `${step.title}. ${step.instruction}`;
+    showStep(step);
     for (;;) {
       if (step.setup) {
         setState('running', step);

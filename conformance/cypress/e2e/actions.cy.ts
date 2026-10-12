@@ -31,7 +31,9 @@ const wallet = (Cypress.expose('dappress') as { mock?: { profile: { wallet: { na
  * with, without asking, which also means it takes no chain it does not have:
  * the dapp stays where the mock starts, mainnet (the real Phantom was recorded
  * on Sepolia), as cypress/wallet.setup.ts has it; whether
- * wallet_revokePermissions exists.
+ * wallet_revokePermissions exists; the code it refuses EIP-5792's
+ * wallet_getCapabilities and wallet_sendCalls with, a wallet that lacks them;
+ * whether it grants wallet_requestPermissions to a connected dapp without asking.
  */
 const differences: {
   switchRefused?: number;
@@ -39,10 +41,19 @@ const differences: {
   watchAssetAnswers?: unknown;
   watchAssetRefused?: number;
   noRevokePermissions?: boolean;
+  batchRefused?: number;
+  permissionsWithoutAsking?: boolean;
 } =
   {
-    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined },
-    Phantom: { switchRefused: 4901, addChainRefused: 4901, watchAssetRefused: -32000, noRevokePermissions: true },
+    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined, batchRefused: -32601, permissionsWithoutAsking: true },
+    Phantom: {
+      switchRefused: 4901,
+      addChainRefused: 4901,
+      watchAssetRefused: -32000,
+      noRevokePermissions: true,
+      batchRefused: -32601,
+      permissionsWithoutAsking: true,
+    },
   }[wallet] ?? {};
 
 // Take the dapp's permission back: wallet_revokePermissions, or the wallet's own screen where it has none
@@ -145,20 +156,44 @@ describe('MetaMask actions', () => {
 
   it('wallet_getCapabilities', () => {
     answer('wallet_getCapabilities', [account]).then((settled) => {
+      // A wallet without EIP-5792 refuses it, as its profile recorded it: not a method the profile never saw
+      if (differences.batchRefused) return expect(settled).to.have.nested.property('error.code', differences.batchRefused);
       if (!recorded('wallet_getCapabilities')) return expect(settled).to.have.nested.property('error.code', UNSUPPORTED);
       expect(settled).to.have.nested.property(`result.${hoodi}.atomic.status`);
     });
     // Asked for some chains: those only
     answer('wallet_getCapabilities', [account, [hoodi]]).then((settled) => {
-      if (recorded('wallet_getCapabilities')) expect(Object.keys(settled.result as object)).to.deep.equal([hoodi]);
+      if (differences.batchRefused) expect(settled).to.have.nested.property('error.code', differences.batchRefused);
+      else if (recorded('wallet_getCapabilities')) expect(Object.keys(settled.result as object)).to.deep.equal([hoodi]);
     });
     // For an account the dapp is not connected with: refused
     answer('wallet_getCapabilities', [secondAccount]).should('have.property', 'error');
   });
 
+  // The permissions a wallet granted
+  const granted = () =>
+    provider
+      .result()
+      .its('result')
+      .should((permissions: Permission[]) => expect(permissions.map((permission) => permission.parentCapability)).to.include('eth_accounts'));
+
   it('wallet_requestPermissions, rejected with rejectConnection', () => {
-    // Asked again while connected, the wallet asks the user again
+    // Asked again while connected, MetaMask asks the user again; Rabby and Phantom grant it without asking
     provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
+    if (differences.permissionsWithoutAsking) {
+      granted();
+      cy.getAccountAddress().should('eq', account);
+      // Nothing to reject: the command fails at once, and says the wallet granted it without asking
+      cy.on('fail', (error) => {
+        expect(error.message).to.match(/^\[dappress\] Nothing for rejectConnection to decide on: .* to wallet_requestPermissions, as recorded, without asking/);
+      });
+      cy.rejectConnection();
+      // Reached only if the command did not fail: the handler above cannot fail a test that passes
+      cy.then(() => {
+        throw new Error('cy.rejectConnection() found a wallet_requestPermissions to reject');
+      });
+      return;
+    }
     cy.rejectConnection();
     provider.result().its('error.code').should('eq', USER_REJECTED);
     cy.getAccountAddress().should('eq', account);
@@ -166,11 +201,8 @@ describe('MetaMask actions', () => {
 
   it('wallet_requestPermissions, accepted with connectToDapp', () => {
     provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
-    cy.connectToDapp();
-    provider
-      .result()
-      .its('result')
-      .should((permissions: Permission[]) => expect(permissions.map((permission) => permission.parentCapability)).to.include('eth_accounts'));
+    if (!differences.permissionsWithoutAsking) cy.connectToDapp();
+    granted();
     cy.getAccountAddress().should('eq', account);
   });
 
@@ -312,9 +344,11 @@ describe('MetaMask actions', () => {
   });
 
   it('wallet_sendCalls on a chain without EIP-7702: refused without asking', () => {
-    // MetaMask batches calls through EIP-7702 only, on the chains it names in its capabilities: not on Anvil's
+    // MetaMask batches calls through EIP-7702 only, on the chains it names in its capabilities: not on Anvil's.
+    // A wallet without EIP-5792 refuses both methods, whatever the chain
     answer('wallet_getCapabilities', [account, [dappChain]]).then((settled) => {
-      if (recorded('wallet_getCapabilities')) expect(settled).to.deep.equal({ result: {} });
+      if (differences.batchRefused) expect(settled).to.have.nested.property('error.code', differences.batchRefused);
+      else if (recorded('wallet_getCapabilities')) expect(settled).to.deep.equal({ result: {} });
     });
     const calls = [
       { to: secondAccount, value: '0x1' },
@@ -322,7 +356,7 @@ describe('MetaMask actions', () => {
     ];
     answer('wallet_sendCalls', [{ version: '2.0.0', chainId: dappChain, from: account, atomicRequired: false, calls }])
       .its('error.code')
-      .should('eq', recorded('wallet_sendCalls') ? 5710 : UNSUPPORTED);
+      .should('eq', differences.batchRefused ?? (recorded('wallet_sendCalls') ? 5710 : UNSUPPORTED));
     provider.call('eth_getTransactionCount', [account, 'latest']).should('eq', '0x0');
   });
 
