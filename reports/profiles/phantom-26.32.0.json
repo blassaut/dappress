@@ -5,19 +5,20 @@
     "version": "26.32.0"
   },
   "recorded": {
-    "by": "hand",
-    "date": "2026-10-06T14:26:10.974Z",
+    "by": "dappress probe 0.11.0",
+    "date": "2026-10-12T13:03:51.551Z",
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
     "recorder": "2"
   },
   "discovery": {
-    "injected": "before",
+    "injected": "after",
     "flags": {
       "isMetaMask": true,
       "isRabby": false,
       "isCoinbaseWallet": false,
       "isBraveWallet": false,
       "isTrust": false,
-      "isPhantom": true,
+      "isPhantom": false,
       "isOkxWallet": false,
       "isZerion": false
     },
@@ -30,99 +31,17 @@
     ]
   },
   "methods": {
-    "eth_accounts": [
-      {
-        "params": [],
-        "via": "eip6963:app.phantom",
-        "result": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
-        ],
-        "count": 5
-      }
-    ],
-    "eth_blockNumber": [
-      {
-        "params": [],
-        "via": "eip6963:app.phantom",
-        "result": "0xb4ea28",
-        "count": 3
-      },
-      {
-        "params": [],
-        "via": "eip6963:app.phantom",
-        "result": "0xb4ea29",
-        "count": 7
-      },
-      {
-        "params": [],
-        "via": "eip6963:app.phantom",
-        "result": "0xb4ea2a",
-        "count": 3
-      },
-      {
-        "params": [],
-        "via": "eip6963:app.phantom",
-        "result": "0xb4ea2b"
-      }
-    ],
     "eth_chainId": [
       {
+        "test": "Read the permissions",
         "params": [],
         "via": "eip6963:app.phantom",
-        "result": "0xaa36a7",
-        "count": 34
-      }
-    ],
-    "eth_estimateGas": [
-      {
-        "params": {
-          "$truncated": 26303,
-          "shape": "{data, from}[]"
-        },
-        "via": "eip6963:app.phantom",
-        "result": "0xe755a0",
-        "count": 3
-      },
-      {
-        "params": [
-          {
-            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x23fb1c211e37487e0ea4776ccaffb591d9d38de8",
-            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
-          }
-        ],
-        "via": "eip6963:app.phantom",
-        "result": "0x1fb61"
-      }
-    ],
-    "eth_getBlockByNumber": [
-      {
-        "params": [
-          "latest",
-          false
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 8707,
-          "shape": "{baseFeePerGas, difficulty, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentHash, receiptsRoot, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles}"
-        },
-        "count": 3
-      },
-      {
-        "params": [
-          "latest",
-          false
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 12709,
-          "shape": "{baseFeePerGas, difficulty, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentHash, receiptsRoot, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles}"
-        },
-        "count": 2
+        "result": "0xaa36a7"
       }
     ],
     "eth_getEncryptionPublicKey": [
       {
+        "test": "console recording, 2026-10-06",
         "params": [
           "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
         ],
@@ -137,121 +56,9 @@
         "count": 2
       }
     ],
-    "eth_getTransactionByHash": [
-      {
-        "params": [
-          "0x1eb419fd551853ebbccf43da6f9cd403091e87dc09fe3500f4502f6f8e1ea5aa"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 52999,
-          "shape": "{blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, nonce, r, s, to, transactionIndex, v, value}"
-        }
-      },
-      {
-        "params": [
-          "0xe663f06d6d20201bb6ea5d456f52bf1258b781335c72d8a1e10d9e49bef00ea9"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 52999,
-          "shape": "{blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, nonce, r, s, to, transactionIndex, v, value}"
-        }
-      },
-      {
-        "params": [
-          "0xe14d7469276641465c71083aa55486d1105659c7761e64b40fa9e046e1b1faba"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "blockHash": null,
-          "blockNumber": null,
-          "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "gas": "0x1fb61",
-          "gasPrice": "0x98fb9512",
-          "hash": "0xe14d7469276641465c71083aa55486d1105659c7761e64b40fa9e046e1b1faba",
-          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170",
-          "nonce": "0x16",
-          "to": "0x23fb1c211e37487e0ea4776ccaffb591d9d38de8",
-          "transactionIndex": null,
-          "value": "0x0",
-          "v": "0x0",
-          "r": "0x9cf7ec7f73175188d947e52a3e2513a1ddbfc683aaca0e8db0dd85697d63ff4d",
-          "s": "0x63cf436415342d4a2fc2aa5c0270cdcb35cf94d8d282babd21bd31ac2eb53af4",
-          "gasLimit": "0x1fb61",
-          "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
-        }
-      }
-    ],
-    "eth_getTransactionCount": [
-      {
-        "params": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "latest"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": "0x14",
-        "count": 2
-      },
-      {
-        "params": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "latest"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": "0x15"
-      },
-      {
-        "params": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "latest"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": "0x16",
-        "count": 2
-      }
-    ],
-    "eth_getTransactionReceipt": [
-      {
-        "params": [
-          "0x1eb419fd551853ebbccf43da6f9cd403091e87dc09fe3500f4502f6f8e1ea5aa"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": null,
-        "count": 3
-      },
-      {
-        "params": [
-          "0x1eb419fd551853ebbccf43da6f9cd403091e87dc09fe3500f4502f6f8e1ea5aa"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 2141,
-          "shape": "{blockHash, blockNumber, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
-        }
-      },
-      {
-        "params": [
-          "0xe663f06d6d20201bb6ea5d456f52bf1258b781335c72d8a1e10d9e49bef00ea9"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": null,
-        "count": 2
-      },
-      {
-        "params": [
-          "0xe663f06d6d20201bb6ea5d456f52bf1258b781335c72d8a1e10d9e49bef00ea9"
-        ],
-        "via": "eip6963:app.phantom",
-        "result": {
-          "$truncated": 2141,
-          "shape": "{blockHash, blockNumber, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
-        },
-        "count": 2
-      }
-    ],
     "eth_requestAccounts": [
       {
+        "test": "Connect, rejected",
         "via": "eip6963:app.phantom",
         "error": {
           "code": 4001,
@@ -259,20 +66,7 @@
         }
       },
       {
-        "via": "eip6963:app.phantom",
-        "result": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
-        ],
-        "count": 2
-      },
-      {
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": 4001,
-          "message": "User rejected the request."
-        }
-      },
-      {
+        "test": "Connect, accepted",
         "via": "eip6963:app.phantom",
         "result": [
           "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
@@ -281,41 +75,11 @@
     ],
     "eth_sendTransaction": [
       {
+        "test": "Send a transaction, rejected",
         "params": [
           {
             "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
-            "value": "0x0",
-            "gasLimit": "0x5208",
-            "maxFeePerGas": "0x2540be400",
-            "maxPriorityFeePerGas": "0x3b9aca00"
-          }
-        ],
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": 4001,
-          "message": "User rejected the request."
-        }
-      },
-      {
-        "params": [
-          {
-            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
-            "value": "0x0",
-            "gasLimit": "0x5208",
-            "maxFeePerGas": "0x2540be400",
-            "maxPriorityFeePerGas": "0x3b9aca00"
-          }
-        ],
-        "via": "eip6963:app.phantom",
-        "result": "0xc33081e54af00cd26de0991004d6f7094f1469e56d73ceee75e0f62917b37b7f"
-      },
-      {
-        "params": [
-          {
-            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "to": "0x000000000000000000000000000000000000dead",
             "value": "0x0"
           }
         ],
@@ -323,82 +87,36 @@
         "error": {
           "code": 4001,
           "message": "User rejected the request."
-        },
-        "count": 2
-      },
-      {
-        "params": [
-          {
-            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
-            "value": "0x0",
-            "gasLimit": "0x5208",
-            "gasPrice": "0x2540be400",
-            "type": "0x0"
-          }
-        ],
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": 4001,
-          "message": "User rejected the request."
         }
       },
       {
+        "test": "Send a transaction, accepted",
         "params": [
           {
             "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
-            "value": "0x0",
-            "gasLimit": "0x5208",
-            "gasPrice": "0x2540be400",
-            "type": "0x0"
+            "to": "0x000000000000000000000000000000000000dead",
+            "value": "0x1"
           }
         ],
         "via": "eip6963:app.phantom",
-        "result": "0x305ff3bd4a52535f1f4cc002769301f04f1aebf5945648198ed2eae3364fa38a"
+        "result": "0xb2d0965efea6cf6accc52f9a5f27f180caa33746c4835d0e9996f458a14a0a89"
       },
       {
-        "params": {
-          "$truncated": 26320,
-          "shape": "{data, from, gas}[]"
-        },
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": 4001,
-          "message": "User rejected the request."
-        }
-      },
-      {
-        "params": {
-          "$truncated": 26320,
-          "shape": "{data, from, gas}[]"
-        },
-        "via": "eip6963:app.phantom",
-        "result": "0x1eb419fd551853ebbccf43da6f9cd403091e87dc09fe3500f4502f6f8e1ea5aa"
-      },
-      {
-        "params": {
-          "$truncated": 26320,
-          "shape": "{data, from, gas}[]"
-        },
-        "via": "eip6963:app.phantom",
-        "result": "0xe663f06d6d20201bb6ea5d456f52bf1258b781335c72d8a1e10d9e49bef00ea9"
-      },
-      {
+        "test": "Approve the token, accepted",
         "params": [
           {
-            "gas": "0x1fb61",
             "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-            "to": "0x23fb1c211e37487e0ea4776ccaffb591d9d38de8",
-            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+            "to": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "data": "0x095ea7b3000000000000000000000000000000000000000000000000000000000000dead0000000000000000000000000000000000000000000000000de0b6b3a7640000"
           }
         ],
         "via": "eip6963:app.phantom",
-        "result": "0xe14d7469276641465c71083aa55486d1105659c7761e64b40fa9e046e1b1faba"
+        "result": "0xb0a27dcbb98163465a3f545ca2c3717a36643aef4c084a446bd376a2964ae742"
       }
     ],
     "eth_sign": [
       {
+        "test": "console recording, 2026-10-06",
         "params": [
           "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
           "0x879a053d4800c6354e76c7985a865d2922c82fb5b3f4577b2fe08b998954f2e0"
@@ -409,6 +127,7 @@
     ],
     "eth_signTypedData": [
       {
+        "test": "console recording, 2026-10-06",
         "params": [
           [
             {
@@ -431,6 +150,7 @@
         }
       },
       {
+        "test": "console recording, 2026-10-06",
         "params": [
           [
             {
@@ -452,10 +172,11 @@
     ],
     "eth_signTypedData_v4": [
       {
-        "params": {
-          "$truncated": 1196,
-          "shape": "[address, string(983)]"
-        },
+        "test": "Sign typed data, rejected",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
         "via": "eip6963:app.phantom",
         "error": {
           "code": 4001,
@@ -463,16 +184,18 @@
         }
       },
       {
-        "params": {
-          "$truncated": 1196,
-          "shape": "[address, string(983)]"
-        },
+        "test": "Sign typed data, accepted",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
         "via": "eip6963:app.phantom",
-        "result": "0x90e50d4eec31872d0d732cd1c9ec97c2d7e5f1651a16adf58b4a4866243197776ee279cc7a82b80467707cb51ee8d8d59cd8e67f7f9551e98426737b84f7dd351c"
+        "result": "0x012053d2647db2c4005ceedcf0f91473172fe50c735034b22ef7a3900c406e6d1b23c6abe941ec64904cdea84179d5fe693c55d3fb0323c7c15cea131ecd8ffb1b"
       }
     ],
     "personal_ecRecover": [
       {
+        "test": "console recording, 2026-10-06",
         "params": [
           "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
           "0x1e4b049760084e64347be709b4174cfaedbecb7c476a40542040b08d5b353f1f70a4dc39432f10b1cfa374d5ec1de61ddb216e6ea54d91d30fe520ba87f491711c"
@@ -489,10 +212,10 @@
     ],
     "personal_sign": [
       {
+        "test": "Sign a message, accepted",
         "params": [
-          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "Example password"
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
         ],
         "via": "eip6963:app.phantom",
         "error": {
@@ -501,23 +224,58 @@
         }
       },
       {
+        "test": "Sign a message, accepted",
         "params": [
-          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
-          "Example password"
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
         ],
         "via": "eip6963:app.phantom",
-        "result": "0x1e4b049760084e64347be709b4174cfaedbecb7c476a40542040b08d5b353f1f70a4dc39432f10b1cfa374d5ec1de61ddb216e6ea54d91d30fe520ba87f491711c"
+        "result": "0xe0e88d71eb68b9fc9a6ea3b4c576fc1e216596cc5cadda1fd22a16a302c93691067b6067471caceaf05ddc198c9dcd1c86338b5837f4df3656f32f715ceb1d931c"
+      },
+      {
+        "test": "Sign a message, rejected",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
       }
     ],
     "wallet_addEthereumChain": [
       {
+        "test": "Add a network, rejected",
         "params": [
           {
-            "chainId": "0x88bb0",
-            "chainName": "Hoodi",
+            "chainId": "0x539",
+            "chainName": "Unreachable",
             "rpcUrls": [
-              "https://ethereum-hoodi-rpc.publicnode.com"
+              "http://127.0.0.1:8546"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      },
+      {
+        "test": "Add Anvil, accepted",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
             ],
             "nativeCurrency": {
               "name": "Ether",
@@ -533,21 +291,80 @@
         }
       }
     ],
+    "wallet_getCapabilities": [
+      {
+        "test": "Read the capabilities",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of one chain",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          [
+            "0x88bb0"
+          ]
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of an account not connected",
+        "params": [
+          "0x000000000000000000000000000000000000dead"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      }
+    ],
     "wallet_getPermissions": [
       {
+        "test": "Read the permissions",
         "via": "eip6963:app.phantom",
         "result": [
           {
-            "invoker": "https://metamask.github.io",
+            "invoker": "http://127.0.0.1:58005",
             "parentCapability": "eth_accounts",
             "caveats": []
           }
-        ],
-        "count": 2
+        ]
+      },
+      {
+        "test": "Read the permissions once revoked",
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "invoker": "http://127.0.0.1:58005",
+            "parentCapability": "eth_accounts",
+            "caveats": []
+          }
+        ]
       }
     ],
     "wallet_requestPermissions": [
       {
+        "test": "Ask for the permissions again, rejected",
         "params": [
           {
             "eth_accounts": {}
@@ -557,13 +374,29 @@
         "result": [
           {
             "parentCapability": "eth_accounts",
-            "date": 1791296301627
+            "date": 1791810158479
+          }
+        ]
+      },
+      {
+        "test": "Ask for the permissions again, accepted",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "parentCapability": "eth_accounts",
+            "date": 1791810161706
           }
         ]
       }
     ],
     "wallet_revokePermissions": [
       {
+        "test": "Revoke the permissions",
         "params": [
           {
             "eth_accounts": {}
@@ -576,12 +409,43 @@
           "data": {
             "method": "wallet_revokePermissions"
           }
-        },
-        "count": 2
+        }
+      }
+    ],
+    "wallet_sendCalls": [
+      {
+        "test": "Send a batch of calls",
+        "params": [
+          {
+            "version": "2.0.0",
+            "chainId": "0x7a69",
+            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+            "atomicRequired": false,
+            "calls": [
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x1"
+              },
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x2"
+              }
+            ]
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_sendCalls does not exist / is not available.",
+          "data": {
+            "method": "wallet_sendCalls"
+          }
+        }
       }
     ],
     "wallet_switchEthereumChain": [
       {
+        "test": "Switch to Sepolia, rejected",
         "params": [
           {
             "chainId": "0xaa36a7"
@@ -591,9 +455,33 @@
         "result": null
       },
       {
+        "test": "Switch to Sepolia, accepted",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": null
+      },
+      {
+        "test": "Switch to a chain the wallet does not know",
         "params": [
           {
             "chainId": "0x1234"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      },
+      {
+        "test": "Switch back to Anvil",
+        "params": [
+          {
+            "chainId": "0x7a69"
           }
         ],
         "via": "eip6963:app.phantom",
@@ -605,13 +493,13 @@
     ],
     "wallet_watchAsset": [
       {
+        "test": "Watch the token, accepted",
         "params": {
           "type": "ERC20",
           "options": {
-            "address": "Creation Failed",
-            "symbol": "TST",
-            "decimals": "4",
-            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
+            "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "symbol": "DPROBE",
+            "decimals": 18
           }
         },
         "via": "eip6963:app.phantom",
@@ -624,51 +512,13 @@
         }
       },
       {
+        "test": "Watch the token, rejected",
         "params": {
           "type": "ERC20",
           "options": {
-            "address": "0x23FB1C211E37487e0eA4776cCAffB591D9D38DE8",
-            "symbol": "TST",
-            "decimals": "4",
-            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
-          }
-        },
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": -32000,
-          "message": "Missing or invalid parameters.",
-          "data": {
-            "method": "wallet_watchAsset"
-          }
-        }
-      },
-      {
-        "params": {
-          "type": "ERC20",
-          "options": {
-            "address": "Creation Failed",
-            "symbol": "TST",
-            "decimals": "4",
-            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
-          }
-        },
-        "via": "eip6963:app.phantom",
-        "error": {
-          "code": -32000,
-          "message": "Missing or invalid parameters.",
-          "data": {
-            "method": "wallet_watchAsset"
-          }
-        }
-      },
-      {
-        "params": {
-          "type": "ERC20",
-          "options": {
-            "address": "0x23FB1C211E37487e0eA4776cCAffB591D9D38DE8",
-            "symbol": "TST",
-            "decimals": "4",
-            "image": "https://metamask.github.io/test-dapp/metamask-fox.svg"
+            "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "symbol": "DPROBE",
+            "decimals": 18
           }
         },
         "via": "eip6963:app.phantom",
@@ -685,44 +535,18 @@
   "events": {
     "accountsChanged": [
       {
-        "payload": [],
-        "via": "eip6963:app.phantom"
-      },
-      {
-        "payload": [],
-        "via": "injected"
-      },
-      {
+        "test": "Connect, accepted",
         "payload": [
           "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
         ],
         "via": "eip6963:app.phantom"
-      },
+      }
+    ],
+    "chainChanged": [
       {
-        "payload": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
-        ],
-        "via": "injected"
-      },
-      {
-        "payload": [],
+        "test": "Read the permissions",
+        "payload": "0xaa36a7",
         "via": "eip6963:app.phantom"
-      },
-      {
-        "payload": [],
-        "via": "injected"
-      },
-      {
-        "payload": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
-        ],
-        "via": "eip6963:app.phantom"
-      },
-      {
-        "payload": [
-          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
-        ],
-        "via": "injected"
       }
     ]
   }

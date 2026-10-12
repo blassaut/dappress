@@ -444,7 +444,7 @@ When a setting appears in several places, the first one found wins: environment 
 
 ## Wallet profiles
 
-A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Rabby and Phantom (recorded by hand) ship with Dappress, in [`reports/profiles`](reports/profiles).
+A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Phantom (recorded with the probe page) and Rabby (recorded by hand) ship with Dappress, in [`reports/profiles`](reports/profiles).
 
 `npm run profile -- diff <a> <b>` lists where two wallets answer differently.
 
