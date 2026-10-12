@@ -4,6 +4,10 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Changed
+
+- The README starts from the choice between the real MetaMask and a mock: what each one proves, what it needs, how long it takes and when to use it. The quick start is shared and ends on both commands; each has its own section, and the configuration is split into the options of both, of the real MetaMask and of the mocks. The mock's section says what it does and what it does not: the wallets it cannot reach (WalletConnect, wallet SDKs, embedded wallets), the methods its profile did not record, and the chains Anvil cannot fork.
+
 ### Security
 
 - A command that fails on MetaMask's seed phrase or private key screen no longer takes a screenshot of it. MetaMask shows the focused word of the phrase in clear, and the length of every other: a screenshot taken while the last word was being typed showed that word, and a CI job that uploads the screenshots of a failed run published it. The error still says what the page shows, in words, which never hold what a field holds.
