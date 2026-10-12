@@ -21,6 +21,7 @@ const { accounts, imported } = Cypress.expose('conformance') as {
 const [account, secondAccount] = accounts;
 
 // The wallet under test: MetaMask, or the one whose profile the mock replays
+const mock = (Cypress.expose('dappress') as { mock?: unknown } | undefined)?.mock;
 const wallet = (Cypress.expose('dappress') as { mock?: { profile: { wallet: { name: string } } } } | undefined)?.mock?.profile.wallet.name ?? 'MetaMask';
 
 /**
@@ -100,6 +101,14 @@ const minedTransaction = () =>
     .then((hash) =>
       provider.waitFor('eth_getTransactionByHash', [hash], (transaction) => Boolean((transaction as { blockNumber?: string } | null)?.blockNumber)),
     );
+
+// The transaction `hash` as the node holds it once mined, asked to the node itself: the wallet's view of the chain may lag
+type Mined = { nonce: string; blockNumber: string | null };
+const onChain = (hash: string, attempts = 20): Cypress.Chainable<Mined | null> =>
+  cy.rpc<Mined | null>('eth_getTransactionByHash', [hash]).then((transaction) => {
+    if (transaction?.blockNumber || attempts === 0) return cy.wrap(transaction, { log: false });
+    return cy.wait(500, { log: false }).then(() => onChain(hash, attempts - 1));
+  });
 
 const hoodi = '0x88bb0';
 // Known to MetaMask but not granted to the dapp (test networks are off by default), so switching asks the user
@@ -543,5 +552,57 @@ describe('MetaMask actions', () => {
     });
     cy.setStorageAt(secondAccount, 7, 255);
     cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
+  });
+
+  it('snapshot, revert: a transaction sent after the revert goes from the nonce the chain went back to', () => {
+    if (!differences.addChainRefused) cy.useNetwork(anvil);
+    // Read from the node itself: what the chain holds, whatever the wallet makes of it
+    const nonce = () => cy.rpc<string>('eth_getTransactionCount', [account, 'latest']);
+    const send = (value: string) => {
+      provider.request('eth_sendTransaction', [{ from: account, to: secondAccount, value }]);
+      cy.confirmTransaction();
+      return provider
+        .result()
+        .its('result')
+        .then((hash) => onChain(hash as string));
+    };
+    nonce().then((before) => {
+      cy.snapshot().as('snapshot');
+      send('0x1').should('include', { nonce: before });
+      nonce().should('eq', `0x${(BigInt(before) + 1n).toString(16)}`);
+      cy.get<string>('@snapshot').then((id) => cy.revert(id));
+      nonce().should('eq', before);
+      // The real MetaMask keeps its own view of the chain, which a revert does not reach: the transaction it sent stays in
+      // its activity and counts in the next nonce, one the node holds as a future transaction and never mines, and its
+      // latest block, once it saw the one reverted, is one the chain no longer has, where eth_sendTransaction fails, -32603
+      if (!mock) return;
+      send('0x2').should('include', { nonce: before });
+    });
+  });
+
+  it('snapshot, revert', () => {
+    // The storage the chain commands test wrote, and the block the chain is at: what the revert puts back
+    cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
+    cy.rpc<string>('eth_blockNumber').then((block) => {
+      cy.snapshot()
+        .should('match', /^0x[0-9a-f]+$/)
+        .as('snapshot');
+      cy.setStorageAt(secondAccount, 7, 1);
+      cy.mine(2);
+      cy.get<string>('@snapshot').then((id) => cy.revert(id));
+      cy.rpc('eth_blockNumber').should('eq', block);
+      cy.rpc('eth_getStorageAt', [secondAccount, '0x7', 'latest']).should('eq', `0x${'ff'.padStart(64, '0')}`);
+    });
+    // The revert consumed the snapshot: a second one fails, naming it
+    cy.get<string>('@snapshot').then((id) => {
+      cy.on('fail', (error) => {
+        expect(error.message).to.match(new RegExp(`^\\[dappress\\] Could not revert to snapshot ${id} on \\S+: the node has no such snapshot`));
+      });
+      cy.revert(id);
+      // Reached only if the command did not fail: the handler above cannot fail a test that passes
+      cy.then(() => {
+        throw new Error('cy.revert() reverted to a consumed snapshot');
+      });
+    });
   });
 });
