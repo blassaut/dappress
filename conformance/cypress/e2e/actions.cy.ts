@@ -180,11 +180,22 @@ describe('MetaMask actions', () => {
   it('wallet_requestPermissions, rejected with rejectConnection', () => {
     // Asked again while connected, MetaMask asks the user again; Rabby and Phantom grant it without asking
     provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
-    if (differences.permissionsWithoutAsking) granted();
-    else {
+    if (differences.permissionsWithoutAsking) {
+      granted();
+      cy.getAccountAddress().should('eq', account);
+      // Nothing to reject: the command fails at once, and says the wallet granted it without asking
+      cy.on('fail', (error) => {
+        expect(error.message).to.match(/^\[dappress\] Nothing for rejectConnection to decide on: .* to wallet_requestPermissions, as recorded, without asking/);
+      });
       cy.rejectConnection();
-      provider.result().its('error.code').should('eq', USER_REJECTED);
+      // Reached only if the command did not fail: the handler above cannot fail a test that passes
+      cy.then(() => {
+        throw new Error('cy.rejectConnection() found a wallet_requestPermissions to reject');
+      });
+      return;
     }
+    cy.rejectConnection();
+    provider.result().its('error.code').should('eq', USER_REJECTED);
     cy.getAccountAddress().should('eq', account);
   });
 
