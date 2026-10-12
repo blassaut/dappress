@@ -22,6 +22,10 @@ What changes for the users of Dappress, version by version. The format follows [
 - The probe page no longer warns of another wallet, nor marks the profile with `otherWallets`, when the wallet chosen announces through EIP-6963 another object than its `window.ethereum`, as Rabby and Phantom do alone in the browser. It warns when more than one wallet announces itself, or when the flags of `window.ethereum` name a wallet other than the chosen one.
 - The probe page shows what to do at each step first, on a line of its own beside "Send it to the wallet": accept in your wallet, in green, reject, in red, or nothing to do. The step's name, and what more it says, follow in smaller text.
 
+### Fixed
+
+- `cy.getAccountAddress()` yields `null` when the dapp has no account: before it connects, once its connection is rejected, or once it is disconnected. It yielded the `[]` the provider answered, which passed `should('exist')` and failed `should('eq', address)` with "expected '[]'". Its type is now `Chainable<string | null>`.
+
 ## [0.11.0] - 2026-10-12
 
 ### Added

@@ -347,7 +347,7 @@ The same commands drive the real MetaMask and the mocks.
 | `cy.connectToDapp({ accounts })` | Same, but connects only the listed accounts, for example `['Account 1', 'Account 2']`.               |
 | `cy.rejectConnection()`          | Rejects the connection request.                                                                      |
 | `cy.disconnectFromDapp()`        | Disconnects the dapp in the wallet. The dapp receives an empty `accountsChanged`.                    |
-| `cy.getAccountAddress()`         | Yields the address the dapp is connected with.                                                       |
+| `cy.getAccountAddress()`         | Yields the address the dapp is connected with, or null.                                              |
 | `cy.getWallet()`                 | Yields the wallet under test as a wallet picker names it, `{ name: 'Rabby Wallet', version, mock }`. |
 
 ### Signatures and transactions
