@@ -4,13 +4,15 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
-### Changed
-
-- The README starts from the choice between the real MetaMask and a mock: what each one proves, what it needs, how long it takes and when to use it. The quick start is shared and ends on both commands; each has its own section, and the configuration is split into the options of both, of the real MetaMask and of the mocks. The mock's section says what it does and what it does not: the wallets it cannot reach (WalletConnect, wallet SDKs, embedded wallets), the methods its profile did not record, and the chains Anvil cannot fork.
+## [0.10.1] - 2026-10-12
 
 ### Security
 
 - A command that fails on MetaMask's seed phrase or private key screen no longer takes a screenshot of it. MetaMask shows the focused word of the phrase in clear, and the length of every other: a screenshot taken while the last word was being typed showed that word, and a CI job that uploads the screenshots of a failed run published it. The error still says what the page shows, in words, which never hold what a field holds.
+
+### Changed
+
+- The README starts from the choice between the real MetaMask and a mock: what each one proves, what it needs, how long it takes and when to use it. The quick start is shared and ends on both commands; each has its own section, and the configuration is split into the options of both, of the real MetaMask and of the mocks. The mock's section says what it does and what it does not: the wallets it cannot reach (WalletConnect, wallet SDKs, embedded wallets), the methods its profile did not record, and the chains Anvil cannot fork.
 
 ## [0.10.0] - 2026-10-07
 
@@ -168,7 +170,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/blassaut/dappress/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/blassaut/dappress/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/blassaut/dappress/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/blassaut/dappress/compare/v0.7.1...v0.8.0
