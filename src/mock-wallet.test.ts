@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chainsSeen, createMockWallet, networkRefused, ProviderRpcError } from './mock-wallet';
+import { chainsSeen, createMockWallet, installMockWallet, networkRefused, ProviderRpcError } from './mock-wallet';
 import { loadProfile, type Profile } from './wallet-profile';
 
 const ACCOUNTS = ['0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'];
@@ -696,4 +696,46 @@ test("Phantom's mock without a starting chain is on mainnet, and refuses Sepolia
     (error: ProviderRpcError) => error.code === 4901,
   );
   assert.deepEqual(mock.chainsKept(), ['0x1']);
+});
+
+test('started off mainnet, a wallet the profile saw on mainnet still has it: the switch back asks, as on any chain it knows', async () => {
+  for (const [profile, start] of [
+    [loadProfile('metamask'), '0xaa36a7'],
+    [loadProfile('rabby'), '0x7a69'],
+  ] as const) {
+    const { mock, provider } = wallet(profile, 500, {}, start);
+    const switching = provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] });
+    await mock.act('approveSwitchNetwork');
+    assert.equal(await switching, null);
+    assert.equal(await provider.request({ method: 'eth_chainId' }), '0x1');
+  }
+  // Phantom was never seen on mainnet: started on Sepolia, it refuses it, as recorded
+  const { provider } = wallet(loadProfile('phantom'), 500, {}, '0xaa36a7');
+  await assert.rejects(
+    provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] }),
+    (error: ProviderRpcError) => error.code === 4901,
+  );
+});
+
+test('the connect event carries the chain the mock started on', async () => {
+  const { mock } = wallet(loadProfile('rabby'), 500, {}, '0x7a69');
+  const connects: unknown[] = [];
+  mock.provider.on('connect', (payload) => connects.push(payload));
+  const page = Object.assign(new EventTarget(), { CustomEvent, location: { origin: 'http://dapp' } });
+  installMockWallet(page as unknown as Window, mock, { profile: loadProfile('rabby'), rpcUrl: 'http://anvil', timeout: 500 });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(connects, [{ chainId: '0x7a69' }]);
+});
+
+test("cy.useNetwork()'s message on Phantom's mock started on Sepolia names the chain it keeps", async () => {
+  const { mock, provider } = wallet(loadProfile('phantom'), 500, {}, '0xaa36a7');
+  const network = { chainId: '0x7a69', chainName: 'Anvil', rpcUrls: ['http://127.0.0.1:8545'] };
+  const error = await provider.request({ method: 'wallet_addEthereumChain', params: [network] }).then(
+    () => assert.fail('Phantom adds no chain'),
+    (refused: ProviderRpcError) => refused,
+  );
+  assert.equal(
+    networkRefused('Phantom', network, error as { code: number; message: string }, mock.chainsKept()),
+    '[dappress] Phantom refused the network Anvil (0x7a69): it answers 4901 "The Provider is not connected to the requested chain.". This wallet takes no chain the dapp adds: it knows only 0xaa36a7. Run the dapp on a fork that keeps one of these chain ids.',
+  );
 });

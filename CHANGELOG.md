@@ -6,7 +6,11 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ### Added
 
-- `mockChain` (or `DAPPRESS_MOCK_CHAIN`) starts a mock on the chain its user set in the wallet, where it started on mainnet only: `'0xaa36a7'` for Phantom with its Testnet mode on, a setting of the wallet a dapp cannot change. The mock answers that chain to `eth_chainId`, holds it as the chain the dapp is allowed on, and reads and sends there as on any chain, at the RPC the `chains` option names for it, else at Anvil; other chains are refused as the profile says, Phantom's with `4901`. Only a chain the profile saw the wallet on is taken, in its `eth_chainId`, `chainChanged` or `connect`, or a switch it made: any other fails as the run starts, naming those. Without it, a mock starts on mainnet, as before.
+- `mockChain` (or `DAPPRESS_MOCK_CHAIN`) starts a mock on the chain its user set in the wallet. Without it, a mock starts on mainnet, as before. Phantom with its Testnet mode on is on Sepolia: `mockChain: '0xaa36a7'`. A dapp cannot change that setting.
+  - The mock answers that chain to `eth_chainId`. The dapp is allowed on it.
+  - Reads and transactions go where any chain's do: the RPC the `chains` option names for it, else Anvil. Where Anvil is on another chain, the run says so, and how to fix it.
+  - Other chains are refused as the profile says: Phantom's with `4901`. A wallet the profile saw on mainnet, MetaMask or Rabby, still knows mainnet.
+  - The option takes mainnet, `0x1`, and the chains the profile saw the wallet on: in its `eth_chainId`, `chainChanged` or `connect`, or a switch it made. Any other fails as the run starts, naming those. A chain id is in hex: a decimal one fails, with its hex.
 
 ### Changed
 

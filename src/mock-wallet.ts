@@ -130,7 +130,8 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, chain: starting
   let connected: string[] = [];
   // The chain the wallet is on, the one its user set to start with, and the ones the dapp added or was allowed onto
   let chainId = startingChain.toLowerCase();
-  const known = new Set<string>([chainId]);
+  // Mainnet too, where the profile saw the wallet on it: started elsewhere, it still has it, as MetaMask and Rabby do
+  const known = new Set<string>([chainId, ...chainsSeen(profile).filter((chain) => chain === '0x1')]);
   const permitted = new Set<string>([chainId]);
   // The chains the wallet knows of itself: those it asked the user to switch to, as the profile saw them rejected.
   // A switch it answered without asking says nothing: the wallet may have been on that chain already

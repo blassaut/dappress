@@ -119,16 +119,35 @@ export function publicOptions(options: ResolvedOptions, mockProfile?: Profile): 
 }
 
 /**
- * The chain a mock starts on, as its user set it in the wallet: one its
- * profile saw the wallet on. The mock never stands on a chain the wallet was
- * not seen on.
+ * The chain a mock starts on, as its user set it in the wallet: mainnet, where
+ * a mock starts without the option, or a chain its profile saw the wallet on.
+ * The mock never stands on a chain the wallet was not seen on. A chain id is
+ * in hex, as eth_chainId answers it: a decimal one is refused, with its hex.
  */
 export function mockChain(chain: string, profile: Profile): string {
   const asked = String(chain).trim().toLowerCase();
-  const seen = chainsSeen(profile);
-  if (seen.includes(asked)) return asked;
+  const takes = [...new Set([MAINNET, ...chainsSeen(profile)])];
+  if (/^\d+$/.test(asked))
+    throw new Error(`[dappress] mockChain ${asked}: a chain id is expected in hex, as eth_chainId answers it: 0x${BigInt(asked).toString(16)}`);
+  if (takes.includes(asked)) return asked;
   const wallet = `${profile.wallet.name} ${profile.wallet.version}`;
   throw new Error(
-    `[dappress] mockChain ${String(chain)}: the ${wallet} profile never saw the wallet on that chain, so its mock cannot start there. It takes ${seen.length ? seen.join(', ') : 'none'}`,
+    `[dappress] mockChain ${String(chain)}: the ${wallet} profile never saw the wallet on that chain, so its mock cannot start there. It takes ${takes.join(', ')}`,
+  );
+}
+
+const MAINNET = '0x1';
+
+/**
+ * What to say of a mock started on `chain` whose reads and transactions go to
+ * the keys' endpoint, as no `chains` entry names an RPC for that chain, while
+ * that endpoint is on another chain. Nothing when they agree, or when the
+ * endpoint did not say.
+ */
+export function keysOnAnotherChain(chain: string, keysChain: string | undefined, rpcUrl: string): string | undefined {
+  if (!keysChain || keysChain.toLowerCase() === chain) return undefined;
+  return (
+    `[dappress] The mock starts on chain ${chain}, and the chains option names no RPC for it: its reads and transactions go to ${rpcUrl}, which is on chain ${keysChain.toLowerCase()}. ` +
+    `Start Anvil with --chain-id ${BigInt(chain).toString()}, or as a fork of that chain, or name its RPC in the chains option`
   );
 }
