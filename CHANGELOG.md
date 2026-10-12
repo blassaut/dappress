@@ -4,6 +4,15 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Changed
+
+- Rabby's and Phantom's profiles are recorded anew with the probe page, `npx dappress probe`, each wallet alone in the browser. The methods the page does not send, `eth_sign`, `eth_signTypedData`, `personal_ecRecover`, `eth_getEncryptionPublicKey` and Rabby's `eth_decrypt`, keep the observations of the console recording, marked as such. What their mocks answer differently:
+  - Both refuse EIP-5792's `wallet_getCapabilities` and `wallet_sendCalls` with `-32601`, as the wallets do, where they refused them with `4200`: a dapp sees a method the wallet lacks, not one the mock cannot answer. A command waiting for the batch says at once that the wallet refused it.
+  - Phantom's `window.ethereum` says `isMetaMask` and no longer `isPhantom`, as Phantom alone in the browser was seen saying. A dapp finds Phantom by its EIP-6963 announcement, "Phantom", `app.phantom`, which is unchanged.
+  - Rabby's mock answers `wallet_getPermissions` with the `eth_accounts` permission while the dapp is connected, and none once disconnected, where it refused it with `4200`. It also emits `connect` with its chain once the page has loaded, as Rabby does.
+- The probe page no longer warns of another wallet, nor marks the profile with `otherWallets`, when the wallet chosen announces through EIP-6963 another object than its `window.ethereum`, as Rabby and Phantom do alone in the browser. It warns when more than one wallet announces itself, or when the flags of `window.ethereum` name a wallet other than the chosen one.
+- The probe page shows what to do at each step first, on a line of its own beside "Send it to the wallet": accept in your wallet, in green, reject, in red, or nothing to do. The step's name, and what more it says, follow in smaller text.
+
 ## [0.11.0] - 2026-10-12
 
 ### Added
