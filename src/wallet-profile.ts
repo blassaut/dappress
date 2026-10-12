@@ -1,5 +1,5 @@
 // A wallet profile: what a dapp sees of a wallet, as conformance/recorder.js
-// recorded it and scripts/profile.ts shaped it. Each request to the provider
+// recorded it and src/profile-build.ts shaped it. Each request to the provider
 // with its result or error, each event with its payload, and how the provider
 // turned up, grouped by method and by event. Nothing is interpreted: what was
 // not observed is not in the profile. The mock wallet replays one.
