@@ -12,6 +12,8 @@ export const ANVIL_PORT = 8545;
 // How long Anvil may take to answer once started, in steps of POLL
 const POLL = 100;
 const START_ATTEMPTS = 100;
+// How long one probe of Anvil may wait for its answer
+const ANSWER_TIMEOUT = 1000;
 
 export interface Anvil {
   url: string;
@@ -42,6 +44,8 @@ async function answers(url: string): Promise<boolean> {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}',
+      // A node that accepts the connection and never answers must not hold the start
+      signal: AbortSignal.timeout(ANSWER_TIMEOUT),
     });
     return response.ok;
   } catch {
@@ -59,8 +63,8 @@ export async function startAnvil({ port = ANVIL_PORT, binary = foundry('anvil') 
   child.once('error', (error: NodeJS.ErrnoException) => {
     failure = error.code === 'ENOENT' ? new Error('[dappress] Anvil is not installed. It is part of Foundry: getfoundry.sh') : error;
   });
-  child.once('exit', (code) => {
-    failure ??= new Error(`[dappress] Anvil stopped as it started, with code ${String(code)}`);
+  child.once('exit', (code, signal) => {
+    failure ??= new Error(`[dappress] Anvil stopped as it started, ${signal ? `on ${signal}` : `with code ${String(code)}`}`);
   });
   for (let attempt = 0; attempt < START_ATTEMPTS && !failure; attempt++) {
     if (await answers(url)) return { url, stop: () => void child.kill() };
