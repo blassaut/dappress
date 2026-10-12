@@ -32,7 +32,8 @@ const wallet = (Cypress.expose('dappress') as { mock?: { profile: { wallet: { na
  * the dapp stays where the mock starts, mainnet (the real Phantom was recorded
  * on Sepolia), as cypress/wallet.setup.ts has it; whether
  * wallet_revokePermissions exists; the code it refuses EIP-5792's
- * wallet_getCapabilities and wallet_sendCalls with, a wallet that lacks them.
+ * wallet_getCapabilities and wallet_sendCalls with, a wallet that lacks them;
+ * whether it grants wallet_requestPermissions to a connected dapp without asking.
  */
 const differences: {
   switchRefused?: number;
@@ -41,10 +42,18 @@ const differences: {
   watchAssetRefused?: number;
   noRevokePermissions?: boolean;
   batchRefused?: number;
+  permissionsWithoutAsking?: boolean;
 } =
   {
-    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined, batchRefused: -32601 },
-    Phantom: { switchRefused: 4901, addChainRefused: 4901, watchAssetRefused: -32000, noRevokePermissions: true, batchRefused: -32601 },
+    Rabby: { switchRefused: -32603, watchAssetAnswers: undefined, batchRefused: -32601, permissionsWithoutAsking: true },
+    Phantom: {
+      switchRefused: 4901,
+      addChainRefused: 4901,
+      watchAssetRefused: -32000,
+      noRevokePermissions: true,
+      batchRefused: -32601,
+      permissionsWithoutAsking: true,
+    },
   }[wallet] ?? {};
 
 // Take the dapp's permission back: wallet_revokePermissions, or the wallet's own screen where it has none
@@ -161,21 +170,28 @@ describe('MetaMask actions', () => {
     answer('wallet_getCapabilities', [secondAccount]).should('have.property', 'error');
   });
 
+  // The permissions a wallet granted
+  const granted = () =>
+    provider
+      .result()
+      .its('result')
+      .should((permissions: Permission[]) => expect(permissions.map((permission) => permission.parentCapability)).to.include('eth_accounts'));
+
   it('wallet_requestPermissions, rejected with rejectConnection', () => {
-    // Asked again while connected, the wallet asks the user again
+    // Asked again while connected, MetaMask asks the user again; Rabby and Phantom grant it without asking
     provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
-    cy.rejectConnection();
-    provider.result().its('error.code').should('eq', USER_REJECTED);
+    if (differences.permissionsWithoutAsking) granted();
+    else {
+      cy.rejectConnection();
+      provider.result().its('error.code').should('eq', USER_REJECTED);
+    }
     cy.getAccountAddress().should('eq', account);
   });
 
   it('wallet_requestPermissions, accepted with connectToDapp', () => {
     provider.request('wallet_requestPermissions', [{ eth_accounts: {} }]);
-    cy.connectToDapp();
-    provider
-      .result()
-      .its('result')
-      .should((permissions: Permission[]) => expect(permissions.map((permission) => permission.parentCapability)).to.include('eth_accounts'));
+    if (!differences.permissionsWithoutAsking) cy.connectToDapp();
+    granted();
     cy.getAccountAddress().should('eq', account);
   });
 

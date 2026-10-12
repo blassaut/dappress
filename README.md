@@ -238,7 +238,7 @@ A mock is a wallet in the page, in place of the extension. It answers your dapp 
 
 - **Every command.** Connect, sign, send, add and switch chains, add tokens, add and switch accounts, lock and unlock: the commands are the same as on the real MetaMask, and so are the specs.
 - **What each wallet answers.** Its identity flags and EIP-6963 announcement, the code and message of each rejection, the methods it lacks, the chain switches it refuses without asking. A method or an option the profile does not cover fails with `4200`: the mock never succeeds at what the wallet was not seen doing.
-- **The permissions and capabilities the dapp asks for**, as the wallet answered them, with the mock's own accounts, chains and origin in them: `wallet_getPermissions`, `wallet_requestPermissions`, which asks the user even while connected, as MetaMask does, and `wallet_getCapabilities`.
+- **The permissions and capabilities the dapp asks for**, as the wallet answered them, with the mock's own accounts, chains and origin in them: `wallet_getPermissions`, `wallet_requestPermissions`, which asks the user again while connected only where the wallet was seen asking, as MetaMask was (Rabby and Phantom grant it without asking), and `wallet_getCapabilities`.
 - **What the user decides, and only that.** A request waits for your command, `cy.confirmTransaction()` or `cy.rejectTransaction()`, as it would on the real wallet.
 - **Real transactions.** Anvil signs, and the mock sends the transaction to the chain the dapp is on: Anvil's own, your testnet, or a fork. See [Your chain, at your block](#your-chain-at-your-block).
 

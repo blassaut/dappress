@@ -235,6 +235,20 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
     return refuseWithoutAsking(kind, method, params);
   }
 
+  /** The permissions the connected dapp holds, granted again without asking: a command waiting to decide on it is told at once. */
+  function grantWithoutAsking(method: string): unknown[] {
+    const held = permissions(method);
+    let granted: unknown[];
+    if (held) granted = recorded(method, held);
+    else {
+      granted = [{ parentCapability: 'eth_accounts' }];
+      lastRecorded = `${wallet} answers ${JSON.stringify(granted)} to ${method}, as EIP-2255 says: the profile has no answer of its own`;
+      log?.(lastRecorded);
+    }
+    answeredWithoutAsking.push({ kind: 'connection', line: lastRecorded! });
+    return granted;
+  }
+
   /** What the wallet answered to `method` when accepted, or `fallback` when the profile has no such answer. */
   function result(method: string, fallback?: unknown): unknown {
     const observation = observations(method).find((candidate) => !candidate.error);
@@ -280,7 +294,9 @@ export function createMockWallet({ profile, rpcUrl, chains = {}, timeout, log }:
         return connected;
       }
       case 'wallet_requestPermissions': {
-        // EIP-2255: the user is asked, connected or not, as MetaMask was seen doing
+        // EIP-2255: before the first connection, it is one, and the user is asked. While connected, the user is asked
+        // again only by a wallet seen rejected for it, as MetaMask was; Rabby and Phantom grant it without asking
+        if (connected.length && !observations(method).some((observation) => observation.error?.code === USER_REJECTED)) return grantWithoutAsking(method);
         await answered('connection', method, list);
         const granted = permissions(method);
         return granted ? recorded(method, granted) : result(method, [{ parentCapability: 'eth_accounts' }]);
