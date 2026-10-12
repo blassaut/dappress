@@ -163,7 +163,9 @@ async function send(provider: Provider, step: Step, context: Context): Promise<O
     setState('waiting', step);
     element<HTMLButtonElement>('skip').disabled = false;
   }, ASKING_AFTER);
-  const settled = provider.request(request).then(
+  // A provider that throws instead of rejecting gives an error outcome all
+  // the same, and the timer above is cleared on every path
+  const settled = new Promise((resolve) => resolve(provider.request(request))).then(
     (result) => ({ result }),
     (error: { code?: unknown; message?: string }) => ({ error: { code: error?.code, message: error?.message } }),
   );
