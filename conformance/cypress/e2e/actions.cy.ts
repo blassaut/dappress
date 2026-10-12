@@ -199,6 +199,35 @@ describe('MetaMask actions', () => {
     testDapp.signTypedDataV4Result().invoke('text').should('match', SIGNATURE);
   });
 
+  it('rejectSignature, then confirmSignature twice, each request sent as the one before settles', () => {
+    // As a dapp chains its requests (approve, then swap), with no user action
+    // in between: MetaMask shows each one where the one before was answered
+    cy.window({ log: false }).then((win) => {
+      const sign = (message: string) => walletOf(win).request({ method: 'personal_sign', params: [message, account] });
+      win.dappressPending = sign('0x6669727374')
+        .then(
+          () => 'signed',
+          (error: { code: number }) => error.code,
+        )
+        .then((first) => sign('0x7365636f6e64').then((second) => sign('0x7468697264').then((third) => [first, second, third])))
+        .then(
+          (result) => ({ result }),
+          (error: { code: number; message: string }) => ({ error: { code: error.code, message: error.message } }),
+        );
+    });
+    cy.rejectSignature();
+    cy.confirmSignature();
+    cy.confirmSignature();
+    provider
+      .result()
+      .its('result')
+      .should(([first, second, third]: [unknown, string, string]) => {
+        expect(first).to.eq(USER_REJECTED);
+        expect(second).to.match(SIGNATURE);
+        expect(third).to.match(SIGNATURE);
+      });
+  });
+
   it('rejectTransaction', () => {
     // The test dapp doesn't catch the rejection, which would fail the test
     cy.on('uncaught:exception', (error) => !error.message.includes('User denied transaction signature'));

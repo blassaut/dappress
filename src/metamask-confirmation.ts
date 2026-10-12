@@ -5,7 +5,7 @@
 
 import type { ConsoleMessage, Page } from 'puppeteer-core';
 import { describe, waitFor, waitForGone, waitUntil, isShown, failure, type Selector } from './page-helpers';
-import { waitForDismissal } from './metamask-pages';
+import { showsAnotherRequest, waitForDismissal } from './metamask-pages';
 import { selectors, decisions, type Decision } from './metamask-selectors';
 import { dismissModal, press, pressWhenEnabled } from './metamask-overlays';
 import { accountNames } from './metamask-wallet';
@@ -107,9 +107,11 @@ export function approveNetworkChange(page: Page): Promise<void> {
  * Press a footer button, then wait for the confirmation to go away: the
  * popup closes, the side panel goes back to the home screen. MetaMask may
  * raise a warning on the way ("Switching network will cancel N pending
- * transactions"), which is acknowledged. If the button stays, the error says
- * whether it is the same request or a new one the dapp sent meanwhile, and
- * what MetaMask logged.
+ * transactions"), which is acknowledged. A request the dapp sent as soon as
+ * this one was answered takes its place in the same window, buttons and all:
+ * the confirmation went all the same, and the next command answers that
+ * request. If the same request stays, the error says so, with what MetaMask
+ * logged.
  */
 async function pressAndWaitForDismissal(page: Page, button: Selector): Promise<void> {
   await waitForButton(page, button);
@@ -119,15 +121,15 @@ async function pressAndWaitForDismissal(page: Page, button: Selector): Promise<v
   try {
     await pressWhenEnabled(page, button, { whileDisabled: () => scrollContentToEnd(page) });
     const gone = async () => {
-      if (page.isClosed()) return true;
+      // Another request in its place means this one was answered, whatever buttons it shares
+      if (page.isClosed() || showsAnotherRequest(request, page.url())) return true;
       if (await isShown(page, selectors.alert.acknowledge)) await press(page, selectors.alert.acknowledge);
       return !(await isShown(page, button));
     };
     await waitUntil(page, `"${describe(button)}" to go once pressed`, gone).catch(async (error: Error) => {
-      const what = page.url() === request ? 'MetaMask kept the same request open' : 'MetaMask shows a new request: the dapp asked again';
       const distinct = [...new Set(logged.errors)].slice(-3);
       const errors = distinct.length ? `MetaMask logged: ${distinct.join(' | ')}` : 'MetaMask logged no error';
-      throw new Error(`${error.message.split(' on ')[0]}. ${what}. ${errors}`);
+      throw new Error(`${error.message.split(' on ')[0]}. MetaMask kept the same request open. ${errors}`);
     });
     await waitForDismissal(page, request);
   } finally {
