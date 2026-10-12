@@ -261,10 +261,17 @@ function finish(profile: Profile, reference: Profile): void {
   });
 }
 
+/** A file of the page's server, as JSON: an error page is not parsed for one. */
+async function fetchJson<T>(route: string): Promise<T> {
+  const response = await fetch(route);
+  if (!response.ok) throw new Error(`[dappress] The page's server answered ${response.status} for ${route}: restart dappress probe`);
+  return (await response.json()) as T;
+}
+
 async function main(): Promise<void> {
   if (!window.__dappressTrace) throw new Error('The recorder did not load: reload the page.');
-  const config = (await (await fetch('/config.json')).json()) as { anvilUrl: string; dappressVersion: string };
-  const reference = (await (await fetch('/reference-profile.json')).json()) as Profile;
+  const config = await fetchJson<{ anvilUrl: string; dappressVersion: string }>('/config.json');
+  const reference = await fetchJson<Profile>('/reference-profile.json');
   const wallets = await discover();
   const { wallet, version, otherWallets } = await choose(wallets);
   // Leaving the page loses the session
