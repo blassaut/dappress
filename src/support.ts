@@ -263,8 +263,8 @@ Cypress.Commands.add('snapshot', () => cy.rpc<string>('evm_snapshot'));
 // The real MetaMask keeps its own view of the chain, which a revert does not
 // reach: the transactions it sent count in its next nonce, and its latest block
 // may be one the revert removed, which it keeps until it sees a higher one.
-// The chain is mined past the block it was at, and MetaMask forgets the
-// account's activity, which also makes its connection to the network anew.
+// The chain is mined past the block it was at, which moves MetaMask's latest
+// block on, and MetaMask forgets the account's activity, which resets its nonce.
 // A mock reads the chain afresh on every request: nothing to do there.
 Cypress.Commands.add('revert', (id: string) => {
   if (typeof id !== 'string') throw new Error(`[dappress] cy.revert() takes the id cy.snapshot() yielded, not ${JSON.stringify(id)}`);

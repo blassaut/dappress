@@ -205,12 +205,16 @@ export async function importAccount(page: Page, privateKey: string): Promise<str
 /**
  * Make MetaMask forget the transactions of the selected account on its
  * current network, as its settings offer: "Delete activity and nonce data".
- * Its next transaction then takes the nonce the chain gives, and its
- * connection to the network is made anew, with a block tracker that starts
- * from the chain's head. Comes back to the wallet's home.
+ * Its next transaction then takes the nonce the chain gives. Its latest block
+ * is not reset: only a higher block replaces it. Comes back to the wallet's home.
  */
 export async function clearActivity(page: Page): Promise<void> {
   const s = selectors.activity;
+  if ((await walletState(page)) === 'locked') {
+    throw new Error(
+      '[dappress] MetaMask is locked: cy.revert() deletes its activity from its settings, which need it unlocked. Unlock it before, with cy.unlockWallet()',
+    );
+  }
   await waitFor(page, selectors.home.header);
   await reloadHome(page, s.route);
   await press(page, s.delete);
