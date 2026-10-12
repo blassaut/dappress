@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, classify, chunksOf, describeOutcome, pendingState, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
+import { STEPS, asksTheUser, classify, chunksOf, describeOutcome, pendingState, plainTrace, OTHER_ACCOUNT, type Context, type Outcome } from './flow';
 import type { TraceChunk } from '../profile-schema';
 
 const ACCOUNT = '0x7b6bae7788079d5fd02dfcbb20f2adb5eb43174a';
@@ -54,6 +54,13 @@ test('a slow request waits for a decision only on a step that asks for one', () 
   assert.equal(pendingState(byTitle('Revoke the permissions')), 'slow');
   assert.equal(pendingState(byTitle('Connect, rejected')), 'waiting');
   assert.equal(pendingState(byTitle('Switch back to Anvil')), 'waiting');
+});
+
+test('the user sends each request they decide on, and only those: the others go alone', () => {
+  const sent = STEPS.filter((step) => step.request && asksTheUser(step)).map((step) => step.title);
+  assert.equal(sent.length, 19);
+  assert.ok(sent.includes('Switch back to Anvil'), 'a step most wallets answer alone still asks the user first');
+  for (const step of STEPS.filter((candidate) => !asksTheUser(candidate))) assert.equal(step.decision, undefined, step.title);
 });
 
 test('the requests carry what the earlier steps found out', () => {

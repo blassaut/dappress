@@ -5,12 +5,26 @@
 // name and its answers are not ours.
 //
 // The end-to-end run reads data-state, data-decision and data-expect on
-// #probe to answer each prompt with Dappress's commands, data-attempt to
+// #probe to press #send when ready and answer each prompt with Dappress's
+// commands when waiting, data-attempt to
 // tell the next request from the one it answered, and the profile on
 // window.dappressProbe.
 
 import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
-import { STEPS, ASKING_AFTER, classify, chunksOf, describeOutcome, pendingState, plainTrace, type Context, type Mark, type Outcome, type Step } from '../flow';
+import {
+  STEPS,
+  ASKING_AFTER,
+  asksTheUser,
+  classify,
+  chunksOf,
+  describeOutcome,
+  pendingState,
+  plainTrace,
+  type Context,
+  type Mark,
+  type Outcome,
+  type Step,
+} from '../flow';
 import { anvilClient } from './anvil-client';
 
 interface Provider {
@@ -166,6 +180,17 @@ function clicked<T extends string>(ids: T[], signal?: AbortSignal): Promise<T> {
 /** Send the step's request, and wait for its outcome, or for the user to skip it. */
 async function send(provider: Provider, step: Step, context: Context): Promise<Outcome | undefined> {
   const request = step.request!(context);
+  if (asksTheUser(step)) {
+    // The user sends it, as a dapp's button would: they read what to do
+    // before the wallet opens, and the wallet has closed the prompt before
+    // it, which a request sent at once would replace in its window
+    setState('ready', step);
+    const button = element<HTMLButtonElement>('send');
+    button.disabled = false;
+    button.focus();
+    await clicked(['send']);
+    button.disabled = true;
+  }
   const started = Date.now();
   // A new request each time, also for a step done again: the end-to-end run
   // answers a prompt once, and waits for the next request before it reads

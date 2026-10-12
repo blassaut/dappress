@@ -285,7 +285,12 @@ export const STEPS: Step[] = [
  * MetaMask takes longer than that to read its capabilities on every chain.
  */
 export function pendingState(step: Step): 'waiting' | 'slow' {
-  return step.expect === 'none' ? 'slow' : 'waiting';
+  return asksTheUser(step) ? 'waiting' : 'slow';
+}
+
+/** Whether the step asks the user to decide in the wallet: the page then lets them send it when ready. */
+export function asksTheUser(step: Step): boolean {
+  return step.expect !== 'none';
 }
 
 export type Verdict = 'as-asked' | 'without-asking' | 'not-as-asked';
