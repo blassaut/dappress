@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Page } from 'puppeteer-core';
 import { describe, waitFor, waitForGone, isShown, firstOf, waitUntil, click, clickWhenEnabled, fill, failure, textOf, sleep } from './page-helpers';
+import { secretFields } from './metamask-selectors';
 
 const URL = 'chrome-extension://abc/home.html';
 const TEST_ID = '[data-testid="confirm-btn"]';
@@ -129,6 +130,35 @@ test("waitFor: the error names the selector, the page's budget and the page, wit
 test('failure: without a screenshot, the message ends on what the page shows', async () => {
   const error = await failure(asPage(fakePage({}, { screenshot: false })), 'MetaMask did not lock');
   assert.equal(error.message, `[dappress] MetaMask did not lock on ${URL}. The page shows: "Connect this website with MetaMask".`);
+});
+
+test('failure: no screenshot of a page that holds a field for the seed phrase or a private key', async () => {
+  for (const field of secretFields) {
+    const page = fakePage({ [field]: fakeElement() });
+    const error = await failure(asPage(page), 'Timed out');
+    assert.deepEqual(page.screenshots, [], field);
+    assert.equal(
+      error.message,
+      `[dappress] Timed out on ${URL}. The page shows: "Connect this website with MetaMask". No screenshot: the page holds a field for the seed phrase or a private key.`,
+    );
+  }
+});
+
+test('failure: no screenshot of a page that cannot say whether it holds a secret field', async () => {
+  const page = fakePage();
+  page.$ = async () => {
+    throw new Error('Execution context was destroyed');
+  };
+  const error = await failure(asPage(page), 'Timed out');
+  assert.deepEqual(page.screenshots, []);
+  assert.match(error.message, /No screenshot: the page holds a field for the seed phrase or a private key\.$/);
+});
+
+test('failure: a screenshot of any other page', async () => {
+  const page = fakePage({ [TEST_ID]: fakeElement() });
+  const error = await failure(asPage(page), 'Timed out');
+  assert.equal(page.screenshots.length, 1);
+  assert.match(error.message, /Screenshot: .*dappress.*\.png$/);
 });
 
 test('waitForGone: returns once every candidate has left, and fails on one that stays', async () => {
