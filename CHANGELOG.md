@@ -4,6 +4,8 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-12
+
 ### Added
 
 - `npx dappress probe` records the profile of any wallet installed in your browser, in a few minutes: it starts Anvil and a local page that sends the wallet the requests of the conformance suite one by one, says for each request you decide on whether to accept or reject, and sends it when you press "Send it to the wallet" (so that the wallet has closed the previous prompt before the next one opens), shows where the wallet differs from MetaMask, and downloads the profile, for a mock to replay or for a pull request to `reports/profiles/`. The page's server answers the machine only, serves its own files only and writes nothing; the page asks for no secret and sends nothing anywhere. Ctrl+C stops the page and Anvil. The conformance workflow goes through the page with Dappress's commands, on MetaMask and on the mocks.
@@ -185,7 +187,8 @@ What changes for the users of Dappress, version by version. The format follows [
 - The wallet setup file, `cypress/wallet.setup.ts`, and the opt-in profile cache.
 - TypeScript declarations.
 
-[Unreleased]: https://github.com/blassaut/dappress/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/blassaut/dappress/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/blassaut/dappress/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/blassaut/dappress/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/blassaut/dappress/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/blassaut/dappress/compare/v0.8.0...v0.9.0
