@@ -5,10 +5,9 @@
 // name and its answers are not ours.
 //
 // The end-to-end run reads data-state, data-decision and data-expect on
-// #probe to press #send when ready and answer each prompt with Dappress's
-// commands when waiting, data-attempt to
-// tell the next request from the one it answered, and the profile on
-// window.dappressProbe.
+// #probe to press #send when ready and to answer each prompt with Dappress's
+// commands when waiting. It reads data-attempt to tell the next request from
+// the one it answered, and the profile on window.dappressProbe.
 
 import { buildProfile, diffProfiles, type Profile, type TraceChunk } from '../../profile-build';
 import {

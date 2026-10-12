@@ -2,10 +2,11 @@ import { outcomeSet, type Profile } from '../../../src/profile-build';
 
 // The probe page, gone through as a user would: each request sent with the
 // page's button, and Dappress's commands answering each prompt the page asks
-// to accept or reject. The profile it
-// builds must answer as the one the suite recorded for this wallet: every
-// outcome the page saw is one the reference holds, method by method. A mock
-// answers 4200 to what its profile never saw; the reference has no entry then.
+// to accept or reject.
+// The profile it builds must answer as the one the suite recorded for this
+// wallet: every outcome the page saw is one the reference holds, method by
+// method. A mock answers 4200 to what its profile never saw; the reference
+// has no entry then.
 
 const reference = Cypress.expose('probeReference') as Profile;
 
