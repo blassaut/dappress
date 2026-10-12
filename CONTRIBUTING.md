@@ -99,7 +99,7 @@ One row per method and per event, and `no` where the two wallets answer differen
 
 1. Disable the other wallet extensions: two active wallets inject two providers, and the profile would mix what each answers. The page warns when it sees another one.
 2. Use a wallet made for testing, never your own: the profile holds everything the dapp saw, your accounts' addresses and the signatures you made included, and it is published.
-3. `npx dappress probe` (or `npm run build && node dist/cli.js probe` from a clone), open the page it prints, pick the wallet, enter its version, and follow the steps.
+3. `npx dappress probe` (or `npm run build && node dist/cli.js probe` from a clone), open the page it prints, pick the wallet, enter its version, and follow the steps: for each request you decide on, the page says whether to accept or reject, and you press "Send it to the wallet" to send it. Ctrl+C stops the page and Anvil.
 4. Download the profile, check it with `npm run profile -- diff reports/profiles/metamask-13.50.0-headless.json <file>`, and open a pull request adding it to `reports/profiles/`: the workflow publishes what that folder holds with the suite's own, and the next person with a dapp to check has it.
 
 The page runs the requests of `conformance/cypress/e2e/actions.cy.ts`, in its order, from `src/probe/flow.ts`; a step added to the suite goes there too. The conformance workflow goes through the page with Dappress's commands, on MetaMask and on the mocks (`npm run conformance -- --probe`), and checks its profile against theirs.

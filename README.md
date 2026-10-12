@@ -446,7 +446,9 @@ When a setting appears in several places, the first one found wins: environment 
 
 A profile is what a dapp sees of a wallet, recorded on the real wallet, request by request and event by event: what each method answers, the code and message of each rejection, the events and their payloads. It is what a mock replays. Profiles of MetaMask (written by the conformance suite at each release), Rabby and Phantom (recorded by hand) ship with Dappress, in [`reports/profiles`](reports/profiles).
 
-`npm run profile -- diff <a> <b>` lists where two wallets answer differently. ### Record a wallet
+`npm run profile -- diff <a> <b>` lists where two wallets answer differently.
+
+### Record a wallet
 
 A wallet that is not there yet, or a newer version of one, takes a few minutes to record, in the browser where it is installed:
 
@@ -454,7 +456,7 @@ A wallet that is not there yet, or a newer version of one, takes a few minutes t
 npx dappress probe
 ```
 
-The command starts Anvil and a page on your machine, and prints the page's URL. Open it, pick the wallet, and follow it: the page sends the wallet the requests of the conformance suite one by one, and says each time whether to accept or reject. At the end it shows where the wallet differs from MetaMask, and downloads its profile, which a mock replays at once: `configureDappress(on, config, { mock: './rabby-0.95.0.json' })`.
+The command starts Anvil and a page on your machine, and prints the page's URL. Open it, pick the wallet, and follow it: the page sends the wallet the requests of the conformance suite one by one. For each request you decide on, it says whether to accept or reject, and you press "Send it to the wallet" to send it, so that the wallet has closed the previous prompt before the next one opens. At the end it shows where the wallet differs from MetaMask, and downloads its profile, which a mock replays at once: `configureDappress(on, config, { mock: './rabby-0.95.0.json' })`.
 
 Use a test wallet: the profile holds its addresses and the signatures made on the page. It needs [Anvil](https://getfoundry.sh), as the mocks do. Ctrl+C stops the page and Anvil. To share the profile, see [CONTRIBUTING.md](CONTRIBUTING.md#wallet-profiles).
 

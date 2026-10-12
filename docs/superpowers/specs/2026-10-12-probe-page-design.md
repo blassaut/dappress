@@ -27,7 +27,7 @@ Rejected: a server that receives the trace and writes the profile (a write endpo
 - **Anvil.**
   - The command starts its own Anvil on `127.0.0.1:8545`, the conformance suite's port, so that the recorded chain is the suite's (`0x7a69`).
   - It never reuses a node already listening there, which may be the user's own development node, with its state. If the port is taken, it stops with "Something already listens on 127.0.0.1:8545: stop it, or pass --anvil-port".
-  - If `anvil` is not on the `PATH`, it stops with the command that installs Foundry.
+  - If `anvil` is not on the `PATH`, it stops and names getfoundry.sh as where to install Foundry, without a URL: no `https://` may appear in `dist`.
   - Anvil is stopped when the command stops, by Ctrl+C or otherwise.
 - **The page's server.**
   - `node:http`, bound to `127.0.0.1` only, on a free port picked at each start. Each session then has a new origin, where the wallet holds no permission from a previous one, which would skew the connection steps.
@@ -58,6 +58,7 @@ Rejected: a server that receives the trace and writes the profile (a write endpo
   11. `wallet_revokePermissions`, then `wallet_getPermissions`.
 - **A step.**
   - It says what to do ("Reject in your wallet", "Accept in your wallet"), sends the request, and shows the outcome: the result, or the code and message of the error.
+  - A step the user decides on waits for the "Send it to the wallet" button before it sends the request. MetaMask shows a request sent at once in place of the one just answered, which Dappress's driver took for the dapp asking again; the button lets the wallet close the previous prompt first.
   - A request the wallet settles without asking is noted as such, and the flow moves on.
   - When the outcome is not the one asked for, an acceptance where a rejection was asked, the step says so and offers to do it again. Everything stays in the trace: it is what the wallet did.
   - "Skip" moves on when the wallet does not answer.
