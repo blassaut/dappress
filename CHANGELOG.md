@@ -4,6 +4,14 @@ What changes for the users of Dappress, version by version. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- MetaMask's profile records `wallet_getPermissions`, `wallet_requestPermissions` and EIP-5792's `wallet_getCapabilities`, from new tests of the conformance suite, and its mock answers them where it refused them with `4200`. The permissions keep the shape MetaMask gives them, with the mock's own accounts, chains, origin, id and date in it; the capabilities are those MetaMask named, for the chains the dapp asks for, and an account the dapp is not connected with is refused with MetaMask's `4100`.
+
+### Changed
+
+- On a mock, `wallet_requestPermissions` asks the user even while the dapp is connected, as MetaMask was seen doing: `cy.connectToDapp()` or `cy.rejectConnection()` answers it. It asked only before the first connection.
+
 ## [0.10.1] - 2026-10-12
 
 ### Security

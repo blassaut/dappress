@@ -238,13 +238,14 @@ A mock is a wallet in the page, in place of the extension. It answers your dapp 
 
 - **Every command.** Connect, sign, send, add and switch chains, add tokens, add and switch accounts, lock and unlock: the commands are the same as on the real MetaMask, and so are the specs.
 - **What each wallet answers.** Its identity flags and EIP-6963 announcement, the code and message of each rejection, the methods it lacks, the chain switches it refuses without asking. A method or an option the profile does not cover fails with `4200`: the mock never succeeds at what the wallet was not seen doing.
+- **The permissions and capabilities the dapp asks for**, as the wallet answered them, with the mock's own accounts, chains and origin in them: `wallet_getPermissions`, `wallet_requestPermissions`, which asks the user even while connected, as MetaMask does, and `wallet_getCapabilities`.
 - **What the user decides, and only that.** A request waits for your command, `cy.confirmTransaction()` or `cy.rejectTransaction()`, as it would on the real wallet.
 - **Real transactions.** Anvil signs, and the mock sends the transaction to the chain the dapp is on: Anvil's own, your testnet, or a fork. See [Your chain, at your block](#your-chain-at-your-block).
 
 ### What it does not do
 
 - **Reach a wallet the dapp does not find in the page.** A mock is an injected wallet, found through `window.ethereum` or EIP-6963. WalletConnect, a wallet SDK such as Coinbase's, and an embedded wallet such as Privy's are out of its reach.
-- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: EIP-5792's batch calls (`wallet_sendCalls`, `wallet_getCapabilities`) are not recorded yet. The `eth_*` reads go to the chain, recorded or not.
+- **Answer what its profile did not record.** A wallet method the profile has not seen fails with `4200` and says so, even where the real wallet supports it: EIP-5792's batch calls (`wallet_sendCalls`) are not recorded yet, and MetaMask's profile is the only one with `wallet_getCapabilities`. The `eth_*` reads go to the chain, recorded or not.
 - **Show screens.** A mock tests your dapp, not the wallet's interface: how MetaMask displays your request needs the real MetaMask.
 - **Estimate fees.** `cy.confirmTransaction({ gas })` takes `'networkSuggested'` or custom values, not `'low'`, `'market'` or `'aggressive'`.
 - **Sign for an imported key on a testnet.** `cy.importAccount()` lets Anvil act for the key's address, not sign for it: that account sends on Anvil's chain or a fork only.
