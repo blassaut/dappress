@@ -215,7 +215,8 @@ async function runFlow(provider: Provider, context: Context): Promise<Mark[]> {
         break;
       }
       if (!outcome) {
-        listStep(step.title, 'skipped', 'skipped');
+        // The request may still be pending in the wallet: an answer to it now lands in a later step's part of the trace
+        listStep(step.title, 'skipped: close its prompt in your wallet; a later answer is recorded under a later step', 'skipped');
         break;
       }
       step.learn?.(context, outcome);
