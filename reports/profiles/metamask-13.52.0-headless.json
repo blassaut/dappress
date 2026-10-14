@@ -1,0 +1,2068 @@
+{
+  "schema": "dappress-wallet-profile/0",
+  "wallet": {
+    "name": "MetaMask",
+    "version": "13.52.0"
+  },
+  "recorded": {
+    "by": "dappress 0.11.0",
+    "date": "2026-10-14T11:21:52.553Z",
+    "mode": "headless",
+    "browser": "chrome-for-testing 156.0.8078.12",
+    "recorder": "2"
+  },
+  "discovery": {
+    "injected": "before",
+    "flags": {
+      "isMetaMask": true,
+      "isRabby": false,
+      "isCoinbaseWallet": false,
+      "isBraveWallet": false,
+      "isTrust": false,
+      "isPhantom": false,
+      "isOkxWallet": false,
+      "isZerion": false
+    },
+    "eip6963": [
+      {
+        "rdns": "io.metamask",
+        "name": "MetaMask",
+        "sameAsInjected": true
+      }
+    ]
+  },
+  "methods": {
+    "eth_accounts": [
+      {
+        "test": "injects the provider into the dapp",
+        "via": "injected",
+        "result": []
+      },
+      {
+        "test": "rejectConnection",
+        "via": "injected",
+        "result": [],
+        "count": 3
+      },
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "wallet_requestPermissions, rejected with rejectConnection",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "wallet_requestPermissions, accepted with connectToDapp",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "approveAddToken",
+        "params": [],
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [],
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "count": 2
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [],
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "count": 2
+      },
+      {
+        "test": "addAccount",
+        "via": "injected",
+        "result": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ]
+      },
+      {
+        "test": "importAccount",
+        "via": "injected",
+        "result": [
+          "0x1b2902f43209619afe83a2be79e51d907c11511f"
+        ]
+      },
+      {
+        "test": "switchAccount",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ],
+        "count": 2
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ]
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "unlockWallet",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "disconnectFromDapp",
+        "via": "injected",
+        "result": [],
+        "count": 2
+      },
+      {
+        "test": "disconnectFromDapp",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      }
+    ],
+    "eth_blockNumber": [
+      {
+        "test": "approveAddToken",
+        "params": [],
+        "via": "injected",
+        "result": "0x1"
+      },
+      {
+        "test": "approveAddToken",
+        "params": [],
+        "via": "injected",
+        "result": "0x2"
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "params": [],
+        "via": "injected",
+        "result": "0xf"
+      }
+    ],
+    "eth_call": [
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          {
+            "to": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "data": "0xdd62ed3e0000000000000000000000004ba92c2eaa2f97fc784a89765b64debc3f35e33c0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+          },
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "count": 3
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          {
+            "to": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "data": "0xdd62ed3e0000000000000000000000004ba92c2eaa2f97fc784a89765b64debc3f35e33c0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+          },
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x0000000000000000000000000000000000000000000000000000000000011170"
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [
+          {
+            "to": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "data": "0xdd62ed3e0000000000000000000000004ba92c2eaa2f97fc784a89765b64debc3f35e33c0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+          },
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x0000000000000000000000000000000000000000000000000000000000011170",
+        "count": 6
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [
+          {
+            "to": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "data": "0xdd62ed3e0000000000000000000000004ba92c2eaa2f97fc784a89765b64debc3f35e33c0000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4"
+          },
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x00000000000000000000000000000000000000000000000000000000000061a8"
+      }
+    ],
+    "eth_chainId": [
+      {
+        "test": "injects the provider into the dapp",
+        "via": "injected",
+        "result": "0x1"
+      },
+      {
+        "test": "rejectConnection",
+        "via": "injected",
+        "result": "0x1"
+      },
+      {
+        "test": "rejectConnection",
+        "params": [],
+        "via": "injected",
+        "result": "0x1",
+        "count": 2
+      },
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "wallet_requestPermissions, accepted with connectToDapp",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "useNetwork, back to a network the dapp is allowed on",
+        "via": "injected",
+        "result": "0x7a69"
+      },
+      {
+        "test": "approveAddToken",
+        "params": [],
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 5
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [],
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 3
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [],
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 2
+      },
+      {
+        "test": "addAccount",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "importAccount",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "switchAccount",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": "0x88bb0",
+        "count": 3
+      },
+      {
+        "test": "disconnectFromDapp",
+        "via": "injected",
+        "result": "0x88bb0"
+      },
+      {
+        "test": "chain commands: mine, increaseTime, setStorageAt, rpc",
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 11
+      },
+      {
+        "test": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 11
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 11
+      },
+      {
+        "test": "snapshot, revert",
+        "via": "injected",
+        "result": "0x7a69",
+        "count": 15
+      }
+    ],
+    "eth_estimateGas": [
+      {
+        "test": "approveAddToken",
+        "params": {
+          "$truncated": 26303,
+          "shape": "{data, from}[]"
+        },
+        "via": "injected",
+        "result": "0x21a088"
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "via": "injected",
+        "result": "0xb71b"
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "via": "injected",
+        "result": "0x695f"
+      }
+    ],
+    "eth_gasPrice": [
+      {
+        "test": "confirmTransaction ({ gas: 'networkSuggested' })",
+        "via": "injected",
+        "result": "0xb05ca9cc"
+      }
+    ],
+    "eth_getBlockByNumber": [
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 17060,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      },
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 4175,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "approveNewNetwork",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1720,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "useNetwork, back to a network the dapp is allowed on",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 21693,
+          "shape": "{baseFeePerGas, blobGasUsed, blockAccessListHash, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, slotNumber, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "useNetwork, back to a network the dapp is allowed on",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1720,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "addAccount",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1791,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      },
+      {
+        "test": "importAccount",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 5963,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "importAccount",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1791,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      },
+      {
+        "test": "switchAccount",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 5963,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "switchAccount",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1791,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1791,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 9
+      },
+      {
+        "test": "lockWallet",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 5963,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        }
+      },
+      {
+        "test": "disconnectFromDapp",
+        "params": [
+          "latest",
+          false
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 1791,
+          "shape": "{baseFeePerGas, blobGasUsed, difficulty, excessBlobGas, extraData, gasLimit, gasUsed, hash, logsBloom, miner, mixHash, nonce, number, parentBeaconBlockRoot, parentHash, receiptsRoot, requestsHash, sha3Uncles, size, stateRoot, timestamp, totalDifficulty, transactions, transactionsRoot, uncles, withdrawals, withdrawalsRoot}"
+        },
+        "count": 3
+      }
+    ],
+    "eth_getTransactionByHash": [
+      {
+        "test": "approveAddToken",
+        "params": [
+          "0xe07c2097202835f9170b586cb25c8480e0e6579e7140015828c91403bf847fcc"
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 53086,
+          "shape": "{accessList, blockHash, blockNumber, creates, data, from, gas, gasLimit, gasPrice, hash, input, maxFeePerGas, maxPriorityFeePerGas, nonce, r, s, transactionIndex, type, v, value}"
+        }
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          "0x053100c72c8e142084489924911c6837363bf95411c2ed7881e31872c9ec0126"
+        ],
+        "via": "injected",
+        "result": {
+          "v": "0x0",
+          "r": "0xc8a94761a950a8c3c94af2bc29f4246cf63f5e790b2fa4f90eb57738628f2765",
+          "s": "0x9f4e3242e4e85f3749316414b295ed30724274f17e982a1416acb583791039c",
+          "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+          "gas": "0xb71b",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "hash": "0x053100c72c8e142084489924911c6837363bf95411c2ed7881e31872c9ec0126",
+          "nonce": "0x2",
+          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170",
+          "value": "0x0",
+          "accessList": null,
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "type": "0x2",
+          "gasPrice": "0x2470b31e6",
+          "maxFeePerGas": "0x2470b31e6",
+          "maxPriorityFeePerGas": "0x2470b31e6",
+          "gasLimit": "0xb71b",
+          "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+        }
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [
+          "0x833207e42f56c263b550d58acfc0483440d8e75c059f6525d48ea677596299cb"
+        ],
+        "via": "injected",
+        "result": {
+          "v": "0x0",
+          "r": "0x1212d34c95378244c933bbd2118ea67a727fe80bc763400a9b75a7146331031d",
+          "s": "0x907ccafeed280b860630a64e6cee3d45b9e790ed5248a7291a35add8fc9b8f4",
+          "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+          "gas": "0x29763",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "hash": "0x833207e42f56c263b550d58acfc0483440d8e75c059f6525d48ea677596299cb",
+          "nonce": "0x3",
+          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef400000000000000000000000000000000000000000000000000000000000061a8",
+          "value": "0x0",
+          "accessList": null,
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "type": "0x2",
+          "gasPrice": "0x2413c97ec",
+          "maxFeePerGas": "0x2413c97ec",
+          "maxPriorityFeePerGas": "0x2413c97ec",
+          "gasLimit": "0x29763",
+          "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef400000000000000000000000000000000000000000000000000000000000061a8"
+        }
+      },
+      {
+        "test": "confirmTransaction ({ gas })",
+        "params": [
+          "0xfcc861257ec2a4fd81b4f7a1f8a9be66cc87f1b8ce7114f7cbce923aa9331f98"
+        ],
+        "via": "injected",
+        "result": {
+          "v": "0x0",
+          "r": "0x32a3a85d313f7d867f0d8fed029c295cc137051e0c647710e1b31dff8d37d34a",
+          "s": "0x551ca84fb4d1ce49abafa4c571b89d0cd334d7578207ed9009a1851f6416ba70",
+          "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+          "gas": "0xc350",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "hash": "0xfcc861257ec2a4fd81b4f7a1f8a9be66cc87f1b8ce7114f7cbce923aa9331f98",
+          "nonce": "0x4",
+          "input": "0x",
+          "value": "0x1",
+          "accessList": null,
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "type": "0x2",
+          "gasPrice": "0x6fc23ac00",
+          "maxFeePerGas": "0x6fc23ac00",
+          "maxPriorityFeePerGas": "0x9502f900"
+        },
+        "count": 6
+      },
+      {
+        "test": "confirmTransaction ({ gas })",
+        "params": [
+          "0xfcc861257ec2a4fd81b4f7a1f8a9be66cc87f1b8ce7114f7cbce923aa9331f98"
+        ],
+        "via": "injected",
+        "result": {
+          "type": "0x2",
+          "chainId": "0x7a69",
+          "nonce": "0x4",
+          "gas": "0xc350",
+          "maxFeePerGas": "0x6fc23ac00",
+          "maxPriorityFeePerGas": "0x9502f900",
+          "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+          "value": "0x1",
+          "accessList": [],
+          "input": "0x",
+          "r": "0x32a3a85d313f7d867f0d8fed029c295cc137051e0c647710e1b31dff8d37d34a",
+          "s": "0x551ca84fb4d1ce49abafa4c571b89d0cd334d7578207ed9009a1851f6416ba70",
+          "yParity": "0x0",
+          "v": "0x0",
+          "hash": "0xfcc861257ec2a4fd81b4f7a1f8a9be66cc87f1b8ce7114f7cbce923aa9331f98",
+          "blockHash": "0xcf47ad0e961da4e413bb5e33b665b80a519b24ebce8352e503e4296f20d6fab7",
+          "blockNumber": "0x5",
+          "transactionIndex": "0x0",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "gasPrice": "0xb8b79e49",
+          "blockTimestamp": "0x6acf6594"
+        }
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap, gas })",
+        "params": [
+          "0x8ba4a177e127dbbe6ead7720f3765fac2b74bf98e07f94665cd540ba1edf2452"
+        ],
+        "via": "injected",
+        "result": {
+          "v": "0x0",
+          "r": "0xd8c79417d5a25490c012f7c18deb6a65de4128279a175fa94ace0bb02aa1188c",
+          "s": "0xaa64947cec020095102a738f481adb32f1f52a3b4f3217b8fe3b136c8e748c5",
+          "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+          "gas": "0x186a0",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "hash": "0x8ba4a177e127dbbe6ead7720f3765fac2b74bf98e07f94665cd540ba1edf2452",
+          "nonce": "0x5",
+          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4000000000000000000000000000000000000000000000000000000000000c350",
+          "value": "0x0",
+          "accessList": null,
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "type": "0x2",
+          "gasPrice": "0x6fc23ac00",
+          "maxFeePerGas": "0x6fc23ac00",
+          "maxPriorityFeePerGas": "0x9502f900"
+        },
+        "count": 6
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap, gas })",
+        "params": [
+          "0x8ba4a177e127dbbe6ead7720f3765fac2b74bf98e07f94665cd540ba1edf2452"
+        ],
+        "via": "injected",
+        "result": {
+          "type": "0x2",
+          "chainId": "0x7a69",
+          "nonce": "0x5",
+          "gas": "0x186a0",
+          "maxFeePerGas": "0x6fc23ac00",
+          "maxPriorityFeePerGas": "0x9502f900",
+          "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+          "value": "0x0",
+          "accessList": [],
+          "input": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4000000000000000000000000000000000000000000000000000000000000c350",
+          "r": "0xd8c79417d5a25490c012f7c18deb6a65de4128279a175fa94ace0bb02aa1188c",
+          "s": "0xaa64947cec020095102a738f481adb32f1f52a3b4f3217b8fe3b136c8e748c5",
+          "yParity": "0x0",
+          "v": "0x0",
+          "hash": "0x8ba4a177e127dbbe6ead7720f3765fac2b74bf98e07f94665cd540ba1edf2452",
+          "blockHash": "0x9e562c8aaf5f11b07aa333f9267f5fd26a992099ff267d465b9b387385564090",
+          "blockNumber": "0x6",
+          "transactionIndex": "0x0",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "gasPrice": "0xb442a321",
+          "blockTimestamp": "0x6acf659b"
+        }
+      },
+      {
+        "test": "confirmTransaction ({ gas: 'networkSuggested' })",
+        "params": [
+          "0x6e6292b59f5fa32161054a5efd00f199584411e1f8f6d14eb080e77f8a50ac56"
+        ],
+        "via": "injected",
+        "result": {
+          "v": "0x0",
+          "r": "0x36cd847e103882e75aead5dd80f923f13efe9f8102c8f3e99a50bfd9b035ba0b",
+          "s": "0x51c0245028e3072b61d79db63afdb17ad74193f4f4be2bfa4c5c15e1a0e71b0",
+          "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+          "gas": "0x5208",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "hash": "0x6e6292b59f5fa32161054a5efd00f199584411e1f8f6d14eb080e77f8a50ac56",
+          "nonce": "0x6",
+          "input": "0x",
+          "value": "0x1",
+          "accessList": null,
+          "blockHash": null,
+          "blockNumber": null,
+          "transactionIndex": null,
+          "type": "0x2",
+          "gasPrice": "0xb05ca9cc",
+          "maxFeePerGas": "0xb05ca9cc",
+          "maxPriorityFeePerGas": "0xb05ca9cc"
+        },
+        "count": 6
+      },
+      {
+        "test": "confirmTransaction ({ gas: 'networkSuggested' })",
+        "params": [
+          "0x6e6292b59f5fa32161054a5efd00f199584411e1f8f6d14eb080e77f8a50ac56"
+        ],
+        "via": "injected",
+        "result": {
+          "type": "0x2",
+          "chainId": "0x7a69",
+          "nonce": "0x6",
+          "gas": "0x5208",
+          "maxFeePerGas": "0xb05ca9cc",
+          "maxPriorityFeePerGas": "0xb05ca9cc",
+          "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+          "value": "0x1",
+          "accessList": [],
+          "input": "0x",
+          "r": "0x36cd847e103882e75aead5dd80f923f13efe9f8102c8f3e99a50bfd9b035ba0b",
+          "s": "0x51c0245028e3072b61d79db63afdb17ad74193f4f4be2bfa4c5c15e1a0e71b0",
+          "yParity": "0x0",
+          "v": "0x0",
+          "hash": "0x6e6292b59f5fa32161054a5efd00f199584411e1f8f6d14eb080e77f8a50ac56",
+          "blockHash": "0xb9a7a8e185e20ed1650b6a598ef82ea53eeadfeb8543ea4978dc96d30a9cf2ad",
+          "blockNumber": "0x7",
+          "transactionIndex": "0x0",
+          "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "gasPrice": "0xb05ca9cc",
+          "blockTimestamp": "0x6acf65a0"
+        }
+      }
+    ],
+    "eth_getTransactionCount": [
+      {
+        "test": "wallet_sendCalls on a chain without EIP-7702: refused without asking",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x0"
+      },
+      {
+        "test": "confirmTransaction",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x0",
+        "count": 6
+      },
+      {
+        "test": "confirmTransaction",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x1"
+      },
+      {
+        "test": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x7"
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "latest"
+        ],
+        "via": "injected",
+        "result": "0x8"
+      }
+    ],
+    "eth_getTransactionReceipt": [
+      {
+        "test": "approveAddToken",
+        "params": [
+          "0xe07c2097202835f9170b586cb25c8480e0e6579e7140015828c91403bf847fcc"
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 2209,
+          "shape": "{blockHash, blockNumber, blockTimestamp, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
+        }
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          "0xe07c2097202835f9170b586cb25c8480e0e6579e7140015828c91403bf847fcc"
+        ],
+        "via": "injected",
+        "result": {
+          "$truncated": 2209,
+          "shape": "{blockHash, blockNumber, blockTimestamp, contractAddress, cumulativeGasUsed, effectiveGasPrice, from, gasUsed, logs, logsBloom, status, to, transactionHash, transactionIndex, type}"
+        }
+      }
+    ],
+    "eth_requestAccounts": [
+      {
+        "test": "rejectConnection",
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "addAccount",
+        "via": "injected",
+        "result": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ]
+      },
+      {
+        "test": "importAccount",
+        "via": "injected",
+        "result": [
+          "0x1b2902f43209619afe83a2be79e51d907c11511f"
+        ]
+      },
+      {
+        "test": "switchAccount",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ]
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ]
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      },
+      {
+        "test": "disconnectFromDapp",
+        "via": "injected",
+        "result": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ]
+      }
+    ],
+    "eth_sendTransaction": [
+      {
+        "test": "rejectTransaction",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "gasPrice": "0x2540be400",
+            "type": "0x0"
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "MetaMask Tx Signature: User denied transaction signature.",
+          "data": {
+            "location": "confirmation",
+            "cause": null
+          }
+        }
+      },
+      {
+        "test": "confirmTransaction",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x0c54FcCd2e384b4BB6f2E405Bf5Cbc15a017AaFb",
+            "value": "0x0",
+            "gasLimit": "0x5208",
+            "gasPrice": "0x2540be400",
+            "type": "0x0"
+          }
+        ],
+        "via": "injected",
+        "result": "0x0329fc8079c2baf2bccb7ec7fff53fd6144f8543afc2a78305dda18df420cadc"
+      },
+      {
+        "test": "approveAddToken",
+        "params": {
+          "$truncated": 26320,
+          "shape": "{data, from, gas}[]"
+        },
+        "via": "injected",
+        "result": "0xe07c2097202835f9170b586cb25c8480e0e6579e7140015828c91403bf847fcc"
+      },
+      {
+        "test": "confirmTransaction (ERC-20 approval)",
+        "params": [
+          {
+            "gas": "0xb71b",
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "via": "injected",
+        "result": "0x053100c72c8e142084489924911c6837363bf95411c2ed7881e31872c9ec0126"
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap })",
+        "params": [
+          {
+            "gas": "0x695f",
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x8366bb72219432837e2b6cf3d78c941a9c75acee",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "via": "injected",
+        "result": "0x833207e42f56c263b550d58acfc0483440d8e75c059f6525d48ea677596299cb"
+      },
+      {
+        "test": "confirmTransaction ({ gas })",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x1"
+          }
+        ],
+        "via": "injected",
+        "result": "0xfcc861257ec2a4fd81b4f7a1f8a9be66cc87f1b8ce7114f7cbce923aa9331f98"
+      },
+      {
+        "test": "confirmTransaction ({ spendingCap, gas })",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "data": "0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef40000000000000000000000000000000000000000000000000000000000011170"
+          }
+        ],
+        "via": "injected",
+        "result": "0x8ba4a177e127dbbe6ead7720f3765fac2b74bf98e07f94665cd540ba1edf2452"
+      },
+      {
+        "test": "confirmTransaction ({ gas: 'networkSuggested' })",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x1"
+          }
+        ],
+        "via": "injected",
+        "result": "0x6e6292b59f5fa32161054a5efd00f199584411e1f8f6d14eb080e77f8a50ac56"
+      },
+      {
+        "test": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x1"
+          }
+        ],
+        "via": "injected",
+        "result": "0xe299db1270fd49e35dd50a1a3e45d8e03763a7e069307da0f149c75f153ead46"
+      },
+      {
+        "test": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x2"
+          }
+        ],
+        "via": "injected",
+        "result": "0x35850dc1b85047a895b68eeee8b36a9d231f67be8218df04d7d8c4ec4568a5a7"
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x1"
+          }
+        ],
+        "via": "injected",
+        "result": "0xd5bdb2ac7762577aa21d89a7ffa64113550b4738f355df6dcd41380f78f908a5"
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+            "value": "0x2"
+          }
+        ],
+        "via": "injected",
+        "result": "0x839063e0c512c00c02ec5638af28b6bdb0d81d56624f7826692c00ffbff2449c"
+      }
+    ],
+    "eth_signTypedData_v4": [
+      {
+        "test": "rejectSignature (signTypedData_v4)",
+        "params": {
+          "$truncated": 1194,
+          "shape": "[address, string(981)]"
+        },
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request.",
+          "data": {
+            "location": "confirmation",
+            "cause": null
+          }
+        }
+      },
+      {
+        "test": "confirmSignature (signTypedData_v4)",
+        "params": {
+          "$truncated": 1194,
+          "shape": "[address, string(981)]"
+        },
+        "via": "injected",
+        "result": "0x610a9320bf5f2ccc1b6dcd085cb376843b4efb7258177f4769f87cc6c2bcf07f079ca5a54113ee9cc2486388393715b4df7db8216ce3029d63a0988b4b8145b71c"
+      }
+    ],
+    "net_version": [
+      {
+        "test": "injects the provider into the dapp",
+        "via": "injected",
+        "result": "1"
+      },
+      {
+        "test": "rejectConnection",
+        "via": "injected",
+        "result": "1"
+      }
+    ],
+    "personal_sign": [
+      {
+        "test": "confirmSignature (personal_sign)",
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "Example password"
+        ],
+        "via": "injected",
+        "result": "0x6fc53752948e27b491e2b62f7050306954cdbc44438bea5c664690ba5eb60314648901f077b9ad2e6a12bf72981b094edc61d73d812302a1efcf8162ff6dbf711c"
+      },
+      {
+        "test": "rejectSignature (personal_sign)",
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "Example password"
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request.",
+          "data": {
+            "location": "confirmation",
+            "cause": null
+          }
+        }
+      },
+      {
+        "test": "rejectSignature, then confirmSignature twice, each request sent as the one before settles",
+        "params": [
+          "0x6669727374",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request.",
+          "data": {
+            "location": "confirmation",
+            "cause": null
+          }
+        }
+      },
+      {
+        "test": "rejectSignature, then confirmSignature twice, each request sent as the one before settles",
+        "params": [
+          "0x7365636f6e64",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected",
+        "result": "0x381f669597d59945ae4227efd48d0e884b7bb719fe9c45c04d5863bc4d4450723f4e83a0bb779fa0a9ba0f3c255b05418e30d36286ecc28a2179dedc3f2bdca41b"
+      },
+      {
+        "test": "rejectSignature, then confirmSignature twice, each request sent as the one before settles",
+        "params": [
+          "0x7468697264",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected",
+        "result": "0x841bb8589bd2d2ef0d9dd960d9b6d84dd16288116ac4c30ae555d108d38d09a86f67c8bcef2aa3f74dfbbfbd8161c80f01b66bf2adea4e494a280e1126f8960e1b"
+      },
+      {
+        "test": "unlockWallet",
+        "params": [
+          "0x6c6f636b6564",
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected",
+        "result": "0xe2cdffd76d0a2e2d95e5be6fde71890b634e7747d9ad346bab28211846ccb9df79baee10f8d7cbc2a6609d3bff8fb562190e168f993ce65d93d7d9a9064d99051c"
+      }
+    ],
+    "wallet_addEthereumChain": [
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "wallet_requestPermissions, accepted with connectToDapp",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "rejectNewNetwork",
+        "params": [
+          {
+            "chainId": "0x539",
+            "chainName": "Unreachable",
+            "rpcUrls": [
+              "http://127.0.0.1:8546"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request.",
+          "data": {
+            "location": "confirmation",
+            "cause": null
+          }
+        }
+      },
+      {
+        "test": "approveNewNetwork",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "useNetwork, back to a network the dapp is allowed on",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "addAccount",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "importAccount",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "switchAccount",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null,
+        "count": 3
+      },
+      {
+        "test": "disconnectFromDapp",
+        "params": [
+          {
+            "chainId": "0x88bb0",
+            "chainName": "Hoodi",
+            "rpcUrls": [
+              "https://ethereum-hoodi-rpc.publicnode.com"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            },
+            "blockExplorerUrls": [
+              "https://hoodi.etherscan.io"
+            ]
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "chain commands: mine, increaseTime, setStorageAt, rpc",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "injected",
+        "result": null
+      }
+    ],
+    "wallet_getCapabilities": [
+      {
+        "test": "wallet_getCapabilities",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected",
+        "result": {
+          "0x1": {
+            "alternateGasFees": {
+              "supported": true
+            },
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x279f": {
+            "atomic": {
+              "status": "ready"
+            }
+          },
+          "0xaa36a7": {
+            "atomic": {
+              "status": "ready"
+            }
+          },
+          "0xe708": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x2105": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0xa4b1": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x38": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0xa": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x89": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x8f": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x13b2": {
+            "atomic": {
+              "status": "ready"
+            },
+            "auxiliaryFunds": {
+              "supported": true
+            }
+          },
+          "0x88bb0": {
+            "atomic": {
+              "status": "ready"
+            }
+          }
+        }
+      },
+      {
+        "test": "wallet_getCapabilities",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          [
+            "0x88bb0"
+          ]
+        ],
+        "via": "injected",
+        "result": {
+          "0x88bb0": {
+            "atomic": {
+              "status": "ready"
+            }
+          }
+        }
+      },
+      {
+        "test": "wallet_getCapabilities",
+        "params": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4100,
+          "message": "The requested account and/or method has not been authorized by the user."
+        }
+      },
+      {
+        "test": "wallet_sendCalls on a chain without EIP-7702: refused without asking",
+        "params": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          [
+            "0x7a69"
+          ]
+        ],
+        "via": "injected",
+        "result": {}
+      }
+    ],
+    "wallet_getPermissions": [
+      {
+        "test": "wallet_getPermissions, once connected",
+        "via": "injected",
+        "result": [
+          {
+            "id": "_qf_zfFRjxwlMiJaBy8hF",
+            "parentCapability": "eth_accounts",
+            "invoker": "https://metamask.github.io",
+            "caveats": [
+              {
+                "type": "restrictReturnedAccounts",
+                "value": [
+                  "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+                ]
+              }
+            ],
+            "date": 1791976824440
+          },
+          {
+            "id": "_qf_zfFRjxwlMiJaBy8hF",
+            "parentCapability": "endowment:permitted-chains",
+            "invoker": "https://metamask.github.io",
+            "caveats": [
+              {
+                "type": "restrictNetworkSwitching",
+                "value": [
+                  "0x1",
+                  "0xe708",
+                  "0x2105",
+                  "0xa4b1",
+                  "0x38",
+                  "0xa",
+                  "0x89",
+                  "0x8f",
+                  "0x13b2",
+                  "0x88bb0"
+                ]
+              }
+            ],
+            "date": 1791976824440
+          }
+        ]
+      },
+      {
+        "test": "addAccount",
+        "params": [],
+        "via": "injected",
+        "result": []
+      },
+      {
+        "test": "importAccount",
+        "params": [],
+        "via": "injected",
+        "result": []
+      },
+      {
+        "test": "switchAccount",
+        "params": [],
+        "via": "injected",
+        "result": []
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "params": [],
+        "via": "injected",
+        "result": [],
+        "count": 3
+      },
+      {
+        "test": "disconnectFromDapp",
+        "params": [],
+        "via": "injected",
+        "result": []
+      },
+      {
+        "test": "disconnectFromDapp",
+        "via": "injected",
+        "result": []
+      }
+    ],
+    "wallet_requestPermissions": [
+      {
+        "test": "wallet_requestPermissions, rejected with rejectConnection",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "wallet_requestPermissions, accepted with connectToDapp",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": [
+          {
+            "id": "zz4GQCijc9NWpPsjy90R0",
+            "parentCapability": "eth_accounts",
+            "invoker": "https://metamask.github.io",
+            "caveats": [
+              {
+                "type": "restrictReturnedAccounts",
+                "value": [
+                  "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+                ]
+              }
+            ],
+            "date": 1791976827363
+          },
+          {
+            "id": "zz4GQCijc9NWpPsjy90R0",
+            "parentCapability": "endowment:permitted-chains",
+            "invoker": "https://metamask.github.io",
+            "caveats": [
+              {
+                "type": "restrictNetworkSwitching",
+                "value": [
+                  "0x1",
+                  "0xe708",
+                  "0x2105",
+                  "0xa4b1",
+                  "0x38",
+                  "0xa",
+                  "0x89",
+                  "0x8f",
+                  "0x13b2",
+                  "0x88bb0"
+                ]
+              }
+            ],
+            "date": 1791976827363
+          }
+        ]
+      }
+    ],
+    "wallet_revokePermissions": [
+      {
+        "test": "addAccount",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": null,
+        "count": 2
+      },
+      {
+        "test": "importAccount",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": null,
+        "count": 2
+      },
+      {
+        "test": "switchAccount",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": null,
+        "count": 2
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": null,
+        "count": 6
+      },
+      {
+        "test": "disconnectFromDapp",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "injected",
+        "result": null
+      }
+    ],
+    "wallet_sendCalls": [
+      {
+        "test": "wallet_sendCalls on a chain without EIP-7702: refused without asking",
+        "params": [
+          {
+            "version": "2.0.0",
+            "chainId": "0x7a69",
+            "from": "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+            "atomicRequired": false,
+            "calls": [
+              {
+                "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+                "value": "0x1"
+              },
+              {
+                "to": "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548",
+                "value": "0x2"
+              }
+            ]
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 5710,
+          "message": "EIP-7702 not supported on chain: 0x7a69"
+        }
+      }
+    ],
+    "wallet_switchEthereumChain": [
+      {
+        "test": "rejectSwitchNetwork",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "approveSwitchNetwork",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "injected",
+        "result": null
+      },
+      {
+        "test": "switch to a chain the wallet does not know",
+        "params": [
+          {
+            "chainId": "0x1234"
+          }
+        ],
+        "via": "injected",
+        "error": {
+          "code": 4902,
+          "message": "Unrecognized chain ID \"0x1234\". Try adding the chain using wallet_addEthereumChain first."
+        }
+      }
+    ],
+    "wallet_watchAsset": [
+      {
+        "test": "approveAddToken",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "symbol": "TST",
+            "decimals": 4
+          }
+        },
+        "via": "injected",
+        "result": true
+      },
+      {
+        "test": "rejectAddToken",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0x8366Bb72219432837E2B6cF3D78C941A9C75aceE",
+            "symbol": "TST",
+            "decimals": 4
+          }
+        },
+        "via": "injected",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      }
+    ]
+  },
+  "events": {
+    "accountsChanged": [
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "payload": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "addAccount",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "addAccount",
+        "payload": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "importAccount",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "importAccount",
+        "payload": [
+          "0x1b2902f43209619afe83a2be79e51d907c11511f"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "switchAccount",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "switchAccount",
+        "payload": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c",
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [
+          "0xca5a1cdfd7931f1f0316de7cf1eb6caa97ef5548"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "connectToDapp ({ accounts })",
+        "payload": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "disconnectFromDapp",
+        "payload": [],
+        "via": "injected"
+      },
+      {
+        "test": "disconnectFromDapp",
+        "payload": [
+          "0x4ba92c2eaa2f97fc784a89765b64debc3f35e33c"
+        ],
+        "via": "injected"
+      }
+    ],
+    "chainChanged": [
+      {
+        "test": "connectToDapp, onto the network from the wallet setup",
+        "payload": "0x88bb0",
+        "via": "injected"
+      },
+      {
+        "test": "approveNewNetwork",
+        "payload": "0x7a69",
+        "via": "injected"
+      },
+      {
+        "test": "approveSwitchNetwork",
+        "payload": "0xaa36a7",
+        "via": "injected"
+      },
+      {
+        "test": "useNetwork, back to a network the dapp is allowed on",
+        "payload": "0x7a69",
+        "via": "injected"
+      },
+      {
+        "test": "importAccount",
+        "payload": "0x88bb0",
+        "via": "injected"
+      },
+      {
+        "test": "importAccount",
+        "payload": "0x7a69",
+        "via": "injected"
+      },
+      {
+        "test": "switchAccount",
+        "payload": "0x88bb0",
+        "via": "injected"
+      },
+      {
+        "test": "switchAccount",
+        "payload": "0x7a69",
+        "via": "injected"
+      },
+      {
+        "test": "lockWallet",
+        "payload": "0x88bb0",
+        "via": "injected"
+      },
+      {
+        "test": "disconnectFromDapp",
+        "payload": "0x7a69",
+        "via": "injected"
+      }
+    ],
+    "connect": [
+      {
+        "test": "injects the provider into the dapp",
+        "payload": {
+          "chainId": "0x1"
+        },
+        "via": "injected"
+      }
+    ]
+  }
+}

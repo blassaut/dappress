@@ -1,0 +1,168 @@
+{
+  "dappressVersion": "0.11.0",
+  "metamaskVersion": "13.52.0",
+  "mode": "popup",
+  "browser": "chrome-for-testing 156.0.8078.12",
+  "date": "2026-10-14T11:23:53.458Z",
+  "passed": false,
+  "actions": [
+    {
+      "action": "injects the provider into the dapp",
+      "status": "failed",
+      "error": "TypeError: The following error originated from your application code, not from Cypress. It was caused by an unhandled promise rejection."
+    },
+    {
+      "action": "rejectConnection",
+      "status": "passed"
+    },
+    {
+      "action": "connectToDapp, onto the network from the wallet setup",
+      "status": "passed"
+    },
+    {
+      "action": "wallet_getPermissions, once connected",
+      "status": "passed"
+    },
+    {
+      "action": "wallet_getCapabilities",
+      "status": "passed"
+    },
+    {
+      "action": "wallet_requestPermissions, rejected with rejectConnection",
+      "status": "passed"
+    },
+    {
+      "action": "wallet_requestPermissions, accepted with connectToDapp",
+      "status": "passed"
+    },
+    {
+      "action": "confirmSignature (personal_sign)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSignature (personal_sign)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSignature (signTypedData_v4)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmSignature (signTypedData_v4)",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSignature, then confirmSignature twice, each request sent as the one before settles",
+      "status": "passed"
+    },
+    {
+      "action": "rejectTransaction",
+      "status": "passed"
+    },
+    {
+      "action": "rejectNewNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "approveNewNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "rejectSwitchNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "approveSwitchNetwork",
+      "status": "passed"
+    },
+    {
+      "action": "switch to a chain the wallet does not know",
+      "status": "passed"
+    },
+    {
+      "action": "useNetwork, back to a network the dapp is allowed on",
+      "status": "passed"
+    },
+    {
+      "action": "wallet_sendCalls on a chain without EIP-7702: refused without asking",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction",
+      "status": "passed"
+    },
+    {
+      "action": "approveAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "rejectAddToken",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction (ERC-20 approval)",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap, gas })",
+      "status": "passed"
+    },
+    {
+      "action": "confirmTransaction ({ gas: 'networkSuggested' })",
+      "status": "passed"
+    },
+    {
+      "action": "addAccount",
+      "status": "passed"
+    },
+    {
+      "action": "importAccount",
+      "status": "failed",
+      "error": "CypressError: `cy.task('dappress:connectToDapp')` failed with the following error:"
+    },
+    {
+      "action": "switchAccount",
+      "status": "passed"
+    },
+    {
+      "action": "connectToDapp ({ accounts })",
+      "status": "passed"
+    },
+    {
+      "action": "lockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "unlockWallet",
+      "status": "passed"
+    },
+    {
+      "action": "disconnectFromDapp",
+      "status": "passed"
+    },
+    {
+      "action": "chain commands: mine, increaseTime, setStorageAt, rpc",
+      "status": "passed"
+    },
+    {
+      "action": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+      "status": "passed"
+    },
+    {
+      "action": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+      "status": "passed"
+    },
+    {
+      "action": "snapshot, revert",
+      "status": "passed"
+    }
+  ]
+}

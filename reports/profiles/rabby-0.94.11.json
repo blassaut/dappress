@@ -1,0 +1,594 @@
+{
+  "schema": "dappress-wallet-profile/0",
+  "wallet": {
+    "name": "Rabby",
+    "version": "0.94.11"
+  },
+  "recorded": {
+    "by": "dappress probe 0.11.0",
+    "date": "2026-10-12T13:09:19.503Z",
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "recorder": "2"
+  },
+  "discovery": {
+    "injected": "before",
+    "flags": {
+      "isMetaMask": true,
+      "isRabby": true,
+      "isCoinbaseWallet": false,
+      "isBraveWallet": false,
+      "isTrust": false,
+      "isPhantom": false,
+      "isOkxWallet": false,
+      "isZerion": false
+    },
+    "eip6963": [
+      {
+        "rdns": "io.rabby",
+        "name": "Rabby Wallet",
+        "sameAsInjected": false
+      }
+    ]
+  },
+  "methods": {
+    "eth_decrypt": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x7b2276657273696f6e223a227832353531392d7873616c736132302d706f6c7931333035222c226e6f6e6365223a2268474e7775355741556f522f586a682b4e5334584a3748327866593667494236222c22657068656d5075626c69634b6579223a224167363973323358444336704b484e395a5a6d2b6a5563322b7338455148566537756f2f627651462b54513d222c2263697068657274657874223a224561446f51774d6f354d4f524d52476f673436535277557a394d6f3d227d",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "toto"
+      }
+    ],
+    "eth_getEncryptionPublicKey": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "oqbH0v29JTmTQ1qjX6nj7WJHRiChwTiMVuiaQwbeGDY=",
+        "count": 2
+      }
+    ],
+    "eth_requestAccounts": [
+      {
+        "test": "Connect, rejected",
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Connect, accepted",
+        "via": "eip6963:io.rabby",
+        "result": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ]
+      }
+    ],
+    "eth_sendTransaction": [
+      {
+        "test": "Send a transaction, rejected",
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x000000000000000000000000000000000000dead",
+            "value": "0x0"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Send a transaction, accepted",
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0x000000000000000000000000000000000000dead",
+            "value": "0x1"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": "0x6f68d8069e6bc6781848fea0aa04856d8a989a2fdbd7091432fd7470f3c2c0e6"
+      },
+      {
+        "test": "Approve the token, accepted",
+        "params": [
+          {
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "to": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+            "data": "0x095ea7b3000000000000000000000000000000000000000000000000000000000000dead0000000000000000000000000000000000000000000000000de0b6b3a7640000"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": "0x2a09745a3d20403efea4583ea5e3e6130850d92185f6e24dca166ed008850ed7"
+      }
+    ],
+    "eth_sign": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "0x879a053d4800c6354e76c7985a865d2922c82fb5b3f4577b2fe08b998954f2e0"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        },
+        "count": 3
+      }
+    ],
+    "eth_signTypedData": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "result": "0xe1efe9a9b9f8e8acb375a569ad152c223438c6de8bf89fa2820c2a866cb0b18f0b839fd93b26225b7eb4755e46f09127771f8eee1c061df1938090f971495fb51c"
+      }
+    ],
+    "eth_signTypedData_v4": [
+      {
+        "test": "Sign typed data, rejected",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Sign typed data, accepted",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
+        "via": "eip6963:io.rabby",
+        "result": "0x5a6ffb7dbc2f945e08a7a701ee6da6352c2ae8fe982f3e6d12d2725e223f3f3d40f2e7673768d567d6f31b0194267ac0814b71b0c6d333e9b0488cd6ba5f9da41c"
+      }
+    ],
+    "personal_ecRecover": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x1a986e21c1dd6c81604c2a7d9951a3c447f341aa96205fbf3463842c6813436b49d780bd8547ac42936d578e9a532d8073eea3ba5869e4d9b4aa14dbd63ab2201c"
+        ],
+        "result": "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+      }
+    ],
+    "personal_sign": [
+      {
+        "test": "Sign a message, accepted",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "via": "eip6963:io.rabby",
+        "result": "0xaaeee0a50250850554684c6f0186208176988e95718403244e9e1185d56881ca603cbfe41899e3aad26a36fd56078b59996f1b173d2b2d8c55afc18fbd4f5dca1c"
+      },
+      {
+        "test": "Sign a message, rejected",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      }
+    ],
+    "wallet_addEthereumChain": [
+      {
+        "test": "Add a network, rejected",
+        "params": [
+          {
+            "chainId": "0x539",
+            "chainName": "Unreachable",
+            "rpcUrls": [
+              "http://127.0.0.1:8546"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Add Anvil, accepted",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": null
+      }
+    ],
+    "wallet_getCapabilities": [
+      {
+        "test": "Read the capabilities",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32601,
+          "message": "method [wallet_getCapabilities] doesn't has corresponding handler",
+          "data": {
+            "method": "wallet_getCapabilities",
+            "params": [
+              "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+            ]
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of one chain",
+        "params": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+          [
+            "0x88bb0"
+          ]
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32601,
+          "message": "method [wallet_getCapabilities] doesn't has corresponding handler",
+          "data": {
+            "method": "wallet_getCapabilities",
+            "params": [
+              "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+              [
+                "0x88bb0"
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of an account not connected",
+        "params": [
+          "0x000000000000000000000000000000000000dead"
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32601,
+          "message": "method [wallet_getCapabilities] doesn't has corresponding handler",
+          "data": {
+            "method": "wallet_getCapabilities",
+            "params": [
+              "0x000000000000000000000000000000000000dead"
+            ]
+          }
+        }
+      }
+    ],
+    "wallet_getPermissions": [
+      {
+        "test": "Read the permissions",
+        "via": "eip6963:io.rabby",
+        "result": [
+          {
+            "parentCapability": "eth_accounts"
+          }
+        ]
+      },
+      {
+        "test": "Read the permissions once revoked",
+        "via": "eip6963:io.rabby",
+        "result": []
+      }
+    ],
+    "wallet_requestPermissions": [
+      {
+        "test": "Ask for the permissions again, rejected",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": [
+          {
+            "parentCapability": "eth_accounts"
+          }
+        ]
+      },
+      {
+        "test": "Ask for the permissions again, accepted",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": [
+          {
+            "parentCapability": "eth_accounts"
+          }
+        ]
+      }
+    ],
+    "wallet_revokePermissions": [
+      {
+        "test": "Revoke the permissions",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": null
+      }
+    ],
+    "wallet_sendCalls": [
+      {
+        "test": "Send a batch of calls",
+        "params": [
+          {
+            "version": "2.0.0",
+            "chainId": "0x7a69",
+            "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+            "atomicRequired": false,
+            "calls": [
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x1"
+              },
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x2"
+              }
+            ]
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32601,
+          "message": "method [wallet_sendCalls] doesn't has corresponding handler",
+          "data": {
+            "method": "wallet_sendCalls",
+            "params": [
+              {
+                "version": "2.0.0",
+                "chainId": "0x7a69",
+                "from": "0x8cfe45475955606a9586d11360efe0172bbc51b6",
+                "atomicRequired": false,
+                "calls": [
+                  {
+                    "to": "0x000000000000000000000000000000000000dead",
+                    "value": "0x1"
+                  },
+                  {
+                    "to": "0x000000000000000000000000000000000000dead",
+                    "value": "0x2"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "wallet_switchEthereumChain": [
+      {
+        "test": "Switch to Sepolia, rejected",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0xaa36a7\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1678,
+            "shape": "{originalError}"
+          }
+        }
+      },
+      {
+        "test": "Switch to Sepolia, accepted",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0xaa36a7\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1678,
+            "shape": "{originalError}"
+          }
+        }
+      },
+      {
+        "test": "Switch to a chain the wallet does not know",
+        "params": [
+          {
+            "chainId": "0x1234"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": -32603,
+          "message": "Unrecognized chain ID \"0x1234\". Try adding the chain using wallet_switchEthereumChain first.",
+          "data": {
+            "$truncated": 1674,
+            "shape": "{originalError}"
+          }
+        }
+      },
+      {
+        "test": "Switch back to Anvil",
+        "params": [
+          {
+            "chainId": "0x7a69"
+          }
+        ],
+        "via": "eip6963:io.rabby",
+        "result": null
+      }
+    ],
+    "wallet_watchAsset": [
+      {
+        "test": "Watch the token, accepted",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+            "symbol": "DPROBE",
+            "decimals": 18
+          }
+        },
+        "via": "eip6963:io.rabby"
+      },
+      {
+        "test": "Watch the token, rejected",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+            "symbol": "DPROBE",
+            "decimals": 18
+          }
+        },
+        "via": "eip6963:io.rabby",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      }
+    ]
+  },
+  "events": {
+    "accountsChanged": [
+      {
+        "test": "Connect, accepted",
+        "payload": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "via": "eip6963:io.rabby"
+      },
+      {
+        "test": "Connect, accepted",
+        "payload": [
+          "0x8cfe45475955606a9586d11360efe0172bbc51b6"
+        ],
+        "via": "injected"
+      },
+      {
+        "test": "Revoke the permissions",
+        "payload": [],
+        "via": "eip6963:io.rabby"
+      },
+      {
+        "test": "Revoke the permissions",
+        "payload": [],
+        "via": "injected"
+      }
+    ],
+    "chainChanged": [
+      {
+        "test": "Add Anvil, accepted",
+        "payload": "0x7a69",
+        "via": "eip6963:io.rabby"
+      },
+      {
+        "test": "Add Anvil, accepted",
+        "payload": "0x7a69",
+        "via": "injected"
+      }
+    ],
+    "connect": [
+      {
+        "test": "Connect, rejected",
+        "payload": {
+          "chainId": "0x1"
+        },
+        "via": "eip6963:io.rabby"
+      },
+      {
+        "test": "Connect, rejected",
+        "payload": {
+          "chainId": "0x1"
+        },
+        "via": "injected"
+      }
+    ]
+  }
+}

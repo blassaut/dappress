@@ -1,0 +1,553 @@
+{
+  "schema": "dappress-wallet-profile/0",
+  "wallet": {
+    "name": "Phantom",
+    "version": "26.32.0"
+  },
+  "recorded": {
+    "by": "dappress probe 0.11.0",
+    "date": "2026-10-12T13:03:51.551Z",
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "recorder": "2"
+  },
+  "discovery": {
+    "injected": "after",
+    "flags": {
+      "isMetaMask": true,
+      "isRabby": false,
+      "isCoinbaseWallet": false,
+      "isBraveWallet": false,
+      "isTrust": false,
+      "isPhantom": false,
+      "isOkxWallet": false,
+      "isZerion": false
+    },
+    "eip6963": [
+      {
+        "rdns": "app.phantom",
+        "name": "Phantom",
+        "sameAsInjected": false
+      }
+    ]
+  },
+  "methods": {
+    "eth_chainId": [
+      {
+        "test": "Read the permissions",
+        "params": [],
+        "via": "eip6963:app.phantom",
+        "result": "0xaa36a7"
+      }
+    ],
+    "eth_getEncryptionPublicKey": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method eth_getEncryptionPublicKey does not exist / is not available.",
+          "data": {
+            "method": "eth_getEncryptionPublicKey"
+          }
+        },
+        "count": 2
+      }
+    ],
+    "eth_requestAccounts": [
+      {
+        "test": "Connect, rejected",
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Connect, accepted",
+        "via": "eip6963:app.phantom",
+        "result": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ]
+      }
+    ],
+    "eth_sendTransaction": [
+      {
+        "test": "Send a transaction, rejected",
+        "params": [
+          {
+            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+            "to": "0x000000000000000000000000000000000000dead",
+            "value": "0x0"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Send a transaction, accepted",
+        "params": [
+          {
+            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+            "to": "0x000000000000000000000000000000000000dead",
+            "value": "0x1"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0xb2d0965efea6cf6accc52f9a5f27f180caa33746c4835d0e9996f458a14a0a89"
+      },
+      {
+        "test": "Approve the token, accepted",
+        "params": [
+          {
+            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+            "to": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "data": "0x095ea7b3000000000000000000000000000000000000000000000000000000000000dead0000000000000000000000000000000000000000000000000de0b6b3a7640000"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0xb0a27dcbb98163465a3f545ca2c3717a36643aef4c084a446bd376a2964ae742"
+      }
+    ],
+    "eth_sign": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          "0x879a053d4800c6354e76c7985a865d2922c82fb5b3f4577b2fe08b998954f2e0"
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0x5e90c002c0b2f979a544aa55e89cd0c0b9352f26da30d6473aee5cf1589c7f887836621e397171199539d1b71df5c42cb599c9abe62df6282d6499cc3405d8e11b"
+      }
+    ],
+    "eth_signTypedData": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          [
+            {
+              "type": "string",
+              "name": "Message",
+              "value": "Hi, Alice!"
+            },
+            {
+              "type": "uint32",
+              "name": "A number",
+              "value": "1337"
+            }
+          ],
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0x83b49d5eca2d02c0e01a913769946b8f511a3e194cd3187d236dc13cd762244e5b17c971336ce397c82f34839bfa345eace29d7fb959df6452c182a8c67aa2101c"
+      }
+    ],
+    "eth_signTypedData_v4": [
+      {
+        "test": "Sign typed data, rejected",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Sign typed data, accepted",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"}],\"Probe\":[{\"name\":\"contents\",\"type\":\"string\"}]},\"primaryType\":\"Probe\",\"domain\":{\"name\":\"Dappress probe\"},\"message\":{\"contents\":\"Dappress probe\"}}"
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0x012053d2647db2c4005ceedcf0f91473172fe50c735034b22ef7a3900c406e6d1b23c6abe941ec64904cdea84179d5fe693c55d3fb0323c7c15cea131ecd8ffb1b"
+      }
+    ],
+    "personal_ecRecover": [
+      {
+        "test": "console recording, 2026-10-06",
+        "params": [
+          "0x4578616d706c652060706572736f6e616c5f7369676e60206d657373616765",
+          "0x1e4b049760084e64347be709b4174cfaedbecb7c476a40542040b08d5b353f1f70a4dc39432f10b1cfa374d5ec1de61ddb216e6ea54d91d30fe520ba87f491711c"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method personal_ecRecover does not exist / is not available.",
+          "data": {
+            "method": "personal_ecRecover"
+          }
+        }
+      }
+    ],
+    "personal_sign": [
+      {
+        "test": "Sign a message, accepted",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      },
+      {
+        "test": "Sign a message, accepted",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "result": "0xe0e88d71eb68b9fc9a6ea3b4c576fc1e216596cc5cadda1fd22a16a302c93691067b6067471caceaf05ddc198c9dcd1c86338b5837f4df3656f32f715ceb1d931c"
+      },
+      {
+        "test": "Sign a message, rejected",
+        "params": [
+          "0x44617070726573732070726f6265",
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4001,
+          "message": "User rejected the request."
+        }
+      }
+    ],
+    "wallet_addEthereumChain": [
+      {
+        "test": "Add a network, rejected",
+        "params": [
+          {
+            "chainId": "0x539",
+            "chainName": "Unreachable",
+            "rpcUrls": [
+              "http://127.0.0.1:8546"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      },
+      {
+        "test": "Add Anvil, accepted",
+        "params": [
+          {
+            "chainId": "0x7a69",
+            "chainName": "Anvil",
+            "rpcUrls": [
+              "http://127.0.0.1:8545"
+            ],
+            "nativeCurrency": {
+              "name": "Ether",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      }
+    ],
+    "wallet_getCapabilities": [
+      {
+        "test": "Read the capabilities",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of one chain",
+        "params": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+          [
+            "0x88bb0"
+          ]
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      },
+      {
+        "test": "Read the capabilities of an account not connected",
+        "params": [
+          "0x000000000000000000000000000000000000dead"
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_getCapabilities does not exist / is not available.",
+          "data": {
+            "method": "wallet_getCapabilities"
+          }
+        }
+      }
+    ],
+    "wallet_getPermissions": [
+      {
+        "test": "Read the permissions",
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "invoker": "http://127.0.0.1:58005",
+            "parentCapability": "eth_accounts",
+            "caveats": []
+          }
+        ]
+      },
+      {
+        "test": "Read the permissions once revoked",
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "invoker": "http://127.0.0.1:58005",
+            "parentCapability": "eth_accounts",
+            "caveats": []
+          }
+        ]
+      }
+    ],
+    "wallet_requestPermissions": [
+      {
+        "test": "Ask for the permissions again, rejected",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "parentCapability": "eth_accounts",
+            "date": 1791810158479
+          }
+        ]
+      },
+      {
+        "test": "Ask for the permissions again, accepted",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": [
+          {
+            "parentCapability": "eth_accounts",
+            "date": 1791810161706
+          }
+        ]
+      }
+    ],
+    "wallet_revokePermissions": [
+      {
+        "test": "Revoke the permissions",
+        "params": [
+          {
+            "eth_accounts": {}
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_revokePermissions does not exist / is not available.",
+          "data": {
+            "method": "wallet_revokePermissions"
+          }
+        }
+      }
+    ],
+    "wallet_sendCalls": [
+      {
+        "test": "Send a batch of calls",
+        "params": [
+          {
+            "version": "2.0.0",
+            "chainId": "0x7a69",
+            "from": "0x7b4292494807bfc7387e7e0ecc65788ed650f043",
+            "atomicRequired": false,
+            "calls": [
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x1"
+              },
+              {
+                "to": "0x000000000000000000000000000000000000dead",
+                "value": "0x2"
+              }
+            ]
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32601,
+          "message": "The method wallet_sendCalls does not exist / is not available.",
+          "data": {
+            "method": "wallet_sendCalls"
+          }
+        }
+      }
+    ],
+    "wallet_switchEthereumChain": [
+      {
+        "test": "Switch to Sepolia, rejected",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": null
+      },
+      {
+        "test": "Switch to Sepolia, accepted",
+        "params": [
+          {
+            "chainId": "0xaa36a7"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "result": null
+      },
+      {
+        "test": "Switch to a chain the wallet does not know",
+        "params": [
+          {
+            "chainId": "0x1234"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      },
+      {
+        "test": "Switch back to Anvil",
+        "params": [
+          {
+            "chainId": "0x7a69"
+          }
+        ],
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": 4901,
+          "message": "The Provider is not connected to the requested chain."
+        }
+      }
+    ],
+    "wallet_watchAsset": [
+      {
+        "test": "Watch the token, accepted",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "symbol": "DPROBE",
+            "decimals": 18
+          }
+        },
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32000,
+          "message": "Missing or invalid parameters.",
+          "data": {
+            "method": "wallet_watchAsset"
+          }
+        }
+      },
+      {
+        "test": "Watch the token, rejected",
+        "params": {
+          "type": "ERC20",
+          "options": {
+            "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+            "symbol": "DPROBE",
+            "decimals": 18
+          }
+        },
+        "via": "eip6963:app.phantom",
+        "error": {
+          "code": -32000,
+          "message": "Missing or invalid parameters.",
+          "data": {
+            "method": "wallet_watchAsset"
+          }
+        }
+      }
+    ]
+  },
+  "events": {
+    "accountsChanged": [
+      {
+        "test": "Connect, accepted",
+        "payload": [
+          "0x7b4292494807bfc7387e7e0ecc65788ed650f043"
+        ],
+        "via": "eip6963:app.phantom"
+      }
+    ],
+    "chainChanged": [
+      {
+        "test": "Read the permissions",
+        "payload": "0xaa36a7",
+        "via": "eip6963:app.phantom"
+      }
+    ]
+  }
+}
