@@ -1,0 +1,167 @@
+{
+  "dappressVersion": "0.11.0",
+  "metamaskVersion": "13.55.0",
+  "mode": "sidepanel",
+  "browser": "chrome-for-testing 156.0.8078.80",
+  "date": "2026-10-30T12:16:23.514Z",
+  "passed": false,
+  "actions": [
+    {
+      "action": "injects the provider into the dapp",
+      "status": "failed",
+      "error": "CypressError: `cy.task('dappress:setupMetaMask')` failed with the following error:"
+    },
+    {
+      "action": "rejectConnection",
+      "status": "skipped"
+    },
+    {
+      "action": "connectToDapp, onto the network from the wallet setup",
+      "status": "skipped"
+    },
+    {
+      "action": "wallet_getPermissions, once connected",
+      "status": "skipped"
+    },
+    {
+      "action": "wallet_getCapabilities",
+      "status": "skipped"
+    },
+    {
+      "action": "wallet_requestPermissions, rejected with rejectConnection",
+      "status": "skipped"
+    },
+    {
+      "action": "wallet_requestPermissions, accepted with connectToDapp",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmSignature (personal_sign)",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectSignature (personal_sign)",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectSignature (signTypedData_v4)",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmSignature (signTypedData_v4)",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectSignature, then confirmSignature twice, each request sent as the one before settles",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectTransaction",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectNewNetwork",
+      "status": "skipped"
+    },
+    {
+      "action": "approveNewNetwork",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectSwitchNetwork",
+      "status": "skipped"
+    },
+    {
+      "action": "approveSwitchNetwork",
+      "status": "skipped"
+    },
+    {
+      "action": "switch to a chain the wallet does not know",
+      "status": "skipped"
+    },
+    {
+      "action": "useNetwork, back to a network the dapp is allowed on",
+      "status": "skipped"
+    },
+    {
+      "action": "wallet_sendCalls on a chain without EIP-7702: refused without asking",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction",
+      "status": "skipped"
+    },
+    {
+      "action": "approveAddToken",
+      "status": "skipped"
+    },
+    {
+      "action": "rejectAddToken",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction (ERC-20 approval)",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap })",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction ({ gas })",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction ({ spendingCap, gas })",
+      "status": "skipped"
+    },
+    {
+      "action": "confirmTransaction ({ gas: 'networkSuggested' })",
+      "status": "skipped"
+    },
+    {
+      "action": "addAccount",
+      "status": "skipped"
+    },
+    {
+      "action": "importAccount",
+      "status": "skipped"
+    },
+    {
+      "action": "switchAccount",
+      "status": "skipped"
+    },
+    {
+      "action": "connectToDapp ({ accounts })",
+      "status": "skipped"
+    },
+    {
+      "action": "lockWallet",
+      "status": "skipped"
+    },
+    {
+      "action": "unlockWallet",
+      "status": "skipped"
+    },
+    {
+      "action": "disconnectFromDapp",
+      "status": "skipped"
+    },
+    {
+      "action": "chain commands: mine, increaseTime, setStorageAt, rpc",
+      "status": "skipped"
+    },
+    {
+      "action": "snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to",
+      "status": "skipped"
+    },
+    {
+      "action": "snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to",
+      "status": "skipped"
+    },
+    {
+      "action": "snapshot, revert",
+      "status": "skipped"
+    }
+  ]
+}
