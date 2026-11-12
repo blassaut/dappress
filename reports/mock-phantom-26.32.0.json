@@ -2,8 +2,8 @@
   "dappressVersion": "0.11.0",
   "metamaskVersion": "13.50.0",
   "mode": "mock",
-  "browser": "chrome-for-testing 157.0.8103.50",
-  "date": "2026-11-11T13:41:19.797Z",
+  "browser": "chrome-for-testing 157.0.8103.78",
+  "date": "2026-11-12T14:45:21.448Z",
   "passed": false,
   "actions": [
     {
