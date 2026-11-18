@@ -2,14 +2,13 @@
   "dappressVersion": "0.11.0",
   "metamaskVersion": "13.50.0",
   "mode": "mock",
-  "browser": "chrome-for-testing 157.0.8103.78",
-  "date": "2026-11-17T15:36:52.448Z",
-  "passed": false,
+  "browser": "chrome-for-testing 158.0.8127.36",
+  "date": "2026-11-18T15:14:20.912Z",
+  "passed": true,
   "actions": [
     {
       "action": "injects the provider into the dapp",
-      "status": "failed",
-      "error": "TypeError: The following error originated from your application code, not from Cypress. It was caused by an unhandled promise rejection."
+      "status": "passed"
     },
     {
       "action": "rejectConnection",

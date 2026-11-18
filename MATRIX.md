@@ -4,7 +4,7 @@ One run of the suite per MetaMask release and mode. A mode is where MetaMask sho
 
 | MetaMask | Side panel | Headless | Popup | Dappress | Date |
 | --- | --- | --- | --- | --- | --- |
-| 13.57.0 | ❌ 0/39 | ❌ 0/39 | – | 0.11.0 | 2026-11-17 |
+| 13.57.0 | ❌ 0/39 | ❌ 0/39 | – | 0.11.0 | 2026-11-18 |
 | 13.56.0 | ❌ 0/39 | ❌ 0/39 | – | 0.11.0 | 2026-11-13 |
 | 13.55.0 | ❌ 0/39 | ❌ 0/39 | – | 0.11.0 | 2026-11-05 |
 | 13.54.0 | ❌ 37/39 | ❌ 37/39 | ❌ 37/39 | 0.11.0 | 2026-10-27 |
@@ -319,7 +319,7 @@ One run of the suite per wallet profile, on the mock wallet that replays it: the
 
 | Action | MetaMask 13.50.0 | Phantom 26.32.0 | Rabby 0.94.11 |
 | --- | --- | --- | --- |
-| injects the provider into the dapp | ❌ | ❌ | ❌ |
+| injects the provider into the dapp | ✅ | ✅ | ✅ |
 | rejectConnection | ✅ | ✅ | ✅ |
 | connectToDapp, onto the network from the wallet setup | ✅ | ✅ | ✅ |
 | wallet_getPermissions, once connected | ✅ | ✅ | ✅ |
@@ -358,9 +358,3 @@ One run of the suite per wallet profile, on the mock wallet that replays it: the
 | snapshot, revert right after a transaction: the next one goes from the nonce the chain went back to | ✅ | ✅ | ✅ |
 | snapshot, revert once the wallet saw the transaction mined: the next one goes from the nonce the chain went back to | ✅ | ✅ | ✅ |
 | snapshot, revert | ✅ | ✅ | ✅ |
-
-### What fails, and why
-
-- MetaMask 13.50.0, injects the provider into the dapp: TypeError: The following error originated from your application code, not from Cypress. It was caused by an unhandled promise rejection.
-- Phantom 26.32.0, injects the provider into the dapp: TypeError: The following error originated from your application code, not from Cypress. It was caused by an unhandled promise rejection.
-- Rabby 0.94.11, injects the provider into the dapp: TypeError: The following error originated from your application code, not from Cypress. It was caused by an unhandled promise rejection.

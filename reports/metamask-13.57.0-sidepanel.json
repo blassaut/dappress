@@ -2,8 +2,8 @@
   "dappressVersion": "0.11.0",
   "metamaskVersion": "13.57.0",
   "mode": "sidepanel",
-  "browser": "chrome-for-testing 157.0.8103.78",
-  "date": "2026-11-17T15:37:05.802Z",
+  "browser": "chrome-for-testing 158.0.8127.36",
+  "date": "2026-11-18T15:14:39.606Z",
   "passed": false,
   "actions": [
     {
